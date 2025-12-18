@@ -25,14 +25,15 @@ export default tseslint.config(
     },
     settings: {
       'boundaries/elements': [
-        { type: 'common', pattern: 'packages/common/*' },
-        { type: 'domain', pattern: 'packages/domain/*/*' },
-        { type: 'infra', pattern: 'packages/infra/*/*' },
-        { type: 'apps', pattern: 'apps/*/*' },
+        { type: 'common', pattern: ['packages/common/src/**'] },
+        { type: 'domain', pattern: ['packages/domain/*/src/**'] },
+        { type: 'infra', pattern: ['packages/infra/*/src/**'] },
+        { type: 'apps', pattern: ['apps/*/src/**'] },
       ],
       'boundaries/ignore': ['**/*.test.ts', '**/*.spec.ts'],
     },
     rules: {
+      'boundaries/no-unknown': ['error'],
       'boundaries/element-types': [
         'error',
         {
