@@ -4,11 +4,22 @@
  * Prompt vault domain - prompt template management and versioning.
  *
  * Structure:
- * - models/    Domain entities (Prompt, Version, etc.)
  * - ports/     Interfaces for external dependencies
- * - usecases/  Application services
- * - policies/  Validation and business rules
+ * - models/    Domain entities (future)
+ * - usecases/  Application services (future)
+ * - policies/  Validation and business rules (future)
  */
 
-// Public exports will be added as domain is implemented
-export {};
+// Ports - interfaces for external dependencies
+export type {
+  NotionConnectionConfig,
+  NotionConnectionPublic,
+  NotionPage,
+  NotionBlock,
+  CreatedNote,
+  NotionErrorCode,
+  NotionError,
+  NotionConnectionRepository,
+  NotionApiPort,
+  IdempotencyLedger,
+} from './ports.js';

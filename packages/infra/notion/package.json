@@ -17,6 +17,8 @@
     "clean": "rm -rf dist .tsbuildinfo"
   },
   "dependencies": {
-    "@praxos/common": "*"
+    "@praxos/common": "*",
+    "@praxos/domain-promptvault": "*",
+    "@notionhq/client": "^2.2.15"
   }
 }

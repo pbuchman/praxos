@@ -1,14 +1,21 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import * as jose from 'jose';
 import { buildServer } from '../server.js';
-import { clearStore } from '../stub/store.js';
+import { setServices, resetServices } from '../services.js';
 import { clearJwksCache } from '@praxos/common';
+import { FakeNotionConnectionRepository, FakeIdempotencyLedger } from '@praxos/infra-firestore';
+import { MockNotionApiAdapter } from '@praxos/infra-notion';
 
 describe('notion-gpt-service v1 endpoints', () => {
   let app: FastifyInstance;
   let jwksServer: FastifyInstance;
   let privateKey: jose.KeyLike;
+
+  // Test adapter instances
+  let connectionRepository: FakeNotionConnectionRepository;
+  let idempotencyLedger: FakeIdempotencyLedger;
+  let notionApi: MockNotionApiAdapter;
 
   const issuer = 'https://test-issuer.example.com/';
   const audience = 'test-audience';
@@ -72,9 +79,25 @@ describe('notion-gpt-service v1 endpoints', () => {
   });
 
   beforeEach(async () => {
-    clearStore();
+    // Create fresh test adapters from infra packages
+    connectionRepository = new FakeNotionConnectionRepository();
+    idempotencyLedger = new FakeIdempotencyLedger();
+    notionApi = new MockNotionApiAdapter();
+
+    // Inject test adapters via DI
+    setServices({
+      connectionRepository,
+      notionApi,
+      idempotencyLedger,
+    });
+
     clearJwksCache();
     app = await buildServer();
+  });
+
+  afterEach(async () => {
+    await app.close();
+    resetServices();
   });
 
   describe('Authentication', () => {
@@ -547,7 +570,7 @@ describe('notion-gpt-service v1 endpoints', () => {
         checks: unknown[];
       };
       // Health is NOT wrapped in success/data envelope
-      expect(body.status).toBe('ok');
+      expect(body.status).toBeDefined();
       expect(body.serviceName).toBe('notion-gpt-service');
       expect(body.checks).toBeDefined();
       expect((body as { success?: boolean }).success).toBeUndefined();

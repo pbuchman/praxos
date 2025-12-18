@@ -17,6 +17,8 @@
     "clean": "rm -rf dist .tsbuildinfo"
   },
   "dependencies": {
-    "@praxos/common": "*"
+    "@praxos/common": "*",
+    "@praxos/domain-promptvault": "*",
+    "@google-cloud/firestore": "^7.10.0"
   }
 }

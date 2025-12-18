@@ -357,11 +357,11 @@ The auth-service provides Device Authorization Flow helpers for CLI/device authe
 
 ### Configuration
 
-| Variable          | Description              | Example                        |
-| ----------------- | ------------------------ | ------------------------------ |
-| `AUTH0_DOMAIN`    | Auth0 tenant domain      | `praxos-dev.eu.auth0.com`      |
-| `AUTH0_CLIENT_ID` | Native app client ID     | `abc123...`                    |
-| `AUTH_AUDIENCE`   | API identifier (default) | `https://api.praxos.app`       |
+| Variable          | Description              | Example                   |
+| ----------------- | ------------------------ | ------------------------- |
+| `AUTH0_DOMAIN`    | Auth0 tenant domain      | `praxos-dev.eu.auth0.com` |
+| `AUTH0_CLIENT_ID` | Native app client ID     | `abc123...`               |
+| `AUTH_AUDIENCE`   | API identifier (default) | `https://api.praxos.app`  |
 
 If any required variable is missing, endpoints return `503 MISCONFIGURED`.
 

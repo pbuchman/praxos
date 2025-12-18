@@ -67,12 +67,12 @@ After creation, configure:
 
 From your tenant domain, derive:
 
-| Variable        | Value                                                   |
-| --------------- | ------------------------------------------------------- |
-| `AUTH0_DOMAIN`  | `your-tenant.eu.auth0.com`                              |
-| `AUTH_ISSUER`   | `https://your-tenant.eu.auth0.com/`                     |
-| `AUTH_JWKS_URL` | `https://your-tenant.eu.auth0.com/.well-known/jwks.json`|
-| `AUTH_AUDIENCE` | `https://api.praxos.app` (from API Identifier)          |
+| Variable        | Value                                                    |
+| --------------- | -------------------------------------------------------- |
+| `AUTH0_DOMAIN`  | `your-tenant.eu.auth0.com`                               |
+| `AUTH_ISSUER`   | `https://your-tenant.eu.auth0.com/`                      |
+| `AUTH_JWKS_URL` | `https://your-tenant.eu.auth0.com/.well-known/jwks.json` |
+| `AUTH_AUDIENCE` | `https://api.praxos.app` (from API Identifier)           |
 
 ## 6. Populate Secret Manager (GCP)
 
@@ -236,6 +236,7 @@ curl http://localhost:3001/v1/integrations/notion/status \
 **Symptom:** `401 Unauthorized` with "Invalid audience"
 
 **Causes:**
+
 - `AUTH_AUDIENCE` doesn't match API Identifier in Auth0
 - Missing trailing slash or protocol mismatch
 
@@ -246,6 +247,7 @@ curl http://localhost:3001/v1/integrations/notion/status \
 **Symptom:** `401 Unauthorized` with "Invalid issuer"
 
 **Causes:**
+
 - `AUTH_ISSUER` doesn't include trailing slash
 - Wrong region in domain (e.g., `.us.` vs `.eu.`)
 
@@ -256,6 +258,7 @@ curl http://localhost:3001/v1/integrations/notion/status \
 **Symptom:** `401 Unauthorized` with "Token expired"
 
 **Causes:**
+
 - Token TTL exceeded
 - Clock skew between client and server
 
@@ -266,6 +269,7 @@ curl http://localhost:3001/v1/integrations/notion/status \
 **Symptom:** `401 Unauthorized` with "Unable to verify signature"
 
 **Causes:**
+
 - `AUTH_JWKS_URL` points to wrong tenant
 - JWKS endpoint unreachable
 
@@ -280,6 +284,7 @@ curl https://your-tenant.eu.auth0.com/.well-known/jwks.json
 **Symptom:** `503 MISCONFIGURED`
 
 **Causes:**
+
 - One or more of `AUTH_JWKS_URL`, `AUTH_ISSUER`, `AUTH_AUDIENCE` not set
 - For auth-service: `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID` not set
 
@@ -298,6 +303,7 @@ export AUTH_AUDIENCE=https://api.praxos.app
 **Symptom:** `400` error with "expired_token" during polling
 
 **Causes:**
+
 - User didn't complete authorization within `expires_in` seconds
 - Polling after expiration
 
@@ -308,6 +314,7 @@ export AUTH_AUDIENCE=https://api.praxos.app
 **Symptom:** `400` error with "slow_down"
 
 **Causes:**
+
 - Polling faster than `interval` seconds
 
 **Fix:** Respect the `interval` value from device code response.
@@ -316,19 +323,19 @@ export AUTH_AUDIENCE=https://api.praxos.app
 
 ### auth-service
 
-| Variable          | Description                    | Example                                       |
-| ----------------- | ------------------------------ | --------------------------------------------- |
-| `AUTH0_DOMAIN`    | Auth0 tenant domain            | `praxos-dev.eu.auth0.com`                     |
-| `AUTH0_CLIENT_ID` | Native app client ID           | `abc123...`                                   |
-| `AUTH_AUDIENCE`   | API identifier (default)       | `https://api.praxos.app`                      |
+| Variable          | Description              | Example                   |
+| ----------------- | ------------------------ | ------------------------- |
+| `AUTH0_DOMAIN`    | Auth0 tenant domain      | `praxos-dev.eu.auth0.com` |
+| `AUTH0_CLIENT_ID` | Native app client ID     | `abc123...`               |
+| `AUTH_AUDIENCE`   | API identifier (default) | `https://api.praxos.app`  |
 
 ### notion-gpt-service (and other protected services)
 
-| Variable        | Description          | Example                                               |
-| --------------- | -------------------- | ----------------------------------------------------- |
-| `AUTH_JWKS_URL` | JWKS endpoint URL    | `https://praxos-dev.eu.auth0.com/.well-known/jwks.json`|
-| `AUTH_ISSUER`   | Token issuer         | `https://praxos-dev.eu.auth0.com/`                    |
-| `AUTH_AUDIENCE` | Expected audience    | `https://api.praxos.app`                              |
+| Variable        | Description       | Example                                                 |
+| --------------- | ----------------- | ------------------------------------------------------- |
+| `AUTH_JWKS_URL` | JWKS endpoint URL | `https://praxos-dev.eu.auth0.com/.well-known/jwks.json` |
+| `AUTH_ISSUER`   | Token issuer      | `https://praxos-dev.eu.auth0.com/`                      |
+| `AUTH_AUDIENCE` | Expected audience | `https://api.praxos.app`                                |
 
 ## Security Notes (v1 Sandbox)
 
@@ -336,4 +343,3 @@ export AUTH_AUDIENCE=https://api.praxos.app
 - **Short TTL only**: Use 1-hour expiry for access tokens
 - **No refresh tokens**: Request new token via DAF when expired
 - **Client secret not used**: Native apps use PKCE or device flow without secret
-
