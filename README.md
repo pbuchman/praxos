@@ -16,6 +16,7 @@ Notion models the world. PraxOS executes.
 3. [Cloud Build Trigger](./docs/setup/03-cloud-build-trigger.md)
 4. [Cloud Run Services](./docs/setup/04-cloud-run-services.md)
 5. [Local Development](./docs/setup/05-local-dev-with-gcp-deps.md)
+6. [Auth0 Setup](./docs/setup/06-auth0.md)
 
 ## Infrastructure
 

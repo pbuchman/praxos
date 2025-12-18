@@ -8,6 +8,7 @@
     "eslint.config.js",
     "packages/**/src/**/*.ts",
     "packages/**/src/**/*.test.ts",
-    "apps/**/src/**/*.ts"
+    "apps/**/src/**/*.ts",
+    "apps/**/src/**/*.test.ts"
   ]
 }

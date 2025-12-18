@@ -351,6 +351,117 @@ This provides a stable identifier across sessions.
 All three variables must be set for authentication to work.
 If any are missing, protected endpoints return `503 MISCONFIGURED`.
 
+## auth-service Endpoints
+
+The auth-service provides Device Authorization Flow helpers for CLI/device authentication.
+
+### Configuration
+
+| Variable          | Description              | Example                        |
+| ----------------- | ------------------------ | ------------------------------ |
+| `AUTH0_DOMAIN`    | Auth0 tenant domain      | `praxos-dev.eu.auth0.com`      |
+| `AUTH0_CLIENT_ID` | Native app client ID     | `abc123...`                    |
+| `AUTH_AUDIENCE`   | API identifier (default) | `https://api.praxos.app`       |
+
+If any required variable is missing, endpoints return `503 MISCONFIGURED`.
+
+### POST /v1/auth/device/start
+
+Start Device Authorization Flow. Returns device code and user code.
+
+**Request:**
+
+```json
+{
+  "audience": "https://api.praxos.app",
+  "scope": "openid profile email"
+}
+```
+
+| Field      | Type     | Required | Default                  |
+| ---------- | -------- | -------- | ------------------------ |
+| `audience` | `string` | No       | From `AUTH_AUDIENCE` env |
+| `scope`    | `string` | No       | `openid profile email`   |
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "device_code": "XXXX-XXXX-XXXX",
+    "user_code": "ABCD-EFGH",
+    "verification_uri": "https://tenant.auth0.com/activate",
+    "verification_uri_complete": "https://tenant.auth0.com/activate?user_code=ABCD-EFGH",
+    "expires_in": 900,
+    "interval": 5
+  },
+  "diagnostics": { "requestId": "..." }
+}
+```
+
+### POST /v1/auth/device/poll
+
+Poll for token after user authorization.
+
+**Request:**
+
+```json
+{
+  "device_code": "XXXX-XXXX-XXXX"
+}
+```
+
+| Field         | Type     | Required |
+| ------------- | -------- | -------- |
+| `device_code` | `string` | Yes      |
+
+**Pending Response (409 CONFLICT):**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CONFLICT",
+    "message": "Authorization pending. User has not yet completed authentication."
+  }
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJSUzI1NiIs...",
+    "token_type": "Bearer",
+    "expires_in": 3600,
+    "scope": "openid profile email"
+  }
+}
+```
+
+### GET /v1/auth/config
+
+Get non-secret auth configuration for troubleshooting.
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "domain": "praxos-dev.eu.auth0.com",
+    "issuer": "https://praxos-dev.eu.auth0.com/",
+    "audience": "https://api.praxos.app",
+    "jwksUrl": "https://praxos-dev.eu.auth0.com/.well-known/jwks.json"
+  }
+}
+```
+
+**Note:** This endpoint does not expose `client_id` or any secrets.
+
 #### Error Responses
 
 | Condition           | Error Code      | HTTP Status |

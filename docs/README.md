@@ -64,6 +64,7 @@ Step-by-step guides for setting up PraxOS infrastructure:
 3. [Cloud Build Trigger](./setup/03-cloud-build-trigger.md) - Configure CI/CD pipeline
 4. [Cloud Run Services](./setup/04-cloud-run-services.md) - Deploy and manage services
 5. [Local Development](./setup/05-local-dev-with-gcp-deps.md) - Run locally with GCP dependencies
+6. [Auth0 Setup](./setup/06-auth0.md) - Configure Auth0 for Device Authorization Flow
 
 ## Infrastructure
 
