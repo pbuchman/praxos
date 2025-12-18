@@ -110,9 +110,7 @@ describe('auth-service v1 endpoints', () => {
         interval: 5,
       };
 
-      nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/device/code')
-        .reply(200, mockResponse);
+      nock(`https://${AUTH0_DOMAIN}`).post('/oauth/device/code').reply(200, mockResponse);
 
       app = await buildServer();
 
@@ -167,12 +165,10 @@ describe('auth-service v1 endpoints', () => {
     });
 
     it('handles Auth0 error response', async () => {
-      nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/device/code')
-        .reply(400, {
-          error: 'invalid_client',
-          error_description: 'Client is not authorized for device flow',
-        });
+      nock(`https://${AUTH0_DOMAIN}`).post('/oauth/device/code').reply(400, {
+        error: 'invalid_client',
+        error_description: 'Client is not authorized for device flow',
+      });
 
       app = await buildServer();
 
@@ -224,12 +220,10 @@ describe('auth-service v1 endpoints', () => {
     });
 
     it('returns 409 CONFLICT when authorization pending', async () => {
-      nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/token')
-        .reply(403, {
-          error: 'authorization_pending',
-          error_description: 'User has not authorized yet',
-        });
+      nock(`https://${AUTH0_DOMAIN}`).post('/oauth/token').reply(403, {
+        error: 'authorization_pending',
+        error_description: 'User has not authorized yet',
+      });
 
       app = await buildServer();
 
@@ -250,12 +244,10 @@ describe('auth-service v1 endpoints', () => {
     });
 
     it('returns 409 CONFLICT when slow_down', async () => {
-      nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/token')
-        .reply(403, {
-          error: 'slow_down',
-          error_description: 'You are polling too quickly',
-        });
+      nock(`https://${AUTH0_DOMAIN}`).post('/oauth/token').reply(403, {
+        error: 'slow_down',
+        error_description: 'You are polling too quickly',
+      });
 
       app = await buildServer();
 
@@ -283,9 +275,7 @@ describe('auth-service v1 endpoints', () => {
         scope: 'openid profile email',
       };
 
-      nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/token')
-        .reply(200, mockTokenResponse);
+      nock(`https://${AUTH0_DOMAIN}`).post('/oauth/token').reply(200, mockTokenResponse);
 
       app = await buildServer();
 
@@ -308,12 +298,10 @@ describe('auth-service v1 endpoints', () => {
     });
 
     it('handles expired token error', async () => {
-      nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/token')
-        .reply(400, {
-          error: 'expired_token',
-          error_description: 'Device code has expired',
-        });
+      nock(`https://${AUTH0_DOMAIN}`).post('/oauth/token').reply(400, {
+        error: 'expired_token',
+        error_description: 'Device code has expired',
+      });
 
       app = await buildServer();
 
@@ -437,4 +425,3 @@ describe('auth-service v1 endpoints', () => {
     });
   });
 });
-

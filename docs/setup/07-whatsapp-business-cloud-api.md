@@ -157,6 +157,7 @@ GET /webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challe
 ```
 
 Your service must:
+
 1. Verify `hub.verify_token` matches your configured token
 2. Return the `hub.challenge` value as plain text
 
@@ -174,11 +175,11 @@ After verification, subscribe to message events:
 
 ## 7. Required Permissions/Scopes
 
-| Permission | Purpose | Required |
-|------------|---------|----------|
-| `whatsapp_business_messaging` | Send/receive messages | ✅ Yes |
-| `whatsapp_business_management` | Manage phone numbers, templates | ✅ Yes |
-| `business_management` | Access business settings | Optional |
+| Permission                     | Purpose                         | Required |
+| ------------------------------ | ------------------------------- | -------- |
+| `whatsapp_business_messaging`  | Send/receive messages           | ✅ Yes   |
+| `whatsapp_business_management` | Manage phone numbers, templates | ✅ Yes   |
+| `business_management`          | Access business settings        | Optional |
 
 These permissions are selected when generating your System User token.
 
@@ -246,6 +247,7 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ### 401 Unauthorized - Invalid Token
 
 **Symptom:**
+
 ```json
 {
   "error": {
@@ -256,17 +258,20 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ```
 
 **Causes:**
+
 - Token expired (temporary tokens last 24h)
 - Token was revoked
 - Token missing required permissions
 
 **Fix:**
+
 - Generate new token with correct permissions
 - Use permanent System User token for production
 
 ### 400 Bad Request - Invalid Phone Number
 
 **Symptom:**
+
 ```json
 {
   "error": {
@@ -277,11 +282,13 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ```
 
 **Causes:**
+
 - Phone number format incorrect (missing country code)
 - Recipient not in test number's allowed list
 - Phone number not registered on WhatsApp
 
 **Fix:**
+
 - Use E.164 format: `+[country code][number]`
 - Add recipient to test phone number's allowed list
 - Verify recipient has WhatsApp installed
@@ -289,6 +296,7 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ### 403 Forbidden - Permissions Issue
 
 **Symptom:**
+
 ```json
 {
   "error": {
@@ -299,11 +307,13 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ```
 
 **Causes:**
+
 - System User lacks required asset permissions
 - App not properly connected to WABA
 - Business not verified (for production features)
 
 **Fix:**
+
 - Grant System User access to App and WABA
 - Complete business verification
 - Check token has `whatsapp_business_messaging` scope
@@ -311,6 +321,7 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ### 131030 - Rate Limit Exceeded
 
 **Symptom:**
+
 ```json
 {
   "error": {
@@ -322,10 +333,12 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ```
 
 **Causes:**
+
 - Too many messages sent too quickly
 - Tier limits exceeded (based on quality rating)
 
 **Fix:**
+
 - Implement exponential backoff
 - Check your messaging tier in Business Manager
 - Improve message quality to increase tier
@@ -333,12 +346,14 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ### Webhook Not Receiving Events
 
 **Causes:**
+
 - Callback URL not accessible publicly
 - SSL certificate invalid
 - Verify token mismatch
 - Webhook fields not subscribed
 
 **Debug steps:**
+
 1. Test callback URL is reachable: `curl -I https://your-url`
 2. Check SSL: `openssl s_client -connect your-domain:443`
 3. Verify webhook subscription in Meta dashboard
@@ -347,6 +362,7 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ### 131047 - Message Failed to Send
 
 **Symptom:**
+
 ```json
 {
   "error": {
@@ -357,11 +373,13 @@ curl -X POST "https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages" \
 ```
 
 **Causes:**
+
 - 24h messaging window expired
 - Template not approved
 - Recipient blocked your number
 
 **Fix:**
+
 - Use approved template for business-initiated messages
 - Check template status in Message Templates
 - Wait for user to message you first
@@ -382,13 +400,13 @@ WHATSAPP_APP_SECRET=your-app-secret
 
 ### Production (Secret Manager via Terraform)
 
-| Secret Name | Env Var | Purpose |
-|-------------|---------|---------|
-| `PRAXOS_WHATSAPP_VERIFY_TOKEN` | `WHATSAPP_VERIFY_TOKEN` | Webhook verification |
-| `PRAXOS_WHATSAPP_ACCESS_TOKEN` | `WHATSAPP_ACCESS_TOKEN` | API authentication |
-| `PRAXOS_WHATSAPP_PHONE_NUMBER_ID` | `WHATSAPP_PHONE_NUMBER_ID` | Identify sender |
-| `PRAXOS_WHATSAPP_WABA_ID` | `WHATSAPP_WABA_ID` | Business account ID |
-| `PRAXOS_WHATSAPP_APP_SECRET` | `WHATSAPP_APP_SECRET` | Webhook signature validation |
+| Secret Name                       | Env Var                    | Purpose                      |
+| --------------------------------- | -------------------------- | ---------------------------- |
+| `PRAXOS_WHATSAPP_VERIFY_TOKEN`    | `WHATSAPP_VERIFY_TOKEN`    | Webhook verification         |
+| `PRAXOS_WHATSAPP_ACCESS_TOKEN`    | `WHATSAPP_ACCESS_TOKEN`    | API authentication           |
+| `PRAXOS_WHATSAPP_PHONE_NUMBER_ID` | `WHATSAPP_PHONE_NUMBER_ID` | Identify sender              |
+| `PRAXOS_WHATSAPP_WABA_ID`         | `WHATSAPP_WABA_ID`         | Business account ID          |
+| `PRAXOS_WHATSAPP_APP_SECRET`      | `WHATSAPP_APP_SECRET`      | Webhook signature validation |
 
 ## Useful Links
 
@@ -406,4 +424,3 @@ WHATSAPP_APP_SECRET=your-app-secret
 - Implement rate limiting on your webhook endpoint
 - Log message IDs but never message content in production
 - Test thoroughly with test phone number before production
-

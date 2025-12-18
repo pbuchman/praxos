@@ -2,13 +2,7 @@ import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { ZodError } from 'zod';
 import { requireAuth } from '@praxos/common';
 import { connectRequestSchema, createNoteRequestSchema, webhookRequestSchema } from './schemas.js';
-import {
-  setNotionConfig,
-  getNotionConfig,
-  removeNotionConfig,
-  isNotionConfigured,
-  getOrCreateNote,
-} from '../stub/store.js';
+import { getServices } from '../services.js';
 
 /**
  * Handle Zod validation errors.
@@ -40,8 +34,19 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
     }
 
     const { notionToken, promptVaultPageId } = parseResult.data;
-    const config = setNotionConfig(user.userId, promptVaultPageId, notionToken);
+    const { connectionRepository } = getServices();
 
+    const result = await connectionRepository.saveConnection(
+      user.userId,
+      promptVaultPageId,
+      notionToken
+    );
+
+    if (!result.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
+    }
+
+    const config = result.value;
     return await reply.ok({
       connected: config.connected,
       promptVaultPageId: config.promptVaultPageId,
@@ -55,8 +60,14 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
     const user = await requireAuth(request, reply);
     if (user === null) return;
 
-    const config = getNotionConfig(user.userId);
+    const { connectionRepository } = getServices();
+    const result = await connectionRepository.getConnection(user.userId);
 
+    if (!result.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
+    }
+
+    const config = result.value;
     return await reply.ok({
       configured: config !== null,
       connected: config?.connected ?? false,
@@ -71,8 +82,14 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
     const user = await requireAuth(request, reply);
     if (user === null) return;
 
-    const config = removeNotionConfig(user.userId);
+    const { connectionRepository } = getServices();
+    const result = await connectionRepository.disconnectConnection(user.userId);
 
+    if (!result.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
+    }
+
+    const config = result.value;
     return await reply.ok({
       connected: config.connected,
       promptVaultPageId: config.promptVaultPageId,
@@ -85,41 +102,55 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
     const user = await requireAuth(request, reply);
     if (user === null) return;
 
-    if (!isNotionConfigured(user.userId)) {
+    const { connectionRepository, notionApi } = getServices();
+
+    // Check if connected
+    const connectedResult = await connectionRepository.isConnected(user.userId);
+    if (!connectedResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', connectedResult.error.message);
+    }
+
+    const isConnected = connectedResult.value;
+    if (!isConnected) {
       return await reply.fail(
         'MISCONFIGURED',
         'Notion integration is not configured. Call POST /v1/integrations/notion/connect first.'
       );
     }
 
-    const config = getNotionConfig(user.userId);
+    // Get token
+    const tokenResult = await connectionRepository.getToken(user.userId);
+    if (!tokenResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', tokenResult.error.message);
+    }
+    const token = tokenResult.value;
+    if (token === null) {
+      return await reply.fail('MISCONFIGURED', 'Notion token not found.');
+    }
 
-    // Stub response with deterministic data
+    // Get config
+    const configResult = await connectionRepository.getConnection(user.userId);
+    if (!configResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', configResult.error.message);
+    }
+    const config = configResult.value;
+    if (config === null) {
+      return await reply.fail('MISCONFIGURED', 'Notion configuration not found.');
+    }
+
+    const pageId = config.promptVaultPageId;
+
+    // Fetch page from Notion
+    const pageResult = await notionApi.getPageWithPreview(token, pageId);
+    if (!pageResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', pageResult.error.message);
+    }
+
+    const pageData = pageResult.value;
     return await reply.ok({
-      page: {
-        id: config?.promptVaultPageId ?? 'stub-page-id',
-        title: 'Prompt Vault',
-        url: `https://notion.so/${config?.promptVaultPageId ?? 'stub-page-id'}`,
-      },
+      page: pageData.page,
       preview: {
-        blocks: [
-          {
-            type: 'heading_1',
-            content: 'Prompt Vault',
-          },
-          {
-            type: 'paragraph',
-            content: 'This is a stub preview of your Prompt Vault page.',
-          },
-          {
-            type: 'bulleted_list_item',
-            content: 'Item 1: System prompts',
-          },
-          {
-            type: 'bulleted_list_item',
-            content: 'Item 2: Templates',
-          },
-        ],
+        blocks: pageData.blocks,
       },
     });
   });
@@ -129,7 +160,16 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
     const user = await requireAuth(request, reply);
     if (user === null) return;
 
-    if (!isNotionConfigured(user.userId)) {
+    const { connectionRepository, notionApi, idempotencyLedger } = getServices();
+
+    // Check if connected
+    const connectedResult = await connectionRepository.isConnected(user.userId);
+    if (!connectedResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', connectedResult.error.message);
+    }
+
+    const isConnected = connectedResult.value;
+    if (!isConnected) {
       return await reply.fail(
         'MISCONFIGURED',
         'Notion integration is not configured. Call POST /v1/integrations/notion/connect first.'
@@ -141,15 +181,57 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
       return await handleValidationError(parseResult.error, reply);
     }
 
-    const { title, idempotencyKey } = parseResult.data;
-    const note = getOrCreateNote(user.userId, idempotencyKey, title);
+    const { title, content, idempotencyKey } = parseResult.data;
+
+    // Check idempotency ledger
+    const existingResult = await idempotencyLedger.get(user.userId, idempotencyKey);
+    if (!existingResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', existingResult.error.message);
+    }
+
+    const existingNote = existingResult.value;
+    if (existingNote !== null) {
+      // Return cached result
+      return await reply.ok({
+        created: existingNote,
+      });
+    }
+
+    // Get token
+    const tokenResult = await connectionRepository.getToken(user.userId);
+    if (!tokenResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', tokenResult.error.message);
+    }
+    const token = tokenResult.value;
+    if (token === null) {
+      return await reply.fail('MISCONFIGURED', 'Notion token not found.');
+    }
+
+    // Get config
+    const configResult = await connectionRepository.getConnection(user.userId);
+    if (!configResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', configResult.error.message);
+    }
+    const config = configResult.value;
+    if (config === null) {
+      return await reply.fail('MISCONFIGURED', 'Notion configuration not found.');
+    }
+
+    const parentPageId = config.promptVaultPageId;
+
+    // Create page in Notion
+    const createResult = await notionApi.createPage(token, parentPageId, title, content);
+    if (!createResult.ok) {
+      return await reply.fail('DOWNSTREAM_ERROR', createResult.error.message);
+    }
+
+    const createdNote = createResult.value;
+
+    // Store in idempotency ledger
+    await idempotencyLedger.set(user.userId, idempotencyKey, createdNote);
 
     return await reply.ok({
-      created: {
-        id: note.id,
-        url: note.url,
-        title: note.title,
-      },
+      created: createdNote,
     });
   });
 
@@ -160,7 +242,7 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
       return await handleValidationError(parseResult.error, reply);
     }
 
-    // Stub: accept any JSON, no side effects
+    // Accept any JSON, no side effects for v1
     return await reply.ok({
       received: true,
     });

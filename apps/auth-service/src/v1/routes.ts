@@ -110,7 +110,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
                   'interval',
                 ],
               },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
           503: {
@@ -118,8 +118,8 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             type: 'object',
             properties: {
               success: { type: 'boolean', enum: [false] },
-              error: { $ref: '#/components/schemas/ErrorBody' },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              error: { $ref: 'ErrorBody#' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
         },
@@ -163,10 +163,14 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
 
         if (!response.ok) {
           if (isAuth0Error(responseBody)) {
-            return await reply.fail('DOWNSTREAM_ERROR', responseBody.error_description ?? responseBody.error, {
-              downstreamStatus: response.status,
-              endpointCalled: deviceCodeUrl,
-            });
+            return await reply.fail(
+              'DOWNSTREAM_ERROR',
+              responseBody.error_description ?? responseBody.error,
+              {
+                downstreamStatus: response.status,
+                endpointCalled: deviceCodeUrl,
+              }
+            );
           }
           return await reply.fail('DOWNSTREAM_ERROR', 'Auth0 device code request failed', {
             downstreamStatus: response.status,
@@ -217,7 +221,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
                 },
                 required: ['access_token', 'token_type', 'expires_in'],
               },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
           409: {
@@ -225,8 +229,8 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             type: 'object',
             properties: {
               success: { type: 'boolean', enum: [false] },
-              error: { $ref: '#/components/schemas/ErrorBody' },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              error: { $ref: 'ErrorBody#' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
           503: {
@@ -234,8 +238,8 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             type: 'object',
             properties: {
               success: { type: 'boolean', enum: [false] },
-              error: { $ref: '#/components/schemas/ErrorBody' },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              error: { $ref: 'ErrorBody#' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
         },
@@ -342,7 +346,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
                 },
                 required: ['domain', 'issuer', 'audience', 'jwksUrl'],
               },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
           503: {
@@ -350,8 +354,8 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             type: 'object',
             properties: {
               success: { type: 'boolean', enum: [false] },
-              error: { $ref: '#/components/schemas/ErrorBody' },
-              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+              error: { $ref: 'ErrorBody#' },
+              diagnostics: { $ref: 'Diagnostics#' },
             },
           },
         },
@@ -379,4 +383,3 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
 
   done();
 };
-

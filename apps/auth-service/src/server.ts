@@ -150,6 +150,45 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   await app.register(praxosFastifyPlugin);
 
+  // Register shared schemas for $ref usage in routes
+  app.addSchema({
+    $id: 'Diagnostics',
+    type: 'object',
+    properties: {
+      requestId: { type: 'string' },
+      durationMs: { type: 'number' },
+      downstreamStatus: { type: 'integer' },
+      downstreamRequestId: { type: 'string' },
+      endpointCalled: { type: 'string' },
+    },
+  });
+
+  app.addSchema({
+    $id: 'ErrorCode',
+    type: 'string',
+    enum: [
+      'INVALID_REQUEST',
+      'UNAUTHORIZED',
+      'FORBIDDEN',
+      'NOT_FOUND',
+      'CONFLICT',
+      'DOWNSTREAM_ERROR',
+      'INTERNAL_ERROR',
+      'MISCONFIGURED',
+    ],
+  });
+
+  app.addSchema({
+    $id: 'ErrorBody',
+    type: 'object',
+    required: ['code', 'message'],
+    properties: {
+      code: { $ref: 'ErrorCode#' },
+      message: { type: 'string' },
+      details: { type: 'object' },
+    },
+  });
+
   await app.register(fastifySwagger, buildOpenApiOptions());
   await app.register(fastifySwaggerUi, {
     routePrefix: '/docs',

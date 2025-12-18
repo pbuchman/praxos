@@ -73,4 +73,3 @@ export function isAuth0Error(body: unknown): body is Auth0ErrorResponse {
   const obj = body as Record<string, unknown>;
   return 'error' in obj && typeof obj['error'] === 'string';
 }
-

@@ -4,8 +4,12 @@
  * Notion infrastructure adapter - implements promptvault and actions domain ports.
  *
  * Structure:
- * - adapters/  Port implementations using Notion SDK
+ * - adapter.ts  NotionApiPort implementation using Notion SDK
+ * - testing/    Mock adapters for use in tests
  */
 
-// Public exports will be added as adapters are implemented
-export {};
+// Adapters
+export { NotionApiAdapter } from './adapter.js';
+
+// Testing utilities (for use by consuming packages)
+export { MockNotionApiAdapter } from './testing/index.js';

@@ -4,8 +4,18 @@
  * Firestore infrastructure adapter - implements domain persistence ports.
  *
  * Structure:
- * - adapters/  Port implementations using Firestore SDK
+ * - client.ts                      Firestore client singleton
+ * - notionConnectionRepository.ts  Per-user Notion config storage
+ * - idempotencyLedger.ts          Idempotency tracking
+ * - testing/                       Test fakes for use in other packages
  */
 
-// Public exports will be added as adapters are implemented
-export {};
+// Client
+export { getFirestore, resetFirestore, setFirestore } from './client.js';
+
+// Adapters
+export { FirestoreNotionConnectionRepository } from './notionConnectionRepository.js';
+export { FirestoreIdempotencyLedger } from './idempotencyLedger.js';
+
+// Testing utilities (for use by consuming packages)
+export { FakeNotionConnectionRepository, FakeIdempotencyLedger } from './testing/index.js';
