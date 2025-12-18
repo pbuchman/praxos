@@ -65,6 +65,7 @@ Step-by-step guides for setting up PraxOS infrastructure:
 4. [Cloud Run Services](./setup/04-cloud-run-services.md) - Deploy and manage services
 5. [Local Development](./setup/05-local-dev-with-gcp-deps.md) - Run locally with GCP dependencies
 6. [Auth0 Setup](./setup/06-auth0.md) - Configure Auth0 for Device Authorization Flow
+7. [WhatsApp Business Cloud API](./setup/07-whatsapp-business-cloud-api.md) - Configure WhatsApp integration
 
 ## Infrastructure
 
