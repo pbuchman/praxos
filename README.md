@@ -6,6 +6,7 @@ Notion models the world. PraxOS executes.
 
 - [Architecture & Philosophy](./docs/README.md)
 - [Package Contracts](./docs/architecture/package-contracts.md)
+- [API Contracts](./docs/architecture/api-contracts.md)
 - [Setup Guide](./docs/setup.md)
 - [Development Guide](./docs/development.md)
 - [Branding](./docs/assets/branding/README.md)

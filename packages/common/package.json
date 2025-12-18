@@ -15,5 +15,9 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist .tsbuildinfo"
+  },
+  "dependencies": {
+    "fastify": "^5.1.0",
+    "fastify-plugin": "^5.0.1"
   }
 }

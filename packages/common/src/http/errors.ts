@@ -1,0 +1,44 @@
+/**
+ * Error codes for PraxOS API responses.
+ * These codes are stable and must not change meaning.
+ */
+export type ErrorCode =
+  | 'INVALID_REQUEST'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'DOWNSTREAM_ERROR'
+  | 'INTERNAL_ERROR'
+  | 'MISCONFIGURED';
+
+/**
+ * HTTP status codes mapped to error codes.
+ */
+export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
+  INVALID_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  DOWNSTREAM_ERROR: 502,
+  INTERNAL_ERROR: 500,
+  MISCONFIGURED: 503,
+};
+
+/**
+ * Base error class for PraxOS services.
+ */
+export class PraxOSError extends Error {
+  readonly code: ErrorCode;
+  readonly httpStatus: number;
+  readonly details?: unknown;
+
+  constructor(code: ErrorCode, message: string, details?: unknown) {
+    super(message);
+    this.name = 'PraxOSError';
+    this.code = code;
+    this.httpStatus = ERROR_HTTP_STATUS[code];
+    this.details = details;
+  }
+}

@@ -15,11 +15,15 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist .tsbuildinfo",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "dev": "node --watch dist/index.js"
   },
   "dependencies": {
     "@praxos/common": "*",
     "@praxos/domain-identity": "*",
-    "@praxos/infra-auth0": "*"
+    "@praxos/infra-auth0": "*",
+    "@fastify/swagger": "^9.4.2",
+    "@fastify/swagger-ui": "^5.2.1",
+    "fastify": "^5.1.0"
   }
 }
