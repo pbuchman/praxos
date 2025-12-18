@@ -6,3 +6,24 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 .idea/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+apps/*/.env
+
+# Terraform
+terraform/.terraform/
+terraform/**/.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# Affected services output (Cloud Build)
+affected.json
+
