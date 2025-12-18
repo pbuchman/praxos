@@ -138,9 +138,11 @@ module "secret_manager" {
   labels      = local.common_labels
 
   secrets = {
-    "PRAXOS_AUTH_JWKS_URL" = "Auth0 JWKS URL for JWT verification"
-    "PRAXOS_AUTH_ISSUER"   = "Auth0 issuer URL"
-    "PRAXOS_AUTH_AUDIENCE" = "Auth0 audience identifier"
+    "PRAXOS_AUTH0_DOMAIN"    = "Auth0 tenant domain for Device Authorization Flow"
+    "PRAXOS_AUTH0_CLIENT_ID" = "Auth0 Native app client ID for Device Authorization Flow"
+    "PRAXOS_AUTH_JWKS_URL"   = "Auth0 JWKS URL for JWT verification"
+    "PRAXOS_AUTH_ISSUER"     = "Auth0 issuer URL"
+    "PRAXOS_AUTH_AUDIENCE"   = "Auth0 audience identifier"
   }
 
   depends_on = [google_project_service.apis]
@@ -179,9 +181,11 @@ module "auth_service" {
   image = "${var.region}-docker.pkg.dev/${var.project_id}/${module.artifact_registry.repository_id}/auth-service:latest"
 
   secrets = {
-    AUTH_JWKS_URL = module.secret_manager.secret_ids["PRAXOS_AUTH_JWKS_URL"]
-    AUTH_ISSUER   = module.secret_manager.secret_ids["PRAXOS_AUTH_ISSUER"]
-    AUTH_AUDIENCE = module.secret_manager.secret_ids["PRAXOS_AUTH_AUDIENCE"]
+    AUTH0_DOMAIN    = module.secret_manager.secret_ids["PRAXOS_AUTH0_DOMAIN"]
+    AUTH0_CLIENT_ID = module.secret_manager.secret_ids["PRAXOS_AUTH0_CLIENT_ID"]
+    AUTH_JWKS_URL   = module.secret_manager.secret_ids["PRAXOS_AUTH_JWKS_URL"]
+    AUTH_ISSUER     = module.secret_manager.secret_ids["PRAXOS_AUTH_ISSUER"]
+    AUTH_AUDIENCE   = module.secret_manager.secret_ids["PRAXOS_AUTH_AUDIENCE"]
   }
 
   depends_on = [

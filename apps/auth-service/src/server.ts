@@ -3,6 +3,7 @@ import type { FastifyDynamicSwaggerOptions } from '@fastify/swagger';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import { praxosFastifyPlugin } from '@praxos/common';
+import { v1AuthRoutes } from './v1/routes.js';
 
 const SERVICE_NAME = 'auth-service';
 const SERVICE_VERSION = '0.0.1';
@@ -55,11 +56,91 @@ function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
     openapi: {
       info: {
         title: SERVICE_NAME,
-        description: 'PraxOS service scaffolding (Step 4)',
+        description: 'PraxOS Authentication Service - Device Authorization Flow helpers',
         version: SERVICE_VERSION,
       },
-      components: {},
-      tags: [{ name: 'system', description: 'System endpoints' }],
+      components: {
+        schemas: {
+          ApiOk: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', enum: [true] },
+              data: { type: 'object' },
+              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+            },
+            required: ['success', 'data'],
+          },
+          ApiError: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', enum: [false] },
+              error: { $ref: '#/components/schemas/ErrorBody' },
+              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+            },
+            required: ['success', 'error'],
+          },
+          ErrorBody: {
+            type: 'object',
+            required: ['code', 'message'],
+            properties: {
+              code: { $ref: '#/components/schemas/ErrorCode' },
+              message: { type: 'string' },
+              details: { type: 'object' },
+            },
+          },
+          ErrorCode: {
+            type: 'string',
+            enum: [
+              'INVALID_REQUEST',
+              'UNAUTHORIZED',
+              'FORBIDDEN',
+              'NOT_FOUND',
+              'CONFLICT',
+              'DOWNSTREAM_ERROR',
+              'INTERNAL_ERROR',
+              'MISCONFIGURED',
+            ],
+          },
+          Diagnostics: {
+            type: 'object',
+            properties: {
+              requestId: { type: 'string' },
+              durationMs: { type: 'number' },
+              downstreamStatus: { type: 'integer' },
+              downstreamRequestId: { type: 'string' },
+              endpointCalled: { type: 'string' },
+            },
+          },
+          HealthResponse: {
+            type: 'object',
+            required: ['status', 'serviceName', 'version', 'timestamp', 'checks'],
+            properties: {
+              status: { type: 'string', enum: ['ok', 'degraded', 'down'] },
+              serviceName: { type: 'string' },
+              version: { type: 'string' },
+              timestamp: { type: 'string', format: 'date-time' },
+              checks: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/HealthCheck' },
+              },
+            },
+          },
+          HealthCheck: {
+            type: 'object',
+            required: ['name', 'status', 'latencyMs'],
+            properties: {
+              name: { type: 'string' },
+              status: { type: 'string', enum: ['ok', 'degraded', 'down'] },
+              latencyMs: { type: 'number' },
+              details: { type: 'object', nullable: true },
+            },
+          },
+        },
+      },
+      tags: [
+        { name: 'system', description: 'System endpoints (health, docs)' },
+        { name: 'auth', description: 'Device Authorization Flow helpers' },
+      ],
     },
   };
 }
@@ -74,29 +155,76 @@ export async function buildServer(): Promise<FastifyInstance> {
     routePrefix: '/docs',
   });
 
-  app.get('/openapi.json', async (_req, reply) => {
-    const spec = app.swagger();
-    return await reply.type('application/json').send(spec);
-  });
+  // Register v1 auth routes
+  await app.register(v1AuthRoutes);
 
-  app.get('/health', async (_req, reply) => {
-    const started = Date.now();
-    const checks: HealthCheck[] = [checkSecrets(), checkFirestore()];
-    const status = computeOverallStatus(checks);
+  app.get(
+    '/openapi.json',
+    {
+      schema: {
+        description: 'OpenAPI specification',
+        tags: ['system'],
+        hide: true,
+      },
+    },
+    async (_req, reply) => {
+      const spec = app.swagger();
+      return await reply.type('application/json').send(spec);
+    }
+  );
 
-    const response: HealthResponse = {
-      status,
-      serviceName: SERVICE_NAME,
-      version: SERVICE_VERSION,
-      timestamp: new Date().toISOString(),
-      checks: checks.map((c) => c),
-    };
+  app.get(
+    '/health',
+    {
+      schema: {
+        description: 'Health check endpoint',
+        tags: ['system'],
+        response: {
+          200: {
+            type: 'object',
+            required: ['status', 'serviceName', 'version', 'timestamp', 'checks'],
+            properties: {
+              status: { type: 'string', enum: ['ok', 'degraded', 'down'] },
+              serviceName: { type: 'string' },
+              version: { type: 'string' },
+              timestamp: { type: 'string', format: 'date-time' },
+              checks: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  required: ['name', 'status', 'latencyMs'],
+                  properties: {
+                    name: { type: 'string' },
+                    status: { type: 'string', enum: ['ok', 'degraded', 'down'] },
+                    latencyMs: { type: 'number' },
+                    details: { type: 'object', nullable: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (_req, reply) => {
+      const started = Date.now();
+      const checks: HealthCheck[] = [checkSecrets(), checkFirestore()];
+      const status = computeOverallStatus(checks);
 
-    // include request duration as a header-level concern handled by logger;
-    // health body stays contract-shaped
-    void reply.header('x-health-duration-ms', String(Date.now() - started));
-    return await reply.type('application/json').send(response);
-  });
+      const response: HealthResponse = {
+        status,
+        serviceName: SERVICE_NAME,
+        version: SERVICE_VERSION,
+        timestamp: new Date().toISOString(),
+        checks: checks.map((c) => c),
+      };
+
+      // include request duration as a header-level concern handled by logger;
+      // health body stays contract-shaped
+      void reply.header('x-health-duration-ms', String(Date.now() - started));
+      return await reply.type('application/json').send(response);
+    }
+  );
 
   return await Promise.resolve(app);
 }

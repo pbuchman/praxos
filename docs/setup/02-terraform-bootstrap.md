@@ -72,7 +72,7 @@ Review the plan carefully. It should create:
 
 - Artifact Registry repository
 - Firestore database
-- Secret Manager secrets (3 secrets)
+- Secret Manager secrets (5 secrets)
 - Service accounts (3 accounts)
 - IAM bindings
 - Cloud Run services (2 services)
@@ -93,26 +93,41 @@ This will take several minutes. The longest steps are usually:
 
 ## 5. Populate Secrets
 
-Terraform creates empty secrets. You must populate them manually:
+Terraform creates empty secrets. You must populate them with actual values:
 
 ```bash
 # Set your Auth0 configuration
 export AUTH0_DOMAIN="your-tenant.auth0.com"
+export AUTH0_CLIENT_ID="your-native-app-client-id"
 export AUTH0_AUDIENCE="https://api.praxos.app"
 
-# Add secret versions
+# Add secret versions (Terraform created the secrets, we add values)
+
+# Auth0 domain - required for auth-service DAF endpoints
+echo -n "${AUTH0_DOMAIN}" | \
+  gcloud secrets versions add PRAXOS_AUTH0_DOMAIN --data-file=-
+
+# Auth0 client ID - required for auth-service DAF endpoints
+echo -n "${AUTH0_CLIENT_ID}" | \
+  gcloud secrets versions add PRAXOS_AUTH0_CLIENT_ID --data-file=-
+
+# Auth JWKS URL - required for JWT verification
 echo -n "https://${AUTH0_DOMAIN}/.well-known/jwks.json" | \
   gcloud secrets versions add PRAXOS_AUTH_JWKS_URL --data-file=-
 
+# Auth issuer - required for JWT verification
 echo -n "https://${AUTH0_DOMAIN}/" | \
   gcloud secrets versions add PRAXOS_AUTH_ISSUER --data-file=-
 
+# Auth audience - required for JWT verification
 echo -n "${AUTH0_AUDIENCE}" | \
   gcloud secrets versions add PRAXOS_AUTH_AUDIENCE --data-file=-
 ```
 
 > **Note**: Per-user Notion integration tokens are stored in Firestore, not Secret Manager.
 > There is no app-level Notion API key in this architecture.
+>
+> See [06-auth0.md](./06-auth0.md) for detailed Auth0 setup instructions.
 
 ## 6. Verify Outputs
 
