@@ -1,0 +1,266 @@
+# PraxOS Dev Environment
+# This is the main entry point for the dev environment.
+
+# Include root-level configurations
+terraform {
+  required_version = ">= 1.5.0"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
+
+# Variables
+variable "project_id" {
+  description = "GCP project ID"
+  type        = string
+}
+
+variable "region" {
+  description = "GCP region for resources"
+  type        = string
+  default     = "europe-central2"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "dev"
+}
+
+variable "github_owner" {
+  description = "GitHub repository owner"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "GitHub repository name"
+  type        = string
+  default     = "praxos"
+}
+
+variable "github_branch" {
+  description = "GitHub branch to trigger builds"
+  type        = string
+  default     = "development"
+}
+
+locals {
+  services = {
+    auth_service = {
+      name      = "praxos-auth-service"
+      app_path  = "apps/auth-service"
+      port      = 8080
+      min_scale = 0
+      max_scale = 2
+    }
+    notion_gpt_service = {
+      name      = "praxos-notion-gpt-service"
+      app_path  = "apps/notion-gpt-service"
+      port      = 8080
+      min_scale = 0
+      max_scale = 2
+    }
+  }
+
+  common_labels = {
+    environment = var.environment
+    managed_by  = "terraform"
+    project     = "praxos"
+  }
+}
+
+# Enable required APIs
+resource "google_project_service" "apis" {
+  for_each = toset([
+    "run.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "firestore.googleapis.com",
+    "secretmanager.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "iam.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+  ])
+
+  project            = var.project_id
+  service            = each.value
+  disable_on_destroy = false
+}
+
+# Artifact Registry
+module "artifact_registry" {
+  source = "../../modules/artifact-registry"
+
+  project_id  = var.project_id
+  region      = var.region
+  environment = var.environment
+  labels      = local.common_labels
+
+  depends_on = [google_project_service.apis]
+}
+
+# Firestore
+module "firestore" {
+  source = "../../modules/firestore"
+
+  project_id  = var.project_id
+  region      = var.region
+  environment = var.environment
+
+  depends_on = [google_project_service.apis]
+}
+
+# Secret Manager
+module "secret_manager" {
+  source = "../../modules/secret-manager"
+
+  project_id  = var.project_id
+  environment = var.environment
+  labels      = local.common_labels
+
+  secrets = {
+    "PRAXOS_AUTH_JWKS_URL"  = "Auth0 JWKS URL for JWT verification"
+    "PRAXOS_AUTH_ISSUER"    = "Auth0 issuer URL"
+    "PRAXOS_AUTH_AUDIENCE"  = "Auth0 audience identifier"
+    "PRAXOS_NOTION_API_KEY" = "Notion API key (placeholder for future use)"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# IAM - Service Accounts
+module "iam" {
+  source = "../../modules/iam"
+
+  project_id  = var.project_id
+  environment = var.environment
+  services    = local.services
+
+  secret_ids = module.secret_manager.secret_ids
+
+  depends_on = [
+    google_project_service.apis,
+    module.secret_manager,
+  ]
+}
+
+# Cloud Run Services
+module "auth_service" {
+  source = "../../modules/cloud-run-service"
+
+  project_id      = var.project_id
+  region          = var.region
+  environment     = var.environment
+  service_name    = local.services.auth_service.name
+  service_account = module.iam.service_accounts["auth_service"]
+  port            = local.services.auth_service.port
+  min_scale       = local.services.auth_service.min_scale
+  max_scale       = local.services.auth_service.max_scale
+  labels          = local.common_labels
+
+  image = "${var.region}-docker.pkg.dev/${var.project_id}/${module.artifact_registry.repository_id}/auth-service:latest"
+
+  secrets = {
+    AUTH_JWKS_URL = module.secret_manager.secret_ids["PRAXOS_AUTH_JWKS_URL"]
+    AUTH_ISSUER   = module.secret_manager.secret_ids["PRAXOS_AUTH_ISSUER"]
+    AUTH_AUDIENCE = module.secret_manager.secret_ids["PRAXOS_AUTH_AUDIENCE"]
+  }
+
+  depends_on = [
+    module.artifact_registry,
+    module.iam,
+    module.secret_manager,
+  ]
+}
+
+module "notion_gpt_service" {
+  source = "../../modules/cloud-run-service"
+
+  project_id      = var.project_id
+  region          = var.region
+  environment     = var.environment
+  service_name    = local.services.notion_gpt_service.name
+  service_account = module.iam.service_accounts["notion_gpt_service"]
+  port            = local.services.notion_gpt_service.port
+  min_scale       = local.services.notion_gpt_service.min_scale
+  max_scale       = local.services.notion_gpt_service.max_scale
+  labels          = local.common_labels
+
+  image = "${var.region}-docker.pkg.dev/${var.project_id}/${module.artifact_registry.repository_id}/notion-gpt-service:latest"
+
+  secrets = {
+    AUTH_JWKS_URL = module.secret_manager.secret_ids["PRAXOS_AUTH_JWKS_URL"]
+    AUTH_ISSUER   = module.secret_manager.secret_ids["PRAXOS_AUTH_ISSUER"]
+    AUTH_AUDIENCE = module.secret_manager.secret_ids["PRAXOS_AUTH_AUDIENCE"]
+  }
+
+  depends_on = [
+    module.artifact_registry,
+    module.iam,
+    module.secret_manager,
+  ]
+}
+
+# Cloud Build Trigger
+module "cloud_build" {
+  source = "../../modules/cloud-build"
+
+  project_id    = var.project_id
+  region        = var.region
+  environment   = var.environment
+  github_owner  = var.github_owner
+  github_repo   = var.github_repo
+  github_branch = var.github_branch
+  labels        = local.common_labels
+
+  artifact_registry_url = module.artifact_registry.repository_url
+
+  depends_on = [
+    google_project_service.apis,
+    module.artifact_registry,
+  ]
+}
+
+# Outputs
+output "artifact_registry_url" {
+  description = "Artifact Registry URL"
+  value       = module.artifact_registry.repository_url
+}
+
+output "auth_service_url" {
+  description = "Auth Service URL"
+  value       = module.auth_service.service_url
+}
+
+output "notion_gpt_service_url" {
+  description = "Notion GPT Service URL"
+  value       = module.notion_gpt_service.service_url
+}
+
+output "firestore_database" {
+  description = "Firestore database name"
+  value       = module.firestore.database_name
+}
+
+output "service_accounts" {
+  description = "Service account emails"
+  value       = module.iam.service_accounts
+}
+

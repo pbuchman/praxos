@@ -1,0 +1,222 @@
+# 05 - Local Development with GCP Dependencies
+
+This document describes how to run PraxOS services locally while using GCP Firestore and Secret Manager.
+
+## Overview
+
+Local development uses:
+
+- **Local services**: Node.js processes via `docker-compose` or `npm run dev`
+- **Remote Firestore**: Dev project's Firestore database
+- **Remote Secret Manager**: Dev project's secrets (or local .env override)
+
+## Prerequisites
+
+- GCP project set up (see [01-gcp-project.md](./01-gcp-project.md))
+- Terraform applied (see [02-terraform-bootstrap.md](./02-terraform-bootstrap.md))
+- `gcloud` CLI authenticated
+
+## 1. Authenticate with GCP
+
+Application Default Credentials (ADC) allows local code to access GCP services.
+
+```bash
+# Login and set up ADC
+gcloud auth application-default login
+
+# Set project
+gcloud config set project YOUR_PROJECT_ID
+
+# Verify
+gcloud auth application-default print-access-token
+```
+
+## 2. Required IAM Roles for Local Development
+
+Your user account needs these roles on the dev project:
+
+| Role                                 | Purpose              |
+| ------------------------------------ | -------------------- |
+| `roles/datastore.user`               | Read/write Firestore |
+| `roles/secretmanager.secretAccessor` | Read secrets         |
+
+Grant roles:
+
+```bash
+export PROJECT_ID="your-project-id"
+export USER_EMAIL="your-email@example.com"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="user:$USER_EMAIL" \
+  --role="roles/datastore.user"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="user:$USER_EMAIL" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+## 3. Local Environment Configuration
+
+Create `.env.local` in the repository root (gitignored):
+
+```bash
+# .env.local - Local development environment
+# DO NOT COMMIT THIS FILE
+
+# GCP Project (for Firestore and Secret Manager)
+GOOGLE_CLOUD_PROJECT=your-project-id
+
+# Auth configuration (can use secrets or direct values for local)
+# Option A: Direct values (faster, no GCP calls)
+AUTH_JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
+AUTH_ISSUER=https://your-tenant.auth0.com/
+AUTH_AUDIENCE=https://api.praxos.app
+
+# Option B: Use Secret Manager (comment out Option A)
+# AUTH_USE_SECRET_MANAGER=true
+
+# Service ports (defaults)
+AUTH_SERVICE_PORT=8080
+NOTION_GPT_SERVICE_PORT=8081
+
+# Logging
+LOG_LEVEL=debug
+```
+
+## 4. Run Services Locally
+
+### Option A: Using npm scripts
+
+```bash
+# Terminal 1: Auth service
+cd apps/auth-service
+npm run dev
+
+# Terminal 2: Notion GPT service
+cd apps/notion-gpt-service
+npm run dev
+```
+
+### Option B: Using Docker Compose
+
+```bash
+# Build and start all services
+docker compose -f docker/docker-compose.yaml up --build
+
+# Or in detached mode
+docker compose -f docker/docker-compose.yaml up -d --build
+
+# View logs
+docker compose -f docker/docker-compose.yaml logs -f
+
+# Stop
+docker compose -f docker/docker-compose.yaml down
+```
+
+## 5. Verify Local Setup
+
+```bash
+# Check auth service health
+curl http://localhost:8080/health | jq
+
+# Check notion-gpt service health
+curl http://localhost:8081/health | jq
+
+# View OpenAPI docs
+open http://localhost:8080/docs
+open http://localhost:8081/docs
+```
+
+## 6. Using Local Firestore Emulator (Optional)
+
+For fully offline development, use the Firestore emulator:
+
+```bash
+# Install emulator
+gcloud components install cloud-firestore-emulator
+
+# Start emulator
+gcloud emulators firestore start --host-port=localhost:8085
+
+# In another terminal, set environment
+export FIRESTORE_EMULATOR_HOST=localhost:8085
+
+# Run services (they'll connect to emulator)
+npm run dev
+```
+
+## Project Structure for Local Development
+
+```
+praxos/
+├── .env.local          # Local environment (gitignored)
+├── docker/
+│   └── docker-compose.yaml
+├── apps/
+│   ├── auth-service/
+│   │   └── .env        # Service-specific overrides (gitignored)
+│   └── notion-gpt-service/
+│       └── .env        # Service-specific overrides (gitignored)
+```
+
+## Secrets Handling
+
+**DO NOT commit secrets to the repository.**
+
+For local development, you have two options:
+
+### Option 1: Direct Environment Variables (Recommended)
+
+Set auth values directly in `.env.local`. Faster, no GCP calls on startup.
+
+### Option 2: Secret Manager Integration
+
+If you need to test Secret Manager integration:
+
+```javascript
+// Code automatically uses Secret Manager when:
+// - Running on Cloud Run (has service account)
+// - GOOGLE_APPLICATION_CREDENTIALS is set
+// - ADC is configured (gcloud auth application-default login)
+```
+
+## Troubleshooting
+
+### "Could not load the default credentials"
+
+Run:
+
+```bash
+gcloud auth application-default login
+```
+
+### "Permission denied" on Firestore
+
+Ensure your user has `roles/datastore.user` on the project.
+
+### Services can't connect to each other
+
+In Docker Compose, services use container names as hostnames.
+In local npm dev, services run on different ports on localhost.
+
+### Environment variables not loading
+
+Check that `.env.local` exists and is in the correct location.
+For Docker, ensure `env_file` is configured in `docker-compose.yaml`.
+
+## Summary
+
+After completing these steps, you can:
+
+- [x] Run services locally with `npm run dev` or Docker Compose
+- [x] Connect to dev Firestore database
+- [x] Access secrets via ADC or direct environment variables
+- [x] Test API endpoints locally
+
+## Development Workflow
+
+1. Make code changes
+2. Run `npm run ci` to validate
+3. Test locally with `npm run dev`
+4. Push to `development` branch
+5. Cloud Build automatically deploys

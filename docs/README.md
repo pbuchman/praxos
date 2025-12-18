@@ -53,10 +53,23 @@ For detailed package contracts and dependency rules, see [Package Contracts](./a
 
 For API response formats and service contracts, see [API Contracts](./architecture/api-contracts.md).
 
+For branding guidelines and assets, see [Branding](./assets/branding/README.md).
+
+## Setup Guides
+
+Step-by-step guides for setting up PraxOS infrastructure:
+
+1. [GCP Project Setup](./setup/01-gcp-project.md) - Create and configure GCP project
+2. [Terraform Bootstrap](./setup/02-terraform-bootstrap.md) - Initialize infrastructure
+3. [Cloud Build Trigger](./setup/03-cloud-build-trigger.md) - Configure CI/CD pipeline
+4. [Cloud Run Services](./setup/04-cloud-run-services.md) - Deploy and manage services
+5. [Local Development](./setup/05-local-dev-with-gcp-deps.md) - Run locally with GCP dependencies
+
+## Infrastructure
+
+- [Terraform Configuration](../terraform/README.md) - Infrastructure as code
+- [Cloud Build Pipeline](../cloudbuild/cloudbuild.yaml) - CI/CD configuration
+
 ## Status
 
 This is **sandbox v1** - a minimal viable scaffold for validating the architecture and workflows before production deployment.
-
----
-
-_For setup instructions, see the forthcoming setup guide._

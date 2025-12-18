@@ -1,0 +1,22 @@
+# PraxOS Dev Environment Terraform Variables
+# Copy this file to terraform.tfvars and fill in your values.
+# DO NOT commit terraform.tfvars to version control.
+
+# GCP Project ID (required)
+project_id = "your-gcp-project-id"
+
+# GCP Region (default: europe-central2)
+region = "europe-central2"
+
+# Environment name
+environment = "dev"
+
+# GitHub owner (your username or organization)
+github_owner = "your-github-username"
+
+# GitHub repository name
+github_repo = "praxos"
+
+# GitHub branch to trigger builds
+github_branch = "development"
+
