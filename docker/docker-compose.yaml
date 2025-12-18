@@ -1,0 +1,6 @@
+# docker-compose.yaml
+services: {}
+
+# To be configured in later steps
+# PraxOS local development environment
+
