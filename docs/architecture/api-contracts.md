@@ -288,3 +288,45 @@ Success responses must include verifiable identifiers when relevant.
 - Update operations must return updated timestamp or version.
 - Delete operations must return deleted resource ID.
 - Query operations must return result count and pagination info.
+
+## Endpoint Categories
+
+### Business Endpoints
+
+Business endpoints (e.g., `/v1/*`) use the unified response envelope:
+
+- Success: `{ "success": true, "data": {...}, "diagnostics": {...} }`
+- Error: `{ "success": false, "error": {...}, "diagnostics": {...} }`
+
+These endpoints implement domain logic and require authentication.
+
+### System Endpoints
+
+System endpoints are NOT wrapped in the unified envelope:
+
+| Endpoint            | Response Format                |
+| ------------------- | ------------------------------ |
+| `GET /health`       | Raw `HealthResponse` object    |
+| `GET /docs`         | Swagger UI HTML                |
+| `GET /openapi.json` | Raw OpenAPI specification JSON |
+
+System endpoints do not require authentication.
+
+## Authentication
+
+### Step 5 Stub Auth
+
+During Step 5 development, authentication uses a stub implementation:
+
+- Protected endpoints require: `Authorization: Bearer <token>`
+- userId is derived as: `usr_` + first 12 characters of token
+- Any non-empty token is accepted
+- This is for contract validation only
+
+### Step 6+ Production Auth
+
+Step 6 will replace stub auth with real JWT validation:
+
+- Auth0-issued JWT tokens required
+- Full token verification (signature, expiry, audience)
+- userId extracted from JWT claims
