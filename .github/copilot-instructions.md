@@ -85,3 +85,30 @@ Violations:
 - ❌ Generating logos/icons without using official prompts
 - ❌ Ad-hoc or experimental branding requests
 - ❌ Embedding images directly in READMEs
+
+## WhatsApp Integration Rules
+
+WhatsApp Business Cloud API integration follows strict credential handling:
+
+- **No ad-hoc credentials** in code or docs - all WhatsApp tokens/secrets use PRAXOS_* naming
+- **All setup instructions** live in `docs/setup/07-whatsapp-business-cloud-api.md`
+- **Secrets in production** use Secret Manager (PRAXOS_WHATSAPP_* prefix)
+- **Local development** uses `.env` with minimal required variables only
+
+Required secrets (Terraform creates, user populates):
+
+| Secret | Purpose |
+|--------|---------|
+| `PRAXOS_WHATSAPP_VERIFY_TOKEN` | Webhook verification |
+| `PRAXOS_WHATSAPP_ACCESS_TOKEN` | API authentication |
+| `PRAXOS_WHATSAPP_PHONE_NUMBER_ID` | Sender identification |
+| `PRAXOS_WHATSAPP_WABA_ID` | Business account ID |
+| `PRAXOS_WHATSAPP_APP_SECRET` | Webhook signature validation |
+
+Violations:
+
+- ❌ Hardcoding WhatsApp tokens anywhere
+- ❌ Creating WhatsApp setup docs outside `docs/setup/`
+- ❌ Using non-PRAXOS_* secret names for WhatsApp
+- ❌ Committing `.env` files with real credentials
+

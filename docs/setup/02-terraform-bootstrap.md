@@ -72,7 +72,7 @@ Review the plan carefully. It should create:
 
 - Artifact Registry repository
 - Firestore database
-- Secret Manager secrets (5 secrets)
+- Secret Manager secrets (10 secrets: 5 Auth0, 5 WhatsApp)
 - Service accounts (3 accounts)
 - IAM bindings
 - Cloud Run services (2 services)
@@ -94,6 +94,8 @@ This will take several minutes. The longest steps are usually:
 ## 5. Populate Secrets
 
 Terraform creates empty secrets. You must populate them with actual values:
+
+### Auth0 Secrets
 
 ```bash
 # Set your Auth0 configuration
@@ -124,10 +126,43 @@ echo -n "${AUTH0_AUDIENCE}" | \
   gcloud secrets versions add PRAXOS_AUTH_AUDIENCE --data-file=-
 ```
 
+> See [06-auth0.md](./06-auth0.md) for detailed Auth0 setup instructions.
+
+### WhatsApp Business Cloud API Secrets
+
+```bash
+# Set your WhatsApp configuration (obtain from Meta Business Suite)
+export WHATSAPP_VERIFY_TOKEN="your-webhook-verify-token"
+export WHATSAPP_ACCESS_TOKEN="your-system-user-access-token"
+export WHATSAPP_PHONE_NUMBER_ID="123456789012345"
+export WHATSAPP_WABA_ID="1234567890123456"
+export WHATSAPP_APP_SECRET="your-app-secret"
+
+# WhatsApp webhook verify token
+echo -n "${WHATSAPP_VERIFY_TOKEN}" | \
+  gcloud secrets versions add PRAXOS_WHATSAPP_VERIFY_TOKEN --data-file=-
+
+# WhatsApp access token (permanent System User token)
+echo -n "${WHATSAPP_ACCESS_TOKEN}" | \
+  gcloud secrets versions add PRAXOS_WHATSAPP_ACCESS_TOKEN --data-file=-
+
+# WhatsApp phone number ID
+echo -n "${WHATSAPP_PHONE_NUMBER_ID}" | \
+  gcloud secrets versions add PRAXOS_WHATSAPP_PHONE_NUMBER_ID --data-file=-
+
+# WhatsApp Business Account ID
+echo -n "${WHATSAPP_WABA_ID}" | \
+  gcloud secrets versions add PRAXOS_WHATSAPP_WABA_ID --data-file=-
+
+# WhatsApp app secret (for webhook signature validation)
+echo -n "${WHATSAPP_APP_SECRET}" | \
+  gcloud secrets versions add PRAXOS_WHATSAPP_APP_SECRET --data-file=-
+```
+
+> See [07-whatsapp-business-cloud-api.md](./07-whatsapp-business-cloud-api.md) for detailed WhatsApp setup instructions.
+
 > **Note**: Per-user Notion integration tokens are stored in Firestore, not Secret Manager.
 > There is no app-level Notion API key in this architecture.
->
-> See [06-auth0.md](./06-auth0.md) for detailed Auth0 setup instructions.
 
 ## 6. Verify Outputs
 

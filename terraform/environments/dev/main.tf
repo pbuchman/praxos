@@ -138,11 +138,18 @@ module "secret_manager" {
   labels      = local.common_labels
 
   secrets = {
+    # Auth0 secrets
     "PRAXOS_AUTH0_DOMAIN"    = "Auth0 tenant domain for Device Authorization Flow"
     "PRAXOS_AUTH0_CLIENT_ID" = "Auth0 Native app client ID for Device Authorization Flow"
     "PRAXOS_AUTH_JWKS_URL"   = "Auth0 JWKS URL for JWT verification"
     "PRAXOS_AUTH_ISSUER"     = "Auth0 issuer URL"
     "PRAXOS_AUTH_AUDIENCE"   = "Auth0 audience identifier"
+    # WhatsApp Business Cloud API secrets
+    "PRAXOS_WHATSAPP_VERIFY_TOKEN"    = "WhatsApp webhook verify token"
+    "PRAXOS_WHATSAPP_ACCESS_TOKEN"    = "WhatsApp Business API access token"
+    "PRAXOS_WHATSAPP_PHONE_NUMBER_ID" = "WhatsApp Business phone number ID"
+    "PRAXOS_WHATSAPP_WABA_ID"         = "WhatsApp Business Account ID"
+    "PRAXOS_WHATSAPP_APP_SECRET"      = "WhatsApp app secret for webhook signature validation"
   }
 
   depends_on = [google_project_service.apis]

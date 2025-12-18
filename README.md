@@ -17,6 +17,7 @@ Notion models the world. PraxOS executes.
 4. [Cloud Run Services](./docs/setup/04-cloud-run-services.md)
 5. [Local Development](./docs/setup/05-local-dev-with-gcp-deps.md)
 6. [Auth0 Setup](./docs/setup/06-auth0.md)
+7. [WhatsApp Business Cloud API](./docs/setup/07-whatsapp-business-cloud-api.md)
 
 ## Infrastructure
 
