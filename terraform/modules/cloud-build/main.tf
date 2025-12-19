@@ -115,13 +115,13 @@ resource "google_cloudbuild_trigger" "webhook_dev" {
 
 resource "google_cloudbuild_trigger" "manual_main" {
   name        = "praxos-${var.environment}-manual"
-  description = "Manual trigger - force deploys all services"
+  description = "Manual trigger - force deploys all services from ${var.github_branch}"
   location    = var.region
 
   # Use source_to_build for manual triggers (no automatic event)
   source_to_build {
     repository = google_cloudbuildv2_repository.praxos.id
-    ref        = "refs/heads/main"
+    ref        = "refs/heads/${var.github_branch}"
     repo_type  = "GITHUB"
   }
 
