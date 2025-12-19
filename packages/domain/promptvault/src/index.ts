@@ -23,3 +23,4 @@ export type {
   NotionApiPort,
   IdempotencyLedger,
 } from './ports.js';
+export { NOTION_ERROR_CODES, isNotionErrorCode, type NotionErrorCodeRuntime } from './notionErrorCode.js';

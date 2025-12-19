@@ -147,11 +147,18 @@ describe('auth-service v1 endpoints', () => {
         interval: 5,
       };
 
+      let receivedBody = '';
+
       nock(`https://${AUTH0_DOMAIN}`)
-        .post('/oauth/device/code', (body: string) => {
-          return body.includes(`audience=${encodeURIComponent(customAudience)}`);
-        })
-        .reply(200, mockResponse);
+        .post('/oauth/device/code')
+        .reply(200, function (_uri, requestBody) {
+          receivedBody = Buffer.isBuffer(requestBody)
+            ? requestBody.toString('utf8')
+            : typeof requestBody === 'string'
+              ? requestBody
+              : JSON.stringify(requestBody);
+          return mockResponse;
+        });
 
       app = await buildServer();
 
@@ -162,6 +169,7 @@ describe('auth-service v1 endpoints', () => {
       });
 
       expect(response.statusCode).toBe(200);
+      expect(receivedBody).toContain(`audience=${encodeURIComponent(customAudience)}`);
     });
 
     it('handles Auth0 error response', async () => {

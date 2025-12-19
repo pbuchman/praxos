@@ -8,6 +8,7 @@ import {
   type TokenResponse,
   type AuthConfigResponse,
 } from './schemas.js';
+import { postFormUrlEncoded, toFormUrlEncodedBody } from './httpClient.js';
 
 /**
  * Auth0 configuration from environment.
@@ -144,36 +145,30 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
 
       const deviceCodeUrl = `https://${config.domain}/oauth/device/code`;
 
-      const body = new URLSearchParams({
-        client_id: config.clientId,
-        audience: effectiveAudience,
-        scope,
-      });
+      const formBody = [
+        `client_id=${encodeURIComponent(config.clientId)}`,
+        `audience=${encodeURIComponent(effectiveAudience)}`,
+        `scope=${encodeURIComponent(scope)}`,
+      ].join('&');
 
       try {
-        const response = await fetch(deviceCodeUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: body.toString(),
-        });
+        const httpRes = await postFormUrlEncoded(deviceCodeUrl, formBody);
 
-        const responseBody: unknown = await response.json();
+        const responseBody: unknown = httpRes.body;
 
-        if (!response.ok) {
+        if (httpRes.status < 200 || httpRes.status >= 300) {
           if (isAuth0Error(responseBody)) {
             return await reply.fail(
               'DOWNSTREAM_ERROR',
               responseBody.error_description ?? responseBody.error,
               {
-                downstreamStatus: response.status,
+                downstreamStatus: httpRes.status,
                 endpointCalled: deviceCodeUrl,
               }
             );
           }
           return await reply.fail('DOWNSTREAM_ERROR', 'Auth0 device code request failed', {
-            downstreamStatus: response.status,
+            downstreamStatus: httpRes.status,
             endpointCalled: deviceCodeUrl,
           });
         }
@@ -262,24 +257,18 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       const { device_code } = parseResult.data;
       const tokenUrl = `https://${config.domain}/oauth/token`;
 
-      const body = new URLSearchParams({
+      const formBody = toFormUrlEncodedBody({
         client_id: config.clientId,
         device_code,
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
       });
 
       try {
-        const response = await fetch(tokenUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: body.toString(),
-        });
+        const httpRes = await postFormUrlEncoded(tokenUrl, formBody);
 
-        const responseBody: unknown = await response.json();
+        const responseBody: unknown = httpRes.body;
 
-        if (!response.ok) {
+        if (httpRes.status < 200 || httpRes.status >= 300) {
           if (isAuth0Error(responseBody)) {
             const errorCode = responseBody.error;
 
@@ -291,7 +280,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
                   ? 'Authorization pending. User has not yet completed authentication.'
                   : 'Polling too fast. Increase interval between requests.';
               return await reply.fail('CONFLICT', message, {
-                downstreamStatus: response.status,
+                downstreamStatus: httpRes.status,
                 endpointCalled: tokenUrl,
               });
             }
@@ -301,13 +290,13 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
               'DOWNSTREAM_ERROR',
               responseBody.error_description ?? responseBody.error,
               {
-                downstreamStatus: response.status,
+                downstreamStatus: httpRes.status,
                 endpointCalled: tokenUrl,
               }
             );
           }
           return await reply.fail('DOWNSTREAM_ERROR', 'Auth0 token request failed', {
-            downstreamStatus: response.status,
+            downstreamStatus: httpRes.status,
             endpointCalled: tokenUrl,
           });
         }
