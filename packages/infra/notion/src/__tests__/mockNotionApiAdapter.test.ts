@@ -39,7 +39,7 @@ describe('MockNotionApiAdapter', () => {
         expect(result.value.page.title).toBe('Prompt Vault');
         expect(result.value.page.url).toBe(`https://notion.so/${pageId}`);
         expect(result.value.blocks).toHaveLength(4);
-        expect(result.value.blocks[0].type).toBe('heading_1');
+        expect(result.value.blocks[0]?.type).toBe('heading_1');
       }
     });
   });
