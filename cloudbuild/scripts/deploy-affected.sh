@@ -45,16 +45,17 @@ validate_env() {
 }
 
 # Read affected services from JSON file
+# Debug output goes to stderr, only service names go to stdout
 read_affected() {
   if [[ ! -f "$AFFECTED_FILE" ]]; then
-    echo "ERROR: Affected file not found at $AFFECTED_FILE"
-    echo "This file should be created by detect-affected.mjs"
+    echo "ERROR: Affected file not found at $AFFECTED_FILE" >&2
+    echo "This file should be created by detect-affected.mjs" >&2
     exit 1
   fi
 
-  echo "Contents of $AFFECTED_FILE:"
-  cat "$AFFECTED_FILE"
-  echo ""
+  echo "Contents of $AFFECTED_FILE:" >&2
+  cat "$AFFECTED_FILE" >&2
+  echo "" >&2
 
   # Extract service names from JSON (handles both single-line and multi-line JSON)
   # First, remove newlines to get single-line JSON
@@ -66,11 +67,11 @@ read_affected() {
   services_array=$(echo "$json_oneline" | sed -n 's/.*"services"[[:space:]]*:[[:space:]]*\[\([^]]*\)\].*/\1/p')
 
   if [[ -z "$services_array" ]]; then
-    echo "ERROR: Could not parse 'services' array from $AFFECTED_FILE"
+    echo "ERROR: Could not parse 'services' array from $AFFECTED_FILE" >&2
     exit 1
   fi
 
-  # Extract individual service names (words with hyphens)
+  # Extract individual service names (words with hyphens) - this goes to stdout
   echo "$services_array" | grep -oE '"[a-z][-a-z]*"' | tr -d '"'
 }
 
