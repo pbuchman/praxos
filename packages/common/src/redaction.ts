@@ -30,7 +30,7 @@ export function redactObject(
   sensitiveFields: string[]
 ): Record<string, unknown> {
   const redacted: Record<string, unknown> = { ...obj };
-  
+
   for (const field of sensitiveFields) {
     if (field in redacted) {
       const value = redacted[field];

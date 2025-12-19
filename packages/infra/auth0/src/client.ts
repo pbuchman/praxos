@@ -20,12 +20,7 @@ export function loadAuth0Config(): Auth0Config | null {
   const domain = process.env['AUTH0_DOMAIN'];
   const clientId = process.env['AUTH0_CLIENT_ID'];
 
-  if (
-    domain === undefined ||
-    domain === '' ||
-    clientId === undefined ||
-    clientId === ''
-  ) {
+  if (domain === undefined || domain === '' || clientId === undefined || clientId === '') {
     return null;
   }
 
@@ -91,7 +86,7 @@ export class Auth0ClientImpl implements Auth0Client {
 
       if (httpRes.status < 200 || httpRes.status >= 300) {
         const body = httpRes.body;
-        
+
         if (
           body !== null &&
           typeof body === 'object' &&
@@ -99,7 +94,7 @@ export class Auth0ClientImpl implements Auth0Client {
           typeof body.error === 'string'
         ) {
           const auth0Error = body as Auth0ErrorResponse;
-          
+
           // Map Auth0 errors to domain errors
           if (auth0Error.error === 'invalid_grant') {
             return err({

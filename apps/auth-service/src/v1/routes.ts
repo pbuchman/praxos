@@ -307,7 +307,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         }
 
         const data = responseBody as TokenResponse;
-        
+
         // Store refresh token if received
         if (data.refresh_token !== undefined && data.refresh_token !== '') {
           try {
@@ -320,7 +320,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
                 const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString());
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const userId = payload.sub as string;
-                
+
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (userId !== '' && userId !== null && userId !== undefined) {
                   const tokenRepo = new FirestoreAuthTokenRepository();
@@ -332,7 +332,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
                     scope: data.scope,
                     idToken: data.id_token,
                   };
-                  
+
                   const saveResult = await tokenRepo.saveTokens(userId, authTokens);
                   if (isErr(saveResult)) {
                     fastify.log.warn(
@@ -348,7 +348,7 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             fastify.log.warn({ error: tokenError }, 'Failed to extract userId from token');
           }
         }
-        
+
         return await reply.ok(data);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -461,14 +461,14 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             'No refresh token found. User must re-authenticate.'
           );
         }
-        
+
         const refreshToken = refreshTokenResult.value;
 
         // Refresh access token
         const refreshResult = await auth0Client.refreshAccessToken(refreshToken);
         if (isErr(refreshResult)) {
           const error = refreshResult.error;
-          
+
           // If invalid_grant, delete stored token and require reauth
           if (error.code === 'INVALID_GRANT') {
             await tokenRepo.deleteTokens(userId);
@@ -478,12 +478,9 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
             );
           }
 
-          return await reply.fail(
-            'DOWNSTREAM_ERROR',
-            `Token refresh failed: ${error.message}`
-          );
+          return await reply.fail('DOWNSTREAM_ERROR', `Token refresh failed: ${error.message}`);
         }
-        
+
         if (!refreshResult.ok) {
           // Should never reach here due to isErr check above, but TypeScript needs this
           return await reply.fail('INTERNAL_ERROR', 'Unexpected error state');
