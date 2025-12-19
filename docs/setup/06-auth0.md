@@ -94,11 +94,17 @@ After creation, configure:
 > - More permissive: 30-90 days idle
 > - More restrictive: 7-14 days idle
 
-## 4. Enable Device Authorization Flow on Tenant
+## 4. Verify Device Authorization Flow is Enabled
 
-1. Go to **Settings** → **Advanced**
-2. Under **Grant Types**, ensure **Device Code** is enabled
-3. Click **Save**
+Device Authorization Flow is enabled **per-application** (done in Step 3 under Grant Types).
+
+There is no separate tenant-level setting required. If you enabled "Device Code" in the application's Advanced Settings → Grant Types, the flow is ready to use.
+
+To verify:
+
+1. Go to **Applications** → **Applications** → **PraxOS CLI**
+2. Go to **Settings** → **Advanced Settings** → **Grant Types**
+3. Confirm **Device Code** is checked
 
 ## 5. Find Issuer and JWKS URL
 

@@ -123,10 +123,6 @@ export function createV1Routes(config: Config): FastifyPluginCallback {
     fastify.post(
       '/webhooks/whatsapp',
       {
-        config: {
-          // Disable default body parsing so we can access raw body for signature validation
-          rawBody: true,
-        },
         schema: {
           description: 'WhatsApp webhook event receiver',
           tags: ['webhooks'],
