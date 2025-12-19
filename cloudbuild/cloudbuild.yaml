@@ -82,7 +82,23 @@ steps:
           echo "whatsapp-service not affected, skipping build."
         fi
 
-  # Step 8: Push auth-service image (if affected)
+  # Step 8: Build api-docs-hub Docker image (if affected)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-api-docs-hub'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if grep -q '"api-docs-hub"' /workspace/affected.json 2>/dev/null; then
+          echo "Building api-docs-hub..."
+          docker build -t ${_ARTIFACT_REGISTRY_URL}/api-docs-hub:$COMMIT_SHA \
+            -t ${_ARTIFACT_REGISTRY_URL}/api-docs-hub:latest \
+            -f apps/api-docs-hub/Dockerfile .
+        else
+          echo "api-docs-hub not affected, skipping build."
+        fi
+
+  # Step 9: Push auth-service image (if affected)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-auth-service'
     entrypoint: 'bash'
@@ -97,7 +113,7 @@ steps:
           echo "auth-service not affected, skipping push."
         fi
 
-  # Step 9: Push notion-gpt-service image (if affected)
+  # Step 10: Push notion-gpt-service image (if affected)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-notion-gpt-service'
     entrypoint: 'bash'
@@ -112,7 +128,7 @@ steps:
           echo "notion-gpt-service not affected, skipping push."
         fi
 
-  # Step 10: Push whatsapp-service image (if affected)
+  # Step 11: Push whatsapp-service image (if affected)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-whatsapp-service'
     entrypoint: 'bash'
@@ -127,7 +143,22 @@ steps:
           echo "whatsapp-service not affected, skipping push."
         fi
 
-  # Step 11: Deploy affected services to Cloud Run
+  # Step 12: Push api-docs-hub image (if affected)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-api-docs-hub'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if grep -q '"api-docs-hub"' /workspace/affected.json 2>/dev/null; then
+          echo "Pushing api-docs-hub..."
+          docker push ${_ARTIFACT_REGISTRY_URL}/api-docs-hub:$COMMIT_SHA
+          docker push ${_ARTIFACT_REGISTRY_URL}/api-docs-hub:latest
+        else
+          echo "api-docs-hub not affected, skipping push."
+        fi
+
+  # Step 13: Deploy affected services to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-affected'
     entrypoint: 'bash'

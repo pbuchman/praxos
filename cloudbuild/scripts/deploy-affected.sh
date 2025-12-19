@@ -79,6 +79,9 @@ get_cloud_run_name() {
     whatsapp-service)
       echo "praxos-whatsapp-service"
       ;;
+    api-docs-hub)
+      echo "praxos-api-docs-hub"
+      ;;
     *)
       echo ""
       ;;
