@@ -11,11 +11,13 @@ All API responses use a consistent JSON envelope structure.
 ```jsonc
 {
   "success": true,
-  "data": { /* response payload */ },
+  "data": {
+    /* response payload */
+  },
   "diagnostics": {
     "requestId": "550e8400-e29b-41d4-a716-446655440000",
-    "durationMs": 42
-  }
+    "durationMs": 42,
+  },
 }
 ```
 
