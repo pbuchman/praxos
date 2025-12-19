@@ -101,7 +101,7 @@ Terraform creates empty secrets. You must populate them with actual values:
 # Set your Auth0 configuration
 export AUTH0_DOMAIN="your-tenant.auth0.com"
 export AUTH0_CLIENT_ID="your-native-app-client-id"
-export AUTH0_AUDIENCE="https://api.praxos.app"
+export AUTH0_AUDIENCE="urn:praxos:api"
 
 # Add secret versions (Terraform created the secrets, we add values)
 
