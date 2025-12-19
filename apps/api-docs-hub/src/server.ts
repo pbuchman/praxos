@@ -48,7 +48,8 @@ function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
     openapi: {
       info: {
         title: SERVICE_NAME,
-        description: 'PraxOS API Documentation Hub - Aggregated OpenAPI documentation for all PraxOS services',
+        description:
+          'PraxOS API Documentation Hub - Aggregated OpenAPI documentation for all PraxOS services',
         version: SERVICE_VERSION,
       },
       components: {},
