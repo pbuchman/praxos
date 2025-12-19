@@ -156,5 +156,11 @@ terraform plan
 - [ ] Outputs have descriptions
 - [ ] `terraform plan` reviewed (if environment access available)
 - [ ] Changes documented in commit message
+- [ ] **`npm run ci` passes** ← **MANDATORY** (for any related app/package changes)
+
+**Additional requirements inherited from global rules (see `.github/copilot-instructions.md`):**
+
+- Code quality standards apply to any scripts or automation
+- Documentation standards
 
 **Verification is not optional.**

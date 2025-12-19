@@ -7,8 +7,8 @@ PREREQUISITES
 **You MUST read these files first — they contain all coding rules:**
 
 - `.github/copilot-instructions.md` — global rules
-- `.github/instructions/apps.instructions.md` — apps (services) rules
-- `.github/instructions/packages.instructions.md` — packages (domain/infra) rules
+- `.github/instructions/apps.instructions.md` — apps (e.g., auth-service, notion-gpt-service) rules
+- `.github/instructions/packages.instructions.md` — packages (common/domain/infra) rules
 - `.github/instructions/terraform.instructions.md` — terraform rules
 
 This prompt provides **execution strategy only**. Do not duplicate rules from above files.
@@ -45,11 +45,13 @@ For each change:
 
 ## Phase 4: Verification
 
-Final checks before completion:
+**MANDATORY before claiming task complete:**
 
 ```bash
 npm run ci   # runs all checks: lint, verify scripts, format, typecheck, test, build
 ```
+
+**Do not claim "done" until `npm run ci` passes.**
 
 For Terraform (if touched):
 
