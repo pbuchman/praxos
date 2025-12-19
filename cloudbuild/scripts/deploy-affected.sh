@@ -120,7 +120,15 @@ deploy_service() {
     return 1
   fi
 
-  local image="${ARTIFACT_REGISTRY_URL}/${service}:${COMMIT_SHA}"
+  # Use :latest tag for force deploys, otherwise use commit SHA
+  local tag
+  if [[ "${FORCE_DEPLOY:-false}" == "true" ]]; then
+    tag="latest"
+  else
+    tag="${COMMIT_SHA}"
+  fi
+
+  local image="${ARTIFACT_REGISTRY_URL}/${service}:${tag}"
 
   echo ""
   echo "=== Deploying $service ==="
