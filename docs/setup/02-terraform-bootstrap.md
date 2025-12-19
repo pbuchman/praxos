@@ -185,23 +185,63 @@ service_accounts = {
 
 ## 7. Initial Image Push (Required)
 
-Cloud Run services require an initial image. Push a placeholder:
+Cloud Run services require an initial image. Build and push from repository root:
 
 ```bash
-# Build and push auth-service
-docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/auth-service:latest \
-  -f apps/auth-service/Dockerfile .
+# Set variables
+export REGION="europe-central2"
+export PROJECT_ID="praxos-dev-yourname"
+
+# Build and push auth-service (--platform for Cloud Run compatibility on Apple Silicon)
+docker build --platform linux/amd64 -f apps/auth-service/Dockerfile \
+  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/auth-service:latest .
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/auth-service:latest
 
 # Build and push notion-gpt-service
-docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/notion-gpt-service:latest \
-  -f apps/notion-gpt-service/Dockerfile .
+docker build --platform linux/amd64 -f apps/notion-gpt-service/Dockerfile \
+  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/notion-gpt-service:latest .
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/notion-gpt-service:latest
+
+# Build and push whatsapp-service
+docker build --platform linux/amd64 -f apps/whatsapp-service/Dockerfile \
+  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/whatsapp-service:latest .
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/whatsapp-service:latest
+
+# Build and push api-docs-hub
+docker build --platform linux/amd64 -f apps/api-docs-hub/Dockerfile \
+  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/api-docs-hub:latest .
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/api-docs-hub:latest
 ```
 
-Or wait for the first Cloud Build trigger to push images.
+> **Important**:
+>
+> - Run from repository root. The `.` at the end specifies the build context.
+> - Use `--platform linux/amd64` when building on Apple Silicon (M1/M2/M3) for Cloud Run compatibility.
 
 ## Troubleshooting
+
+### "Repository mapping does not exist" (Cloud Build Trigger)
+
+This is expected on first run. You must manually connect your GitHub repository to Cloud Build:
+
+1. Visit the URL shown in the error (or go to Cloud Build > Triggers > Connect Repository)
+2. Select "GitHub (Cloud Build GitHub App)"
+3. Authenticate with GitHub and select your repository
+4. After connecting, re-run `terraform apply`
+
+See [03-cloud-build-trigger.md](./03-cloud-build-trigger.md) for detailed instructions.
+
+### "Image not found" (Cloud Run)
+
+Build and push the required images using the commands in Step 7 before running `terraform apply`.
+
+### "Container manifest type must support amd64/linux"
+
+This happens when building on Apple Silicon (M1/M2/M3). Always use `--platform linux/amd64`:
+
+```bash
+docker build --platform linux/amd64 -f apps/<service>/Dockerfile -t <tag> .
+```
 
 ### "Error creating Firestore database"
 

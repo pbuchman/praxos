@@ -1,4 +1,8 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyDynamicSwaggerOptions } from '@fastify/swagger';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyCors from '@fastify/cors';
 import { praxosFastifyPlugin } from '@praxos/common';
 import { getFirestore } from '@praxos/infra-firestore';
 import { createV1Routes } from './v1/routes.js';
@@ -82,6 +86,60 @@ function computeOverallStatus(checks: HealthCheck[]): HealthStatus {
   return 'ok';
 }
 
+function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
+  return {
+    openapi: {
+      info: {
+        title: SERVICE_NAME,
+        description: 'PraxOS WhatsApp Service - WhatsApp Business Cloud API webhook handler',
+        version: SERVICE_VERSION,
+      },
+      components: {
+        schemas: {
+          ApiOk: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', enum: [true] },
+              data: { type: 'object' },
+              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+            },
+            required: ['success', 'data'],
+          },
+          ApiError: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', enum: [false] },
+              error: { $ref: '#/components/schemas/ErrorBody' },
+              diagnostics: { $ref: '#/components/schemas/Diagnostics' },
+            },
+            required: ['success', 'error'],
+          },
+          ErrorBody: {
+            type: 'object',
+            required: ['code', 'message'],
+            properties: {
+              code: { type: 'string' },
+              message: { type: 'string' },
+              details: { type: 'object' },
+            },
+          },
+          Diagnostics: {
+            type: 'object',
+            properties: {
+              requestId: { type: 'string' },
+              durationMs: { type: 'number' },
+            },
+          },
+        },
+      },
+      tags: [
+        { name: 'webhooks', description: 'WhatsApp webhook endpoints' },
+        { name: 'system', description: 'System endpoints' },
+      ],
+    },
+  };
+}
+
 export async function buildServer(config: Config): Promise<FastifyInstance> {
   const app = Fastify({
     logger: true,
@@ -101,6 +159,17 @@ export async function buildServer(config: Config): Promise<FastifyInstance> {
   });
 
   await app.register(praxosFastifyPlugin);
+
+  // CORS for cross-origin OpenAPI access (api-docs-hub)
+  await app.register(fastifyCors, {
+    origin: true,
+    methods: ['GET', 'HEAD', 'OPTIONS'],
+  });
+
+  await app.register(fastifySwagger, buildOpenApiOptions());
+  await app.register(fastifySwaggerUi, {
+    routePrefix: '/docs',
+  });
 
   // Register v1 routes
   await app.register(createV1Routes(config));
@@ -155,6 +224,22 @@ export async function buildServer(config: Config): Promise<FastifyInstance> {
 
       void reply.header('x-health-duration-ms', String(Date.now() - started));
       return await reply.type('application/json').send(response);
+    }
+  );
+
+  // OpenAPI JSON endpoint
+  app.get(
+    '/openapi.json',
+    {
+      schema: {
+        description: 'OpenAPI specification',
+        tags: ['system'],
+        hide: true,
+      },
+    },
+    async (_req, reply) => {
+      const spec = app.swagger();
+      return await reply.type('application/json').send(spec);
     }
   );
 
