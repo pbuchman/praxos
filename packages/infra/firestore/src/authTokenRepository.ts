@@ -78,9 +78,7 @@ export class FirestoreAuthTokenRepository implements AuthTokenRepository {
     }
   }
 
-  async getTokenMetadata(
-    userId: string
-  ): Promise<Result<AuthTokensPublic | null, AuthError>> {
+  async getTokenMetadata(userId: string): Promise<Result<AuthTokensPublic | null, AuthError>> {
     try {
       const db = getFirestore();
       const docRef = db.collection(COLLECTION_NAME).doc(userId);
@@ -119,7 +117,7 @@ export class FirestoreAuthTokenRepository implements AuthTokenRepository {
       }
 
       const data = doc.data() as AuthTokenDoc;
-      
+
       // Decrypt refresh token
       const decryptedToken = decryptToken(data.refreshToken);
       return ok(decryptedToken);

@@ -11,11 +11,13 @@ This guide covers setting up Auth0 for PraxOS authentication using the Device Au
 ## Overview: Device Flow + Refresh Tokens
 
 PraxOS uses OAuth2 Device Authorization Flow for authentication, which is ideal for:
+
 - CLI applications
-- IoT devices  
+- IoT devices
 - API consumers that cannot easily handle browser redirects
 
 To support **daily usage without re-authentication**, we implement:
+
 - **Refresh tokens** - Long-lived tokens stored securely server-side
 - **Token rotation** - Automatic refresh token rotation for enhanced security
 - **Encrypted storage** - AES-256-GCM encryption in Firestore
@@ -83,10 +85,12 @@ After creation, configure:
 3. Click **Save Changes**
 
 > **Refresh Token Lifetimes Explained:**
+>
 > - **Absolute Lifetime (30 days)**: Maximum token age regardless of usage
 > - **Idle Lifetime (15 days)**: Token expires if unused for this period
-> 
+>
 > For **daily usage**, idle lifetime is the key setting. 15 days means users must authenticate at least once every 15 days. Adjust based on your security requirements:
+>
 > - More permissive: 30-90 days idle
 > - More restrictive: 7-14 days idle
 
@@ -295,7 +299,8 @@ curl -X POST http://localhost:3000/v1/auth/refresh \
 }
 ```
 
-> **Daily Usage Pattern**: 
+> **Daily Usage Pattern**:
+>
 > 1. User authenticates once via device flow
 > 2. Refresh token is stored server-side (valid for 15 days idle, 30 days absolute)
 > 3. Each day, client calls `/v1/auth/refresh` to get fresh access token
@@ -337,6 +342,7 @@ curl -X POST http://localhost:3000/v1/auth/refresh \
 ### Refresh Token Rotation
 
 When rotation is enabled:
+
 - Each refresh operation returns a **new** refresh token
 - The old refresh token is **immediately revoked**
 - Reuse of old token **invalidates entire token family** (security feature)
@@ -422,7 +428,8 @@ curl -X POST "https://your-tenant.eu.auth0.com/api/v2/device-credentials/{id}" \
 - `offline_access` scope not requested in `/device/start`
 - API doesn't have "Allow Offline Access" enabled
 
-**Fix:** 
+**Fix:**
+
 1. Include `offline_access` in scope (default in updated auth-service)
 2. Verify API settings in Auth0 Dashboard
 
@@ -485,14 +492,14 @@ export PRAXOS_TOKEN_ENCRYPTION_KEY=your-base64-key
 
 ### auth-service
 
-| Variable                      | Description                                     | Example                                          |
-| ----------------------------- | ----------------------------------------------- | ------------------------------------------------ |
-| `AUTH0_DOMAIN`                | Auth0 tenant domain                             | `praxos-dev.eu.auth0.com`                        |
-| `AUTH0_CLIENT_ID`             | Native app client ID                            | `abc123...`                                      |
-| `AUTH_AUDIENCE`               | API identifier (default for device flow)        | `https://api.praxos.app`                         |
-| `AUTH_JWKS_URL`               | JWKS endpoint URL for token verification        | `https://praxos-dev.eu.auth0.com/.well-known/jwks.json` |
-| `AUTH_ISSUER`                 | Token issuer for verification                   | `https://praxos-dev.eu.auth0.com/`               |
-| `PRAXOS_TOKEN_ENCRYPTION_KEY` | AES-256 encryption key (base64, 32 bytes)       | `k7J9mL2nP4qR6s...`                              |
+| Variable                      | Description                               | Example                                                 |
+| ----------------------------- | ----------------------------------------- | ------------------------------------------------------- |
+| `AUTH0_DOMAIN`                | Auth0 tenant domain                       | `praxos-dev.eu.auth0.com`                               |
+| `AUTH0_CLIENT_ID`             | Native app client ID                      | `abc123...`                                             |
+| `AUTH_AUDIENCE`               | API identifier (default for device flow)  | `https://api.praxos.app`                                |
+| `AUTH_JWKS_URL`               | JWKS endpoint URL for token verification  | `https://praxos-dev.eu.auth0.com/.well-known/jwks.json` |
+| `AUTH_ISSUER`                 | Token issuer for verification             | `https://praxos-dev.eu.auth0.com/`                      |
+| `PRAXOS_TOKEN_ENCRYPTION_KEY` | AES-256 encryption key (base64, 32 bytes) | `k7J9mL2nP4qR6s...`                                     |
 
 ### notion-gpt-service (and other protected services)
 

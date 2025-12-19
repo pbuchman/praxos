@@ -15,7 +15,7 @@ const IV_LENGTH = 16; // 128 bits
  */
 function getEncryptionKey(): Buffer {
   const keyEnv = process.env['PRAXOS_TOKEN_ENCRYPTION_KEY'];
-  
+
   if (keyEnv !== undefined && keyEnv !== '') {
     // Key should be base64-encoded 32-byte key
     const key = Buffer.from(keyEnv, 'base64');
@@ -41,10 +41,7 @@ export function encryptToken(token: string): string {
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
 
-  const encrypted = Buffer.concat([
-    cipher.update(token, 'utf8'),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(token, 'utf8'), cipher.final()]);
 
   const authTag = cipher.getAuthTag();
 
@@ -59,7 +56,7 @@ export function encryptToken(token: string): string {
  */
 export function decryptToken(encryptedData: string): string {
   const key = getEncryptionKey();
-  
+
   const parts = encryptedData.split(':');
   if (parts.length !== 3) {
     throw new Error('Invalid encrypted data format');
@@ -80,10 +77,7 @@ export function decryptToken(encryptedData: string): string {
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final(),
-  ]);
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
   return decrypted.toString('utf8');
 }
