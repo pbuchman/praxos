@@ -384,7 +384,7 @@ This provides a stable identifier across sessions.
 | --------------- | ----------------------------- | ----------------------------------------------------- |
 | `AUTH_JWKS_URL` | URL to fetch JSON Web Key Set | `https://your-tenant.auth0.com/.well-known/jwks.json` |
 | `AUTH_ISSUER`   | Expected token issuer         | `https://your-tenant.auth0.com/`                      |
-| `AUTH_AUDIENCE` | Expected token audience       | `https://api.praxos.app`                              |
+| `AUTH_AUDIENCE` | Expected token audience       | `urn:praxos:api`                              |
 
 All three variables must be set for authentication to work.
 If any are missing, protected endpoints return `503 MISCONFIGURED`.
@@ -399,7 +399,7 @@ The auth-service provides Device Authorization Flow helpers for CLI/device authe
 | ----------------- | ------------------------ | ------------------------- |
 | `AUTH0_DOMAIN`    | Auth0 tenant domain      | `praxos-dev.eu.auth0.com` |
 | `AUTH0_CLIENT_ID` | Native app client ID     | `abc123...`               |
-| `AUTH_AUDIENCE`   | API identifier (default) | `https://api.praxos.app`  |
+| `AUTH_AUDIENCE`   | API identifier (default) | `urn:praxos:api`  |
 
 If any required variable is missing, endpoints return `503 MISCONFIGURED`.
 
@@ -411,7 +411,7 @@ Start Device Authorization Flow. Returns device code and user code.
 
 ```json
 {
-  "audience": "https://api.praxos.app",
+  "audience": "urn:praxos:api",
   "scope": "openid profile email"
 }
 ```
@@ -492,7 +492,7 @@ Get non-secret auth configuration for troubleshooting.
   "data": {
     "domain": "praxos-dev.eu.auth0.com",
     "issuer": "https://praxos-dev.eu.auth0.com/",
-    "audience": "https://api.praxos.app",
+    "audience": "urn:praxos:api",
     "jwksUrl": "https://praxos-dev.eu.auth0.com/.well-known/jwks.json"
   }
 }
