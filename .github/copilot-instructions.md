@@ -178,33 +178,96 @@ Violations:
 
 Run from repo root:
 
-| Check         | Command                 |
-| ------------- | ----------------------- |
-| Lint all      | `npm run lint`          |
-| Format check  | `npm run format:check`  |
-| Typecheck all | `npm run typecheck`     |
-| Test all      | `npm run test`          |
-| Coverage      | `npm run test:coverage` |
-| Build all     | `npm run build`         |
-| Full CI       | `npm run ci`            |
+| Check              | Command                           | Notes                                           |
+| ------------------ | --------------------------------- | ----------------------------------------------- |
+| Typecheck          | `npm run typecheck`               | Must run before lint when packages change       |
+| Lint all           | `npm run lint`                    | Requires built .d.ts files for workspace pkgs   |
+| Format check       | `npm run format:check`            | Run `npm run format` to auto-fix                |
+| Test all           | `npm run test`                    |                                                 |
+| Coverage           | `npm run test:coverage`           |                                                 |
+| Build all          | `npm run build`                   | Alias for typecheck (both run tsc -b)           |
+| Terraform format   | `terraform fmt -check -recursive` | Run from `/terraform`, use `-recursive` to fix  |
+| Terraform validate | `terraform validate`              | Run from `/terraform` or specific environment   |
+| Full CI            | `npm run ci`                      | **MANDATORY** - runs all checks in proper order |
 
-Always finish a task by running `npm run ci` and ensuring it passes.
+**CI Script Order (CRITICAL):**
+
+```bash
+typecheck → lint → verify:* → format:check → test:coverage → build
+```
+
+Why this order matters:
+
+1. `typecheck` runs first to build `.d.ts` files for all workspace packages
+2. `lint` runs second because ESLint's type-aware rules need those `.d.ts` files
+3. Without step 1, ESLint fails with "unsafe assignment of error typed value"
+
+**Never change CI script order without understanding this dependency.**
+
+Always finish a task by running `npm run ci` and ensuring it passes. If terraform files changed, also run terraform checks.
 
 ---
 
 ## Task Completion Checklist
 
-**When you finish ANY task, you MUST:**
+**When you finish ANY task, you MUST follow this quality loop:**
 
-- [ ] `npm run typecheck` passes
-- [ ] `npm run lint` passes
-- [ ] `npm run test` passes
-- [ ] **`npm run ci` passes** ← **MANDATORY before claiming task complete**
-- [ ] No new warnings introduced
-- [ ] Changes to logic have corresponding tests
-- [ ] Path-specific checklist completed (see `.github/instructions/*.instructions.md`)
+### Quality Loop (MANDATORY)
 
-**Do not claim "done" until verified. Running `npm run ci` is non-negotiable.**
+1. **Run all quality checks:**
+   - [ ] `npm run typecheck` passes
+   - [ ] `npm run lint` passes
+   - [ ] `npm run format:check` passes (run `npm run format` to fix)
+   - [ ] `npm run test` passes
+   - [ ] **`npm run test:coverage` passes with ≥90% coverage** ← **MANDATORY**
+   - [ ] If terraform files changed: `terraform fmt -check -recursive` passes (run `terraform fmt -recursive` to fix)
+   - [ ] **`npm run ci` passes** ← **MANDATORY**
+
+2. **If ANY check fails:**
+   - Fix the issues
+   - Go back to step 1 (repeat until all pass)
+
+3. **Only when ALL checks pass:**
+   - Task is complete
+   - Path-specific checklist completed (see `.github/instructions/*.instructions.md`)
+
+### Additional Requirements
+
+- **Coverage thresholds (non-negotiable):**
+  - Lines: ≥90%
+  - Branches: ≥85%
+  - Functions: ≥90%
+  - Statements: ≥90%
+- No new warnings introduced
+- Changes to logic have corresponding tests
+- Terraform changes validated (if applicable)
+
+**CRITICAL: Coverage is a quality gate**
+
+- Coverage below 90% is a **blocking failure**
+- Add tests until coverage meets thresholds
+- Do NOT claim task complete until coverage passes
+- Coverage check is part of `npm run ci` - it will fail if below threshold
+
+**CRITICAL: When adding or modifying workspace packages (@praxos/\*)**
+
+Before running `npm run lint`, you MUST:
+
+- Run `npm run build` or `npm run typecheck` first
+- This ensures `.d.ts` files exist for ESLint's type-aware rules
+- Without built declarations, ESLint will fail with "error typed value" errors
+- The `npm run ci` script handles this automatically by running `typecheck` before `lint`
+
+**CRITICAL: When modifying Terraform files**
+
+Before claiming task complete, you MUST:
+
+- Run `terraform fmt -recursive` to format
+- Run `terraform fmt -check -recursive` to verify
+- Run `terraform validate` in affected environments
+- See `.github/instructions/terraform.instructions.md` for full checklist
+
+**Do not claim "done" until the quality loop completes successfully. Running `npm run ci` with passing coverage and terraform checks (if applicable) is non-negotiable.**
 
 ---
 
