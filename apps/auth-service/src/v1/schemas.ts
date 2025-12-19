@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 export const deviceStartRequestSchema = z.object({
   audience: z.string().url().optional(),
-  scope: z.string().optional().default('openid profile email'),
+  scope: z.string().optional().default('openid profile email offline_access'),
 });
 
 export type DeviceStartRequest = z.infer<typeof deviceStartRequestSchema>;
@@ -42,7 +42,18 @@ export interface TokenResponse {
   expires_in: number;
   scope?: string;
   id_token?: string;
+  refresh_token?: string;
 }
+
+/**
+ * POST /v1/auth/refresh
+ * Refresh access token using stored refresh token.
+ */
+export const refreshTokenRequestSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+});
+
+export type RefreshTokenRequest = z.infer<typeof refreshTokenRequestSchema>;
 
 /**
  * GET /v1/auth/config

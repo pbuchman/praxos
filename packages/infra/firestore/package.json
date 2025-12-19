@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@praxos/common": "*",
+    "@praxos/domain-identity": "*",
     "@praxos/domain-promptvault": "*",
     "@google-cloud/firestore": "^7.10.0"
   }
