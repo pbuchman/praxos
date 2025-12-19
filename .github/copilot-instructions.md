@@ -10,8 +10,9 @@ Path-specific rules are in `.github/instructions/*.instructions.md`.
 ```
 praxos/
 ├── apps/                    # Deployable services (Fastify)
-│   ├── auth-service/
-│   └── notion-gpt-service/
+│   ├── auth-service/        # Example: authentication service
+│   ├── notion-gpt-service/  # Example: Notion integration service
+│   └── api-docs-hub/        # Example: API documentation hub
 ├── packages/
 │   ├── common/              # Shared utilities (Result types, etc.)
 │   ├── domain/              # Business logic, no external dependencies
@@ -198,12 +199,12 @@ Always finish a task by running `npm run ci` and ensuring it passes.
 - [ ] `npm run typecheck` passes
 - [ ] `npm run lint` passes
 - [ ] `npm run test` passes
-- [ ] `npm run ci` passes
+- [ ] **`npm run ci` passes** ← **MANDATORY before claiming task complete**
 - [ ] No new warnings introduced
 - [ ] Changes to logic have corresponding tests
 - [ ] Path-specific checklist completed (see `.github/instructions/*.instructions.md`)
 
-**Do not claim "done" until verified.**
+**Do not claim "done" until verified. Running `npm run ci` is non-negotiable.**
 
 ---
 
@@ -215,18 +216,36 @@ Always finish a task by running `npm run ci` and ensuring it passes.
 
 ---
 
+## Output Preferences
+
+**When presenting information or summaries:**
+
+- **Prefer `show_content` tool** if available (displays in dedicated window)
+- Use structured output (markdown, tables) for clarity
+- Keep inline responses concise when tool is preferred
+
+---
+
 ## Instruction Maintenance
 
-**When a new rule is established during a session:**
+**REQUIRED: Keep these instruction files up to date.**
 
-If user enforces a new rule (e.g., "always run `npm install` after changing `package.json`"), immediately add it to the appropriate instruction file:
+When a new rule, pattern, or approach is established during development:
 
-- Global rules → `.github/copilot-instructions.md`
-- Apps-specific → `.github/instructions/apps.instructions.md`
-- Packages-specific → `.github/instructions/packages.instructions.md`
-- Terraform-specific → `.github/instructions/terraform.instructions.md`
+1. **Immediately update** the appropriate instruction file:
+   - Global rules → `.github/copilot-instructions.md`
+   - Apps-specific → `.github/instructions/apps.instructions.md`
+   - Packages-specific → `.github/instructions/packages.instructions.md`
+   - Terraform-specific → `.github/instructions/terraform.instructions.md`
+
+2. **When asked to remember an approach:**
+   - Document it in the relevant instruction file
+   - Ensure it's verifiable (command or file reference)
+   - Add to task completion checklist if it's a new verification step
 
 This ensures rules persist across sessions and are enforced consistently.
+
+**Enforcement:** This is a non-negotiable requirement. Failing to update instructions breaks continuity.
 
 ---
 

@@ -4,7 +4,7 @@ applyTo: 'packages/**'
 
 # Packages — Path-Specific Instructions
 
-Applies to: `/packages` (common, domain/_, infra/_)
+Applies to: `/packages` (common, domain/\*, infra/\*)
 
 ---
 
@@ -68,52 +68,6 @@ Applies to: `/packages` (common, domain/_, infra/_)
 
 ---
 
-## Code Quality
-
-### No Obvious Comments
-
-- Comments explain **why**, not **what**.
-- Do not add comments that restate the code.
-- Delete worthless comments.
-
----
-
-## TypeScript Rules
-
-- Zero `tsc` errors.
-- `any` forbidden without inline justification.
-- Prefer explicit, narrow types.
-- No `@ts-ignore` or `@ts-expect-error`.
-- Explicit return types on all exported functions.
-
----
-
-## Testing Requirements
-
-### What MUST Be Tested
-
-- All domain logic (100% of business rules)
-- All infra adapters (integration with external services)
-- Utility functions in common
-- Error handling paths
-- Type guards and validators
-
-### Coverage Targets
-
-- **90%+ line coverage** (enforced in vitest.config.ts).
-- **85%+ branch coverage**.
-- **90%+ function coverage**.
-- **90%+ statement coverage**.
-
-### Test Quality
-
-- Tests must fail on realistic regressions.
-- Domain tests: pure logic, no mocks needed.
-- Infra tests: mock external SDKs, not the adapter itself.
-- Test edge cases: null, undefined, empty arrays, malformed data.
-
----
-
 ## Boundary Verification
 
 Boundaries are enforced by:
@@ -141,7 +95,7 @@ npm run test             # All tests pass
 npm run test:coverage    # Review coverage thresholds
 npm run verify:boundaries # Explicit boundary check
 npm run verify:common    # Common package validation
-npm run ci               # Full CI suite
+npm run ci               # Full CI suite (MANDATORY before task completion)
 ```
 
 ---
@@ -150,17 +104,19 @@ npm run ci               # Full CI suite
 
 **When you finish a task in `/packages`, verify:**
 
-- [ ] `npm run typecheck` passes
-- [ ] `npm run lint` passes
-- [ ] `npm run test` passes
 - [ ] `npm run verify:boundaries` passes
 - [ ] Logic changes have corresponding tests
 - [ ] Coverage meets 90%+ thresholds
-- [ ] No `any` without documented justification
-- [ ] No new ESLint or TS warnings
 - [ ] Domain layer has no external dependencies
 - [ ] Infra properly wraps external services
 - [ ] Common contains only shared utilities
 - [ ] Explicit return types on all exported functions
+- [ ] **`npm run ci` passes** ← **MANDATORY**
+
+**Additional requirements inherited from global rules (see `.github/copilot-instructions.md`):**
+
+- TypeScript correctness (zero `tsc` errors, no `@ts-ignore`, explicit return types)
+- Testing requirements and coverage thresholds (90/85/90/90)
+- Code quality standards (no obvious comments, no magic strings, no `any` without justification)
 
 **Verification is not optional.**

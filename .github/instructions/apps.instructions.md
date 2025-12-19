@@ -4,7 +4,7 @@ applyTo: 'apps/**'
 
 # Apps — Path-Specific Instructions
 
-Applies to: `/apps` (auth-service, notion-gpt-service)
+Applies to: `/apps` (e.g., auth-service, notion-gpt-service, api-docs-hub)
 
 ---
 
@@ -37,49 +37,6 @@ Applies to: `/apps` (auth-service, notion-gpt-service)
 
 ---
 
-## Code Quality
-
-### No Obvious Comments
-
-- Comments explain **why**, not **what**.
-- Do not add comments that restate the code.
-- Delete worthless comments.
-
----
-
-## TypeScript Rules
-
-- Zero `tsc` errors.
-- `any` forbidden without inline justification.
-- Prefer explicit, narrow types.
-- No `@ts-ignore` or `@ts-expect-error`.
-
----
-
-## Testing Requirements
-
-### What MUST Be Tested
-
-- Route handlers (HTTP endpoints)
-- Request validation
-- Error handling
-- Service orchestration logic
-- Integration with domain/infra layers
-
-### Coverage Targets
-
-- **90%+ line coverage** for route handlers and service logic.
-- Test all branches in conditional logic.
-- Test edge cases: null, undefined, empty strings, malformed data.
-
-### Test Quality
-
-- Tests must fail on realistic regressions.
-- Mock external services (Firestore, Auth0, Notion) properly.
-- Do not mock away the system under test.
-
----
-
 ## Verification Commands
 
 Run from repo root:
@@ -89,7 +46,7 @@ npm run lint          # Zero warnings required
 npm run typecheck     # Zero errors required
 npm run test          # All tests pass
 npm run test:coverage # Review coverage
-npm run ci            # Full CI suite
+npm run ci            # Full CI suite (MANDATORY before task completion)
 ```
 
 ---
@@ -98,15 +55,17 @@ npm run ci            # Full CI suite
 
 **When you finish a task in `/apps`, verify:**
 
-- [ ] `npm run typecheck` passes
-- [ ] `npm run lint` passes
-- [ ] `npm run test` passes
 - [ ] Logic changes have corresponding tests
-- [ ] No `any` without documented justification
-- [ ] No new ESLint or TS warnings
 - [ ] Auth/validation changes have tests
 - [ ] Route changes are minimal and focused
 - [ ] Secrets use PRAXOS\_\* naming convention
 - [ ] Apps remain thin (business logic in domain, integrations in infra)
+- [ ] **`npm run ci` passes** ← **MANDATORY**
+
+**Additional requirements inherited from global rules (see `.github/copilot-instructions.md`):**
+
+- TypeScript correctness, zero warnings, explicit return types
+- Testing requirements and coverage thresholds
+- Code quality standards (no obvious comments, no magic strings)
 
 **Verification is not optional.**
