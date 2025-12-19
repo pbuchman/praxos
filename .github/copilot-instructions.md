@@ -178,15 +178,28 @@ Violations:
 
 Run from repo root:
 
-| Check         | Command                 |
-| ------------- | ----------------------- |
-| Lint all      | `npm run lint`          |
-| Format check  | `npm run format:check`  |
-| Typecheck all | `npm run typecheck`     |
-| Test all      | `npm run test`          |
-| Coverage      | `npm run test:coverage` |
-| Build all     | `npm run build`         |
-| Full CI       | `npm run ci`            |
+| Check         | Command                 | Notes                                           |
+| ------------- | ----------------------- | ----------------------------------------------- |
+| Typecheck     | `npm run typecheck`     | Must run before lint when packages change       |
+| Lint all      | `npm run lint`          | Requires built .d.ts files for workspace pkgs   |
+| Format check  | `npm run format:check`  |                                                 |
+| Test all      | `npm run test`          |                                                 |
+| Coverage      | `npm run test:coverage` |                                                 |
+| Build all     | `npm run build`         | Alias for typecheck (both run tsc -b)           |
+| Full CI       | `npm run ci`            | **MANDATORY** - runs all checks in proper order |
+
+**CI Script Order (CRITICAL):**
+
+```bash
+typecheck → lint → verify:* → format:check → test:coverage → build
+```
+
+Why this order matters:
+1. `typecheck` runs first to build `.d.ts` files for all workspace packages
+2. `lint` runs second because ESLint's type-aware rules need those `.d.ts` files
+3. Without step 1, ESLint fails with "unsafe assignment of error typed value"
+
+**Never change CI script order without understanding this dependency.**
 
 Always finish a task by running `npm run ci` and ensuring it passes.
 
@@ -203,6 +216,14 @@ Always finish a task by running `npm run ci` and ensuring it passes.
 - [ ] No new warnings introduced
 - [ ] Changes to logic have corresponding tests
 - [ ] Path-specific checklist completed (see `.github/instructions/*.instructions.md`)
+
+**CRITICAL: When adding or modifying workspace packages (@praxos/*)**
+
+Before running `npm run lint`, you MUST:
+- Run `npm run build` or `npm run typecheck` first
+- This ensures `.d.ts` files exist for ESLint's type-aware rules
+- Without built declarations, ESLint will fail with "error typed value" errors
+- The `npm run ci` script handles this automatically by running `typecheck` before `lint`
 
 **Do not claim "done" until verified. Running `npm run ci` is non-negotiable.**
 
