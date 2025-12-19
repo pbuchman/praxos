@@ -25,8 +25,8 @@ steps:
     entrypoint: 'npm'
     args: ['run', 'ci']
 
-  # Step 4: Detect affected services
-  - name: 'node:22-slim'
+  # Step 4: Detect affected services (uses full node image for git)
+  - name: 'node:22'
     id: 'detect-affected'
     entrypoint: 'node'
     args: ['cloudbuild/scripts/detect-affected.mjs']
