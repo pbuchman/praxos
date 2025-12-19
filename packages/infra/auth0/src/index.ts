@@ -4,8 +4,8 @@
  * Auth0 infrastructure adapter - implements identity domain ports.
  *
  * Structure:
- * - adapters/  Port implementations using Auth0 SDK
+ * - client.ts      Auth0 OAuth2 client implementation
+ * - adapters/      Port implementations using Auth0 SDK
  */
 
-// Public exports will be added as adapters are implemented
-export {};
+export { Auth0ClientImpl, loadAuth0Config, type Auth0Config } from './client.js';

@@ -22,3 +22,6 @@ export { praxosFastifyPlugin } from './http/fastifyPlugin.js';
 export { type JwtConfig, type VerifiedJwt, verifyJwt, clearJwksCache } from './auth/jwt.js';
 
 export { type AuthUser, requireAuth, fastifyAuthPlugin } from './auth/fastifyAuthPlugin.js';
+
+// Security utilities
+export { redactToken, redactObject, SENSITIVE_FIELDS } from './redaction.js';

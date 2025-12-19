@@ -10,5 +10,10 @@
  * - policies/  Validation and business rules
  */
 
-// Public exports will be added as domain is implemented
-export {};
+// Models
+export type { AuthTokens, AuthTokensPublic, RefreshResult } from './models/AuthToken.js';
+export type { AuthError, AuthErrorCode } from './models/AuthError.js';
+
+// Ports
+export type { AuthTokenRepository } from './ports/AuthTokenRepository.js';
+export type { Auth0Client } from './ports/Auth0Client.js';
