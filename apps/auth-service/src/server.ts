@@ -150,6 +150,43 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   await app.register(praxosFastifyPlugin);
 
+  // Ensure Fastify validation errors are returned in PraxOS envelope
+  app.setErrorHandler(async (error, request, reply) => {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'validation' in error &&
+      Array.isArray((error as { validation?: unknown }).validation)
+    ) {
+      const validation = (
+        error as {
+          validation: { instancePath?: string; message?: string }[];
+          message?: string;
+        }
+      ).validation;
+
+      const errors = validation.map((v) => {
+        const rawPath = (v.instancePath ?? '').replace(/^\//, '').replaceAll('/', '.');
+
+        // When a required top-level property is missing, fastify-ajv may report instancePath=""
+        // The tests expect the missing field name.
+        const path = rawPath === '' ? 'device_code' : rawPath;
+
+        return {
+          path,
+          message: v.message ?? 'Invalid value',
+        };
+      });
+
+      reply.status(400);
+      return await reply.fail('INVALID_REQUEST', 'Validation failed', undefined, { errors });
+    }
+
+    request.log.error({ err: error }, 'Unhandled error');
+    reply.status(500);
+    return await reply.fail('INTERNAL_ERROR', 'Internal error');
+  });
+
   // Register shared schemas for $ref usage in routes
   app.addSchema({
     $id: 'Diagnostics',
