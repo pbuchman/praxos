@@ -11,9 +11,6 @@ resource "google_storage_bucket" "static_assets" {
     enabled = true
   }
 
-  # Public access prevention: do not enforce (allow public access)
-  public_access_prevention = "inherited"
-
   # CORS configuration for cross-origin access
   cors {
     origin          = ["*"]
@@ -41,3 +38,4 @@ resource "google_storage_bucket_iam_member" "public_read" {
   role   = "roles/storage.objectViewer"
   member = "allUsers"
 }
+
