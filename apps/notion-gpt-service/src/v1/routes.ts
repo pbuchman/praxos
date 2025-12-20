@@ -3,7 +3,9 @@ import { ZodError } from 'zod';
 import { requireAuth } from '@praxos/common';
 import {
   connectRequestSchema,
-  createPromptVaultNoteRequestSchema,
+  createPromptRequestSchema,
+  listPromptsQuerySchema,
+  updatePromptRequestSchema,
   webhookRequestSchema,
 } from './schemas.js';
 import { getServices } from '../services.js';
@@ -228,18 +230,18 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
     }
   );
 
-  // POST /v1/tools/notion/promptvault/note
+  // POST /v1/tools/notion/promptvault/prompts (create prompt)
   fastify.post(
-    '/v1/tools/notion/promptvault/note',
+    '/v1/tools/notion/promptvault/prompts',
     {
       schema: {
-        operationId: 'createPromptVaultNote',
-        summary: 'Create PromptVault note',
-        description: 'Create a new note in the PromptVault',
+        operationId: 'createPrompt',
+        summary: 'Create a new prompt',
+        description: 'Create a new prompt in the PromptVault',
         tags: ['tools'],
         security: [{ bearerAuth: [] }],
         response: {
-          200: { description: 'Note created successfully' },
+          200: { description: 'Prompt created successfully' },
           400: { description: 'Invalid request' },
           401: { description: 'Unauthorized' },
           502: { description: 'Downstream error' },
@@ -251,15 +253,15 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
       const user = await requireAuth(request, reply);
       if (user === null) return;
 
-      // Validate request body first (before checking connection)
-      const parseResult = createPromptVaultNoteRequestSchema.safeParse(request.body);
+      // Validate request body
+      const parseResult = createPromptRequestSchema.safeParse(request.body);
       if (!parseResult.success) {
         return await handleValidationError(parseResult.error, reply);
       }
 
-      const { title, prompt } = parseResult.data;
+      const { title, prompt, tags, source } = parseResult.data;
 
-      const { connectionRepository, notionApi } = getServices();
+      const { connectionRepository, createPromptUseCase } = getServices();
 
       // Check if connected
       const connectedResult = await connectionRepository.isConnected(user.userId);
@@ -275,47 +277,260 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
         );
       }
 
-      // Get token
-      const tokenResult = await connectionRepository.getToken(user.userId);
-      if (!tokenResult.ok) {
-        return await reply.fail('DOWNSTREAM_ERROR', tokenResult.error.message);
-      }
-      const token = tokenResult.value;
-      if (token === null) {
-        return await reply.fail('MISCONFIGURED', 'Notion token not found.');
-      }
-
-      // Get config
-      const configResult = await connectionRepository.getConnection(user.userId);
-      if (!configResult.ok) {
-        return await reply.fail('DOWNSTREAM_ERROR', configResult.error.message);
-      }
-      const config = configResult.value;
-      if (config === null) {
-        return await reply.fail('MISCONFIGURED', 'Notion configuration not found.');
-      }
-
-      const parentPageId = config.promptVaultPageId;
-
-      // Create PromptVault note in Notion with exact block structure
-      const createResult = await notionApi.createPromptVaultNote({
-        token,
-        parentPageId,
+      // Create prompt
+      const result = await createPromptUseCase.execute(user.userId, {
         title,
         prompt,
-        userId: user.userId,
+        tags: tags ?? undefined,
+        source:
+          source !== undefined
+            ? { type: source.type, details: source.details ?? undefined }
+            : undefined,
       });
 
-      if (!createResult.ok) {
-        return await reply.fail('DOWNSTREAM_ERROR', createResult.error.message);
+      if (!result.ok) {
+        return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
       }
 
-      const createdNote = createResult.value;
+      const createdPrompt = result.value;
 
       return await reply.ok({
-        pageId: createdNote.id,
-        url: createdNote.url,
-        title: createdNote.title,
+        id: createdPrompt.id,
+        title: createdPrompt.title,
+        preview: createdPrompt.preview,
+        tags: createdPrompt.tags ?? null,
+        source: createdPrompt.source ?? null,
+        url: createdPrompt.url,
+        createdAt: createdPrompt.createdAt,
+        updatedAt: createdPrompt.updatedAt,
+      });
+    }
+  );
+
+  // GET /v1/tools/notion/promptvault/prompts (list prompts)
+  fastify.get(
+    '/v1/tools/notion/promptvault/prompts',
+    {
+      schema: {
+        operationId: 'listPrompts',
+        summary: 'List prompts',
+        description: 'List all prompts in the PromptVault',
+        tags: ['tools'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: { description: 'Prompts retrieved successfully' },
+          401: { description: 'Unauthorized' },
+          502: { description: 'Downstream error' },
+          503: { description: 'Service misconfigured' },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await requireAuth(request, reply);
+      if (user === null) return;
+
+      // Validate query params
+      const parseResult = listPromptsQuerySchema.safeParse(request.query);
+      if (!parseResult.success) {
+        return await handleValidationError(parseResult.error, reply);
+      }
+
+      const { limit, cursor, includeContent } = parseResult.data;
+
+      const { connectionRepository, listPromptsUseCase } = getServices();
+
+      // Check if connected
+      const connectedResult = await connectionRepository.isConnected(user.userId);
+      if (!connectedResult.ok) {
+        return await reply.fail('DOWNSTREAM_ERROR', connectedResult.error.message);
+      }
+
+      const isConnected = connectedResult.value;
+      if (!isConnected) {
+        return await reply.fail(
+          'MISCONFIGURED',
+          'Notion integration is not configured. Call POST /v1/integrations/notion/connect first.'
+        );
+      }
+
+      // List prompts
+      const result = await listPromptsUseCase.execute(user.userId, {
+        limit: limit ?? undefined,
+        cursor: cursor ?? undefined,
+        includeContent: includeContent ?? undefined,
+      });
+
+      if (!result.ok) {
+        return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
+      }
+
+      const { prompts, hasMore, nextCursor } = result.value;
+
+      return await reply.ok({
+        prompts: prompts.map((p) => ({
+          id: p.id,
+          title: p.title,
+          preview: p.preview,
+          tags: p.tags ?? null,
+          source: p.source ?? null,
+          url: p.url,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          ...(includeContent && 'content' in p ? { content: p.content } : {}),
+        })),
+        hasMore,
+        nextCursor: nextCursor ?? null,
+      });
+    }
+  );
+
+  // GET /v1/tools/notion/promptvault/prompts/:promptId (get single prompt)
+  fastify.get(
+    '/v1/tools/notion/promptvault/prompts/:promptId',
+    {
+      schema: {
+        operationId: 'getPrompt',
+        summary: 'Get a prompt by ID',
+        description: 'Get a single prompt from the PromptVault',
+        tags: ['tools'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: { description: 'Prompt retrieved successfully' },
+          401: { description: 'Unauthorized' },
+          404: { description: 'Prompt not found' },
+          502: { description: 'Downstream error' },
+          503: { description: 'Service misconfigured' },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await requireAuth(request, reply);
+      if (user === null) return;
+
+      const { promptId } = request.params as { promptId: string };
+
+      const { connectionRepository, getPromptUseCase } = getServices();
+
+      // Check if connected
+      const connectedResult = await connectionRepository.isConnected(user.userId);
+      if (!connectedResult.ok) {
+        return await reply.fail('DOWNSTREAM_ERROR', connectedResult.error.message);
+      }
+
+      const isConnected = connectedResult.value;
+      if (!isConnected) {
+        return await reply.fail(
+          'MISCONFIGURED',
+          'Notion integration is not configured. Call POST /v1/integrations/notion/connect first.'
+        );
+      }
+
+      // Get prompt
+      const result = await getPromptUseCase.execute(user.userId, promptId);
+
+      if (!result.ok) {
+        if (result.error.code === 'NOT_FOUND') {
+          return await reply.status(404).fail('NOT_FOUND', result.error.message);
+        }
+        return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
+      }
+
+      const prompt = result.value;
+
+      return await reply.ok({
+        id: prompt.id,
+        title: prompt.title,
+        content: prompt.content,
+        preview: prompt.preview,
+        tags: prompt.tags ?? null,
+        source: prompt.source ?? null,
+        url: prompt.url,
+        createdAt: prompt.createdAt,
+        updatedAt: prompt.updatedAt,
+      });
+    }
+  );
+
+  // PATCH /v1/tools/notion/promptvault/prompts/:promptId (update prompt)
+  fastify.patch(
+    '/v1/tools/notion/promptvault/prompts/:promptId',
+    {
+      schema: {
+        operationId: 'updatePrompt',
+        summary: 'Update a prompt',
+        description: 'Update a prompt in the PromptVault (partial update)',
+        tags: ['tools'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: { description: 'Prompt updated successfully' },
+          400: { description: 'Invalid request' },
+          401: { description: 'Unauthorized' },
+          404: { description: 'Prompt not found' },
+          502: { description: 'Downstream error' },
+          503: { description: 'Service misconfigured' },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await requireAuth(request, reply);
+      if (user === null) return;
+
+      const { promptId } = request.params as { promptId: string };
+
+      // Validate request body
+      const parseResult = updatePromptRequestSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return await handleValidationError(parseResult.error, reply);
+      }
+
+      const { title, prompt, tags, source } = parseResult.data;
+
+      const { connectionRepository, updatePromptUseCase } = getServices();
+
+      // Check if connected
+      const connectedResult = await connectionRepository.isConnected(user.userId);
+      if (!connectedResult.ok) {
+        return await reply.fail('DOWNSTREAM_ERROR', connectedResult.error.message);
+      }
+
+      const isConnected = connectedResult.value;
+      if (!isConnected) {
+        return await reply.fail(
+          'MISCONFIGURED',
+          'Notion integration is not configured. Call POST /v1/integrations/notion/connect first.'
+        );
+      }
+
+      // Update prompt
+      const result = await updatePromptUseCase.execute(user.userId, promptId, {
+        title: title ?? undefined,
+        prompt: prompt ?? undefined,
+        tags: tags ?? undefined,
+        source:
+          source !== undefined
+            ? { type: source.type, details: source.details ?? undefined }
+            : undefined,
+      });
+
+      if (!result.ok) {
+        if (result.error.code === 'NOT_FOUND') {
+          return await reply.status(404).fail('NOT_FOUND', result.error.message);
+        }
+        return await reply.fail('DOWNSTREAM_ERROR', result.error.message);
+      }
+
+      const updatedPrompt = result.value;
+
+      return await reply.ok({
+        id: updatedPrompt.id,
+        title: updatedPrompt.title,
+        content: updatedPrompt.content,
+        preview: updatedPrompt.preview,
+        tags: updatedPrompt.tags ?? null,
+        source: updatedPrompt.source ?? null,
+        url: updatedPrompt.url,
+        createdAt: updatedPrompt.createdAt,
+        updatedAt: updatedPrompt.updatedAt,
       });
     }
   );

@@ -5,7 +5,13 @@ import { buildServer } from '../server.js';
 import { setServices, resetServices } from '../services.js';
 import { clearJwksCache } from '@praxos/common';
 import { FakeNotionConnectionRepository } from '@praxos/infra-firestore';
-import { MockNotionApiAdapter } from '@praxos/infra-notion';
+import { MockNotionApiAdapter, NotionPromptRepository } from '@praxos/infra-notion';
+import {
+  CreatePromptUseCase,
+  ListPromptsUseCase,
+  GetPromptUseCase,
+  UpdatePromptUseCase,
+} from '@praxos/domain-promptvault';
 
 describe('notion-gpt-service v1 endpoints', () => {
   let app: FastifyInstance;
@@ -15,6 +21,7 @@ describe('notion-gpt-service v1 endpoints', () => {
   // Test adapter instances
   let connectionRepository: FakeNotionConnectionRepository;
   let notionApi: MockNotionApiAdapter;
+  let promptRepository: NotionPromptRepository;
 
   const issuer = 'https://test-issuer.example.com/';
   const audience = 'test-audience';
@@ -81,11 +88,17 @@ describe('notion-gpt-service v1 endpoints', () => {
     // Create fresh test adapters from infra packages
     connectionRepository = new FakeNotionConnectionRepository();
     notionApi = new MockNotionApiAdapter();
+    promptRepository = new NotionPromptRepository(connectionRepository);
 
     // Inject test adapters via DI
     setServices({
       connectionRepository,
       notionApi,
+      promptRepository,
+      createPromptUseCase: new CreatePromptUseCase(promptRepository),
+      listPromptsUseCase: new ListPromptsUseCase(promptRepository),
+      getPromptUseCase: new GetPromptUseCase(promptRepository),
+      updatePromptUseCase: new UpdatePromptUseCase(promptRepository),
     });
 
     clearJwksCache();
