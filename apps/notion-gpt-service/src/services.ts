@@ -2,9 +2,13 @@
  * Service container for notion-gpt-service.
  * Provides dependency injection for adapters.
  */
-import type { NotionConnectionRepository, NotionApiPort } from '@praxos/domain-promptvault';
+import type {
+  NotionConnectionRepository,
+  NotionApiPort,
+  PromptRepository,
+} from '@praxos/domain-promptvault';
 import { FirestoreNotionConnectionRepository } from '@praxos/infra-firestore';
-import { NotionApiAdapter } from '@praxos/infra-notion';
+import { NotionApiAdapter, NotionPromptRepository } from '@praxos/infra-notion';
 
 /**
  * Service container holding all adapter instances.
@@ -12,6 +16,7 @@ import { NotionApiAdapter } from '@praxos/infra-notion';
 export interface ServiceContainer {
   connectionRepository: NotionConnectionRepository;
   notionApi: NotionApiPort;
+  promptRepository: PromptRepository;
 }
 
 let container: ServiceContainer | null = null;
@@ -21,10 +26,29 @@ let container: ServiceContainer | null = null;
  * In production, uses real Firestore and Notion adapters.
  */
 export function getServices(): ServiceContainer {
-  container ??= {
-    connectionRepository: new FirestoreNotionConnectionRepository(),
-    notionApi: new NotionApiAdapter(),
-  };
+  if (container === null) {
+    const connectionRepository = new FirestoreNotionConnectionRepository();
+
+    // Create PromptRepository with access to connection data
+    const promptRepository = new NotionPromptRepository(
+      async (userId) => {
+        return await connectionRepository.getToken(userId);
+      },
+      async (userId) => {
+        const result = await connectionRepository.getConnection(userId);
+        if (!result.ok) return result;
+        const config = result.value;
+        if (config === null) return { ok: true, value: null };
+        return { ok: true, value: config.promptVaultPageId };
+      }
+    );
+
+    container = {
+      connectionRepository,
+      notionApi: new NotionApiAdapter(),
+      promptRepository,
+    };
+  }
   return container;
 }
 

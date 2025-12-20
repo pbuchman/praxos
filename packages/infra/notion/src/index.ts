@@ -5,11 +5,13 @@
  *
  * Structure:
  * - adapter.ts  NotionApiPort implementation using Notion SDK
+ * - adapters/   Domain repository implementations
  * - testing/    Mock adapters for use in tests
  */
 
 // Adapters
 export { NotionApiAdapter } from './adapter.js';
+export { NotionPromptRepository } from './adapters/notionPromptRepository.js';
 
 // Testing utilities (for use by consuming packages)
 export { MockNotionApiAdapter, type CapturedPromptVaultNote } from './testing/index.js';
