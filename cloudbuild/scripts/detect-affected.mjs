@@ -10,9 +10,13 @@
  * - apps/notion-gpt-service/** affects notion-gpt-service
  * - apps/whatsapp-service/** affects whatsapp-service
  * - apps/api-docs-hub/** affects api-docs-hub
+ * - docs/assets/** triggers static assets sync
  *
  * Output: /workspace/affected.json
- * Format: { "services": ["auth-service", "notion-gpt-service", "whatsapp-service", "api-docs-hub"] }
+ * Format: {
+ *   "services": ["auth-service", "notion-gpt-service", "whatsapp-service", "api-docs-hub"],
+ *   "staticAssets": true
+ * }
  */
 
 import { execSync } from 'node:child_process';
@@ -126,6 +130,13 @@ function getAffectedServices(changedFiles) {
 }
 
 /**
+ * Check if static assets are affected.
+ */
+function checkStaticAssetsAffected(changedFiles) {
+  return changedFiles.some((file) => file.startsWith('docs/assets/'));
+}
+
+/**
  * Main entry point.
  */
 function main() {
@@ -149,8 +160,12 @@ function main() {
   const affectedServices = getAffectedServices(changedFiles);
   console.log(`\nAffected services: ${affectedServices.join(', ') || 'none'}`);
 
+  const staticAssetsAffected = checkStaticAssetsAffected(changedFiles);
+  console.log(`Static assets affected: ${staticAssetsAffected}`);
+
   const output = {
     services: affectedServices,
+    staticAssets: staticAssetsAffected,
     changedFilesCount: changedFiles.length,
     diffRange,
     timestamp: new Date().toISOString(),

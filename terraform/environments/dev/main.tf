@@ -116,6 +116,7 @@ resource "google_project_service" "apis" {
     "artifactregistry.googleapis.com",
     "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "storage.googleapis.com",
   ])
 
   project            = var.project_id
@@ -126,6 +127,18 @@ resource "google_project_service" "apis" {
 # Artifact Registry
 module "artifact_registry" {
   source = "../../modules/artifact-registry"
+
+  project_id  = var.project_id
+  region      = var.region
+  environment = var.environment
+  labels      = local.common_labels
+
+  depends_on = [google_project_service.apis]
+}
+
+# Static Assets Bucket
+module "static_assets" {
+  source = "../../modules/static-assets"
 
   project_id  = var.project_id
   region      = var.region
@@ -366,5 +379,15 @@ output "firestore_database" {
 output "service_accounts" {
   description = "Service account emails"
   value       = module.iam.service_accounts
+}
+
+output "static_assets_bucket_name" {
+  description = "Static assets bucket name"
+  value       = module.static_assets.bucket_name
+}
+
+output "static_assets_public_url" {
+  description = "Static assets public base URL"
+  value       = module.static_assets.public_base_url
 }
 
