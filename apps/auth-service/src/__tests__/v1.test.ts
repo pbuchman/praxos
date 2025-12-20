@@ -8,7 +8,7 @@ describe('auth-service v1 endpoints', () => {
 
   const AUTH0_DOMAIN = 'test-tenant.eu.auth0.com';
   const AUTH0_CLIENT_ID = 'test-client-id';
-  const AUTH_AUDIENCE = 'https://api.praxos.app';
+  const AUTH_AUDIENCE = 'urn:praxos:api';
 
   beforeAll(() => {
     nock.disableNetConnect();

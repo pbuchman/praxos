@@ -6,38 +6,71 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files for all required workspaces
 COPY package*.json ./
 COPY apps/notion-gpt-service/package*.json ./apps/notion-gpt-service/
 COPY packages/common/package*.json ./packages/common/
+COPY packages/domain/identity/package*.json ./packages/domain/identity/
+COPY packages/domain/promptvault/package*.json ./packages/domain/promptvault/
+COPY packages/domain/actions/package*.json ./packages/domain/actions/
+COPY packages/infra/notion/package*.json ./packages/infra/notion/
+COPY packages/infra/firestore/package*.json ./packages/infra/firestore/
 
-# Install dependencies
-RUN npm ci --workspace=@praxos/common --workspace=apps/notion-gpt-service
+# Install ALL dependencies including root devDependencies (typescript)
+# Workspace filter doesn't install root devDeps, so we install everything for build
+RUN npm ci
 
 # Copy source files
 COPY tsconfig*.json ./
 COPY packages/common/ ./packages/common/
+COPY packages/domain/identity/ ./packages/domain/identity/
+COPY packages/domain/promptvault/ ./packages/domain/promptvault/
+COPY packages/domain/actions/ ./packages/domain/actions/
+COPY packages/infra/notion/ ./packages/infra/notion/
+COPY packages/infra/firestore/ ./packages/infra/firestore/
 COPY apps/notion-gpt-service/ ./apps/notion-gpt-service/
 
-# Build
+# Build all packages in dependency order
 RUN npm run build --workspace=@praxos/common
-RUN npm run build --workspace=apps/notion-gpt-service
+RUN npm run build --workspace=@praxos/domain-identity
+RUN npm run build --workspace=@praxos/domain-promptvault
+RUN npm run build --workspace=@praxos/domain-actions
+RUN npm run build --workspace=@praxos/infra-notion
+RUN npm run build --workspace=@praxos/infra-firestore
+RUN npm run build --workspace=@praxos/notion-gpt-service
 
 # Stage 2: Production
 FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files for all required workspaces
 COPY package*.json ./
 COPY apps/notion-gpt-service/package*.json ./apps/notion-gpt-service/
 COPY packages/common/package*.json ./packages/common/
+COPY packages/domain/identity/package*.json ./packages/domain/identity/
+COPY packages/domain/promptvault/package*.json ./packages/domain/promptvault/
+COPY packages/domain/actions/package*.json ./packages/domain/actions/
+COPY packages/infra/notion/package*.json ./packages/infra/notion/
+COPY packages/infra/firestore/package*.json ./packages/infra/firestore/
 
 # Install production dependencies only
-RUN npm ci --omit=dev --workspace=@praxos/common --workspace=apps/notion-gpt-service
+RUN npm ci --omit=dev \
+    --workspace=@praxos/common \
+    --workspace=@praxos/domain-identity \
+    --workspace=@praxos/domain-promptvault \
+    --workspace=@praxos/domain-actions \
+    --workspace=@praxos/infra-notion \
+    --workspace=@praxos/infra-firestore \
+    --workspace=@praxos/notion-gpt-service
 
-# Copy built files
+# Copy built files from all packages
 COPY --from=builder /app/packages/common/dist ./packages/common/dist
+COPY --from=builder /app/packages/domain/identity/dist ./packages/domain/identity/dist
+COPY --from=builder /app/packages/domain/promptvault/dist ./packages/domain/promptvault/dist
+COPY --from=builder /app/packages/domain/actions/dist ./packages/domain/actions/dist
+COPY --from=builder /app/packages/infra/notion/dist ./packages/infra/notion/dist
+COPY --from=builder /app/packages/infra/firestore/dist ./packages/infra/firestore/dist
 COPY --from=builder /app/apps/notion-gpt-service/dist ./apps/notion-gpt-service/dist
 
 # Set environment

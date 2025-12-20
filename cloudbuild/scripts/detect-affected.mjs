@@ -4,14 +4,15 @@
  *
  * Rules:
  * - packages/common/** affects all services
+ * - packages/domain/** affects all services (except api-docs-hub)
+ * - packages/infra/** affects all services (except api-docs-hub)
  * - apps/auth-service/** affects auth-service
  * - apps/notion-gpt-service/** affects notion-gpt-service
  * - apps/whatsapp-service/** affects whatsapp-service
- * - packages/domain/** affects all services
- * - packages/infra/** affects all services
+ * - apps/api-docs-hub/** affects api-docs-hub
  *
  * Output: /workspace/affected.json
- * Format: { "services": ["auth-service", "notion-gpt-service", "whatsapp-service"] }
+ * Format: { "services": ["auth-service", "notion-gpt-service", "whatsapp-service", "api-docs-hub"] }
  */
 
 import { execSync } from 'node:child_process';
@@ -48,6 +49,14 @@ const SERVICE_DEPS = {
     'packages/common/',
     'packages/domain/',
     'packages/infra/',
+    'package.json',
+    'package-lock.json',
+    'tsconfig.json',
+    'tsconfig.base.json',
+  ],
+  'api-docs-hub': [
+    'apps/api-docs-hub/',
+    'packages/common/',
     'package.json',
     'package-lock.json',
     'tsconfig.json',

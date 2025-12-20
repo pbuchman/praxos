@@ -62,6 +62,11 @@ variable "github_branch" {
   default     = "development"
 }
 
+variable "github_connection_name" {
+  description = "Name of the Cloud Build GitHub connection (created manually via GCP Console)"
+  type        = string
+}
+
 locals {
   services = {
     auth_service = {
@@ -311,13 +316,13 @@ module "api_docs_hub" {
 module "cloud_build" {
   source = "../../modules/cloud-build"
 
-  project_id    = var.project_id
-  region        = var.region
-  environment   = var.environment
-  github_owner  = var.github_owner
-  github_repo   = var.github_repo
-  github_branch = var.github_branch
-  labels        = local.common_labels
+  project_id             = var.project_id
+  region                 = var.region
+  environment            = var.environment
+  github_owner           = var.github_owner
+  github_repo            = var.github_repo
+  github_branch          = var.github_branch
+  github_connection_name = var.github_connection_name
 
   artifact_registry_url = module.artifact_registry.repository_url
 
