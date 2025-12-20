@@ -53,15 +53,13 @@ function computeOverallStatus(checks: HealthCheck[]): HealthStatus {
 }
 
 function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
-  const serviceUrl = process.env['SERVICE_URL'];
-  if (serviceUrl === undefined || serviceUrl === '') {
-    throw new Error('SERVICE_URL environment variable is required for OpenAPI spec generation');
-  }
-
   // Exactly two servers: local development and Cloud Run deployment
   const servers = [
     { url: 'http://localhost:8080', description: 'Local development' },
-    { url: serviceUrl, description: 'Cloud (Development)' },
+    {
+      url: 'https://praxos-auth-service-ooafxzbaua-lm.a.run.app',
+      description: 'Cloud (Development)',
+    },
   ];
 
   return {

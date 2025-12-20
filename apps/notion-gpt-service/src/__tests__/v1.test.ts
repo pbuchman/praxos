@@ -75,7 +75,6 @@ describe('notion-gpt-service v1 endpoints', () => {
     delete process.env['AUTH_JWKS_URL'];
     delete process.env['AUTH_ISSUER'];
     delete process.env['AUTH_AUDIENCE'];
-    delete process.env['SERVICE_URL'];
   });
 
   beforeEach(async () => {
@@ -89,7 +88,6 @@ describe('notion-gpt-service v1 endpoints', () => {
       notionApi,
     });
 
-    process.env['SERVICE_URL'] = 'https://notion-test.example.com';
     clearJwksCache();
     app = await buildServer();
   });

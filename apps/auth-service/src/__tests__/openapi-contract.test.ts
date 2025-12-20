@@ -19,7 +19,6 @@ describe('auth-service OpenAPI contract', () => {
     process.env['AUTH0_DOMAIN'] = 'test.auth0.com';
     process.env['AUTH0_CLIENT_ID'] = 'test-client';
     process.env['AUTH_AUDIENCE'] = 'https://api.test.com';
-    process.env['SERVICE_URL'] = 'https://auth-dev.example.com';
 
     app = await buildServer();
     const response = await app.inject({
@@ -34,7 +33,6 @@ describe('auth-service OpenAPI contract', () => {
     delete process.env['AUTH0_DOMAIN'];
     delete process.env['AUTH0_CLIENT_ID'];
     delete process.env['AUTH_AUDIENCE'];
-    delete process.env['SERVICE_URL'];
   });
 
   it('has no "Default Response" placeholders', () => {
@@ -59,7 +57,7 @@ describe('auth-service OpenAPI contract', () => {
     expect(servers?.[0]?.url).toBe('http://localhost:8080');
     expect(servers?.[0]?.description).toBe('Local development');
 
-    expect(servers?.[1]?.url).toBe('https://auth-dev.example.com');
+    expect(servers?.[1]?.url).toBe('https://praxos-auth-service-ooafxzbaua-lm.a.run.app');
     expect(servers?.[1]?.description).toBe('Cloud (Development)');
   });
 

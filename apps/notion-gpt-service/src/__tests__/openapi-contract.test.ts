@@ -24,7 +24,6 @@ describe('notion-gpt-service OpenAPI contract', () => {
     process.env['AUTH_JWKS_URL'] = 'https://test.auth0.com/.well-known/jwks.json';
     process.env['AUTH_ISSUER'] = 'https://test.auth0.com/';
     process.env['AUTH_AUDIENCE'] = 'https://api.test.com';
-    process.env['SERVICE_URL'] = 'https://notion-dev.example.com';
     process.env['VITEST'] = 'true';
 
     app = await buildServer();
@@ -40,7 +39,6 @@ describe('notion-gpt-service OpenAPI contract', () => {
     delete process.env['AUTH_JWKS_URL'];
     delete process.env['AUTH_ISSUER'];
     delete process.env['AUTH_AUDIENCE'];
-    delete process.env['SERVICE_URL'];
     delete process.env['VITEST'];
   });
 
@@ -66,7 +64,7 @@ describe('notion-gpt-service OpenAPI contract', () => {
     expect(servers?.[0]?.url).toBe('http://localhost:8081');
     expect(servers?.[0]?.description).toBe('Local development');
 
-    expect(servers?.[1]?.url).toBe('https://notion-dev.example.com');
+    expect(servers?.[1]?.url).toBe('https://praxos-notion-gpt-service-ooafxzbaua-lm.a.run.app');
     expect(servers?.[1]?.description).toBe('Cloud (Development)');
   });
 
