@@ -33,7 +33,6 @@ steps:
     env:
       - 'COMMIT_SHA=$COMMIT_SHA'
       - 'BRANCH_NAME=$BRANCH_NAME'
-      - 'FORCE_DEPLOY=${_FORCE_DEPLOY}'
 
   # Step 5: Build auth-service Docker image (if affected)
   - name: 'gcr.io/cloud-builders/docker'
@@ -171,23 +170,19 @@ steps:
       - 'ENVIRONMENT=${_ENVIRONMENT}'
       - 'FORCE_DEPLOY=${_FORCE_DEPLOY}'
 
-  # Step 14: Sync static assets to GCS bucket (if affected)
+  # Step 14: Sync static assets to GCS bucket (always run)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'sync-static-assets'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        if grep -q '"staticAssets":[[:space:]]*true' /workspace/affected.json 2>/dev/null; then
-          echo "Static assets affected, syncing to GCS bucket..."
-          BUCKET="praxos-static-assets-${_ENVIRONMENT}"
-          echo "Bucket name: $$BUCKET"
-          echo "Syncing docs/assets/** to gs://$$BUCKET/"
-          gsutil -m rsync -r -d docs/assets/ "gs://$$BUCKET/"
-          echo "Static assets sync complete."
-        else
-          echo "Static assets not affected, skipping sync."
-        fi
+        echo "Syncing static assets to GCS bucket..."
+        BUCKET="praxos-static-assets-${_ENVIRONMENT}"
+        echo "Bucket name: $$BUCKET"
+        echo "Syncing docs/assets/** to gs://$$BUCKET/"
+        gsutil -m rsync -r -d docs/assets/ "gs://$$BUCKET/"
+        echo "Static assets sync complete."
 
 # No substitutions block here - all substitutions come from the Terraform-managed
 # Cloud Build trigger. This ensures single source of truth.

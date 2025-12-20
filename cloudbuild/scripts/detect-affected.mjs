@@ -10,12 +10,10 @@
  * - apps/notion-gpt-service/** affects notion-gpt-service
  * - apps/whatsapp-service/** affects whatsapp-service
  * - apps/api-docs-hub/** affects api-docs-hub
- * - docs/assets/** triggers static assets sync
  *
  * Output: /workspace/affected.json
  * Format: {
- *   "services": ["auth-service", "notion-gpt-service", "whatsapp-service", "api-docs-hub"],
- *   "staticAssets": true
+ *   "services": ["auth-service", "notion-gpt-service", "whatsapp-service", "api-docs-hub"]
  * }
  */
 
@@ -130,23 +128,13 @@ function getAffectedServices(changedFiles) {
 }
 
 /**
- * Check if static assets are affected.
- */
-function checkStaticAssetsAffected(changedFiles) {
-  return changedFiles.some((file) => file.startsWith('docs/assets/'));
-}
-
-/**
  * Main entry point.
  */
 function main() {
   console.log('=== Detecting Affected Services ===');
   console.log(`COMMIT_SHA: ${process.env.COMMIT_SHA || 'not set'}`);
   console.log(`BRANCH_NAME: ${process.env.BRANCH_NAME || 'not set'}`);
-  console.log(`FORCE_DEPLOY: ${process.env.FORCE_DEPLOY || 'false'}`);
   console.log(`Output file: ${OUTPUT_FILE}`);
-
-  const forceDeployEnabled = process.env.FORCE_DEPLOY === 'true';
 
   const diffRange = getDiffRange();
   console.log(`Diff range: ${diffRange}`);
@@ -163,15 +151,8 @@ function main() {
   const affectedServices = getAffectedServices(changedFiles);
   console.log(`\nAffected services: ${affectedServices.join(', ') || 'none'}`);
 
-  // Static assets are affected if files changed OR if force deploy is enabled
-  const staticAssetsAffected = checkStaticAssetsAffected(changedFiles) || forceDeployEnabled;
-  console.log(
-    `Static assets affected: ${staticAssetsAffected}${forceDeployEnabled ? ' (force deploy)' : ''}`
-  );
-
   const output = {
     services: affectedServices,
-    staticAssets: staticAssetsAffected,
     changedFilesCount: changedFiles.length,
     diffRange,
     timestamp: new Date().toISOString(),
