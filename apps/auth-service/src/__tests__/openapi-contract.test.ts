@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../server.js';
 
 interface OpenApiSpec {
-  servers?: { url: string }[];
+  servers?: { url: string; description?: string }[];
   paths?: Record<string, Record<string, { operationId?: string; requestBody?: unknown }>>;
   components?: {
     schemas?: Record<string, unknown>;
