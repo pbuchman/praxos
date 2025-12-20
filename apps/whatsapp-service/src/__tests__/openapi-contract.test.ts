@@ -3,9 +3,24 @@ import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../server.js';
 import type { Config } from '../config.js';
 
+interface OpenApiSpec {
+  servers?: { url: string }[];
+  paths?: Record<
+    string,
+    Record<
+      string,
+      {
+        operationId?: string;
+        responses?: Record<string, { content?: Record<string, unknown> }>;
+        parameters?: { in: string; name: string }[];
+      }
+    >
+  >;
+}
+
 describe('whatsapp-service OpenAPI contract', () => {
   let app: FastifyInstance;
-  let openapiSpec: Record<string, unknown>;
+  let openapiSpec: OpenApiSpec;
 
   const testConfig: Config = {
     verifyToken: 'test-verify-token-12345',
@@ -26,7 +41,7 @@ describe('whatsapp-service OpenAPI contract', () => {
       method: 'GET',
       url: '/openapi.json',
     });
-    openapiSpec = JSON.parse(response.body) as Record<string, unknown>;
+    openapiSpec = JSON.parse(response.body) as OpenApiSpec;
   });
 
   afterAll(async () => {
@@ -43,7 +58,7 @@ describe('whatsapp-service OpenAPI contract', () => {
   });
 
   it('has servers array with valid URL', () => {
-    const servers = openapiSpec.servers as Array<{ url: string }> | undefined;
+    const servers = openapiSpec.servers;
     expect(servers).toBeDefined();
     expect(Array.isArray(servers)).toBe(true);
     expect(servers?.length).toBeGreaterThan(0);
@@ -52,35 +67,23 @@ describe('whatsapp-service OpenAPI contract', () => {
   });
 
   it('every path+method has an operationId', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<string, { operationId?: string }>
-    >;
+    const paths = openapiSpec.paths;
     expect(paths).toBeDefined();
 
-    for (const [path, methods] of Object.entries(paths)) {
+    for (const [path, methods] of Object.entries(paths ?? {})) {
       for (const [method, operation] of Object.entries(methods)) {
-        expect(operation.operationId, `Missing operationId for ${method.toUpperCase()} ${path}`).toBeDefined();
+        expect(
+          operation.operationId,
+          `Missing operationId for ${method.toUpperCase()} ${path}`
+        ).toBeDefined();
         expect(operation.operationId).not.toBe('');
       }
     }
   });
 
   it('GET /webhooks/whatsapp 200 response is text/plain', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<
-        string,
-        {
-          responses?: Record<
-            string,
-            { content?: Record<string, unknown> }
-          >;
-        }
-      >
-    >;
-
-    const getWebhook = paths['/webhooks/whatsapp']?.get;
+    const paths = openapiSpec.paths;
+    const getWebhook = paths?.['/webhooks/whatsapp']?.['get'];
     expect(getWebhook).toBeDefined();
 
     const response200 = getWebhook?.responses?.['200'];
@@ -90,29 +93,20 @@ describe('whatsapp-service OpenAPI contract', () => {
   });
 
   it('has required endpoints documented', () => {
-    const paths = openapiSpec.paths as Record<string, unknown>;
+    const paths = openapiSpec.paths;
 
-    expect(paths['/webhooks/whatsapp']).toBeDefined();
-    expect(paths['/health']).toBeDefined();
+    expect(paths?.['/webhooks/whatsapp']).toBeDefined();
+    expect(paths?.['/health']).toBeDefined();
   });
 
   it('uses PUBLIC_BASE_URL in servers', () => {
-    const servers = openapiSpec.servers as Array<{ url: string }>;
-    expect(servers[0]?.url).toBe('https://whatsapp.praxos.app');
+    const servers = openapiSpec.servers;
+    expect(servers?.[0]?.url).toBe('https://whatsapp.praxos.app');
   });
 
   it('POST /webhooks/whatsapp documents signature header', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<
-        string,
-        {
-          parameters?: Array<{ in: string; name: string }>;
-        }
-      >
-    >;
-
-    const postWebhook = paths['/webhooks/whatsapp']?.post;
+    const paths = openapiSpec.paths;
+    const postWebhook = paths?.['/webhooks/whatsapp']?.['post'];
     expect(postWebhook).toBeDefined();
     // Signature is documented in headers schema
   });

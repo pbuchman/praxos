@@ -2,9 +2,22 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../server.js';
 
+interface OpenApiSpec {
+  servers?: { url: string }[];
+  paths?: Record<
+    string,
+    Record<string, { operationId?: string; security?: Record<string, unknown[]>[] }>
+  >;
+  components?: {
+    securitySchemes?: {
+      bearerAuth?: { description?: string };
+    };
+  };
+}
+
 describe('notion-gpt-service OpenAPI contract', () => {
   let app: FastifyInstance;
-  let openapiSpec: Record<string, unknown>;
+  let openapiSpec: OpenApiSpec;
 
   beforeAll(async () => {
     // Set required env vars
@@ -19,7 +32,7 @@ describe('notion-gpt-service OpenAPI contract', () => {
       method: 'GET',
       url: '/openapi.json',
     });
-    openapiSpec = JSON.parse(response.body) as Record<string, unknown>;
+    openapiSpec = JSON.parse(response.body) as OpenApiSpec;
   });
 
   afterAll(async () => {
@@ -37,7 +50,7 @@ describe('notion-gpt-service OpenAPI contract', () => {
   });
 
   it('has servers array with valid URL', () => {
-    const servers = openapiSpec.servers as Array<{ url: string }> | undefined;
+    const servers = openapiSpec.servers;
     expect(servers).toBeDefined();
     expect(Array.isArray(servers)).toBe(true);
     expect(servers?.length).toBeGreaterThan(0);
@@ -46,52 +59,46 @@ describe('notion-gpt-service OpenAPI contract', () => {
   });
 
   it('every path+method has an operationId', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<string, { operationId?: string }>
-    >;
+    const paths = openapiSpec.paths;
     expect(paths).toBeDefined();
 
-    for (const [path, methods] of Object.entries(paths)) {
+    for (const [path, methods] of Object.entries(paths ?? {})) {
       for (const [method, operation] of Object.entries(methods)) {
-        expect(operation.operationId, `Missing operationId for ${method.toUpperCase()} ${path}`).toBeDefined();
+        expect(
+          operation.operationId,
+          `Missing operationId for ${method.toUpperCase()} ${path}`
+        ).toBeDefined();
         expect(operation.operationId).not.toBe('');
       }
     }
   });
 
   it('bearerAuth description does NOT mention stub auth', () => {
-    const components = openapiSpec.components as {
-      securitySchemes?: { bearerAuth?: { description?: string } };
-    };
-    const bearerAuth = components?.securitySchemes?.bearerAuth;
+    const bearerAuth = openapiSpec.components?.securitySchemes?.bearerAuth;
     expect(bearerAuth).toBeDefined();
     expect(bearerAuth?.description).toBeDefined();
     expect(bearerAuth?.description?.toLowerCase()).not.toContain('stub');
   });
 
   it('has required endpoints documented', () => {
-    const paths = openapiSpec.paths as Record<string, unknown>;
+    const paths = openapiSpec.paths;
 
-    expect(paths['/v1/integrations/notion/connect']).toBeDefined();
-    expect(paths['/v1/integrations/notion/status']).toBeDefined();
-    expect(paths['/v1/integrations/notion/disconnect']).toBeDefined();
-    expect(paths['/v1/tools/notion/promptvault/main-page']).toBeDefined();
-    expect(paths['/v1/tools/notion/promptvault/note']).toBeDefined();
-    expect(paths['/v1/webhooks/notion']).toBeDefined();
-    expect(paths['/health']).toBeDefined();
+    expect(paths?.['/v1/integrations/notion/connect']).toBeDefined();
+    expect(paths?.['/v1/integrations/notion/status']).toBeDefined();
+    expect(paths?.['/v1/integrations/notion/disconnect']).toBeDefined();
+    expect(paths?.['/v1/tools/notion/promptvault/main-page']).toBeDefined();
+    expect(paths?.['/v1/tools/notion/promptvault/note']).toBeDefined();
+    expect(paths?.['/v1/webhooks/notion']).toBeDefined();
+    expect(paths?.['/health']).toBeDefined();
   });
 
   it('uses PUBLIC_BASE_URL in servers', () => {
-    const servers = openapiSpec.servers as Array<{ url: string }>;
-    expect(servers[0]?.url).toBe('https://notion.praxos.app');
+    const servers = openapiSpec.servers;
+    expect(servers?.[0]?.url).toBe('https://notion.praxos.app');
   });
 
   it('protected endpoints require bearerAuth security', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<string, { security?: Array<Record<string, unknown[]>> }>
-    >;
+    const paths = openapiSpec.paths;
 
     const protectedEndpoints = [
       '/v1/integrations/notion/connect',
@@ -102,8 +109,9 @@ describe('notion-gpt-service OpenAPI contract', () => {
     ];
 
     for (const endpoint of protectedEndpoints) {
-      const methods = paths[endpoint];
+      const methods = paths?.[endpoint];
       expect(methods).toBeDefined();
+      if (methods === undefined) continue;
       for (const [method, operation] of Object.entries(methods)) {
         if (method !== 'get' && method !== 'post') continue;
         expect(
@@ -111,7 +119,9 @@ describe('notion-gpt-service OpenAPI contract', () => {
           `${method.toUpperCase()} ${endpoint} should have security`
         ).toBeDefined();
         const hasBearerAuth = operation.security?.some((s) => 'bearerAuth' in s);
-        expect(hasBearerAuth, `${method.toUpperCase()} ${endpoint} should require bearerAuth`).toBe(true);
+        expect(hasBearerAuth, `${method.toUpperCase()} ${endpoint} should require bearerAuth`).toBe(
+          true
+        );
       }
     }
   });

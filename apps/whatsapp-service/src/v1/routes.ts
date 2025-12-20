@@ -69,7 +69,8 @@ export function createV1Routes(config: Config): FastifyPluginCallback {
         schema: {
           operationId: 'verifyWhatsAppWebhook',
           summary: 'Verify WhatsApp webhook',
-          description: 'WhatsApp webhook verification endpoint - returns hub.challenge as plain text',
+          description:
+            'WhatsApp webhook verification endpoint - returns hub.challenge as plain text',
           tags: ['webhooks'],
           querystring: {
             type: 'object',
@@ -154,7 +155,10 @@ export function createV1Routes(config: Config): FastifyPluginCallback {
           headers: {
             type: 'object',
             properties: {
-              [SIGNATURE_HEADER]: { type: 'string', description: 'HMAC-SHA256 signature for payload validation' },
+              [SIGNATURE_HEADER]: {
+                type: 'string',
+                description: 'HMAC-SHA256 signature for payload validation',
+              },
             },
           },
           response: {
