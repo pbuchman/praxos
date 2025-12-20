@@ -4,7 +4,7 @@ import { buildServer } from '../server.js';
 import type { Config } from '../config.js';
 
 interface OpenApiSpec {
-  servers?: { url: string }[];
+  servers?: { url: string; description?: string }[];
   paths?: Record<
     string,
     Record<
