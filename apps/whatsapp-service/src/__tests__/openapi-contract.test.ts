@@ -66,6 +66,19 @@ describe('whatsapp-service OpenAPI contract', () => {
     expect(servers?.[0]?.url).not.toBe('');
   });
 
+  it('includes both local and production servers', () => {
+    const servers = openapiSpec.servers;
+    expect(servers).toBeDefined();
+    
+    const localServer = servers?.find(s => s.url === 'http://localhost:8082');
+    const prodServer = servers?.find(s => s.url === 'https://whatsapp.praxos.app');
+    
+    expect(localServer).toBeDefined();
+    expect(localServer?.description).toBe('Local development');
+    expect(prodServer).toBeDefined();
+    expect(prodServer?.description).toBe('Production (Cloud Run)');
+  });
+
   it('every path+method has an operationId', () => {
     const paths = openapiSpec.paths;
     expect(paths).toBeDefined();
@@ -101,7 +114,9 @@ describe('whatsapp-service OpenAPI contract', () => {
 
   it('uses PUBLIC_BASE_URL in servers', () => {
     const servers = openapiSpec.servers;
-    expect(servers?.[0]?.url).toBe('https://whatsapp.praxos.app');
+    // Should include production server and optional custom deployment
+    const prodServer = servers?.find(s => s.url === 'https://whatsapp.praxos.app');
+    expect(prodServer).toBeDefined();
   });
 
   it('POST /webhooks/whatsapp documents signature header', () => {
@@ -109,5 +124,62 @@ describe('whatsapp-service OpenAPI contract', () => {
     const postWebhook = paths?.['/webhooks/whatsapp']?.['post'];
     expect(postWebhook).toBeDefined();
     // Signature is documented in headers schema
+  });
+
+  it('all non-health endpoints use envelope format for success responses', () => {
+    const paths = openapiSpec.paths;
+    expect(paths).toBeDefined();
+
+    for (const [path, methods] of Object.entries(paths ?? {})) {
+      if (path === '/health' || path === '/docs' || path === '/openapi.json') continue;
+      // GET /webhooks/whatsapp returns plain text, not envelope
+      if (path === '/webhooks/whatsapp' && Object.keys(methods).includes('get')) {
+        const getOp = methods['get'];
+        const response200 = getOp?.responses?.['200'];
+        expect(response200?.content?.['text/plain']).toBeDefined();
+        continue;
+      }
+
+      for (const [method, operation] of Object.entries(methods)) {
+        if (method === 'get' && path === '/webhooks/whatsapp') continue; // Already handled
+
+        const responses = (operation as { responses?: Record<string, { properties?: Record<string, unknown> }> }).responses;
+        if (!responses) continue;
+
+        const response200 = responses['200'];
+        if (!response200) continue;
+
+        const props = response200.properties;
+        expect(props, `${method.toUpperCase()} ${path} 200 response should have properties`).toBeDefined();
+        expect(props?.['success'], `${method.toUpperCase()} ${path} 200 response should have success field`).toBeDefined();
+        expect(props?.['data'], `${method.toUpperCase()} ${path} 200 response should have data field`).toBeDefined();
+      }
+    }
+  });
+
+  it('all error responses use envelope format', () => {
+    const paths = openapiSpec.paths;
+    expect(paths).toBeDefined();
+
+    const errorCodes = ['400', '401', '403', '404', '409', '500', '502', '503'];
+
+    for (const [path, methods] of Object.entries(paths ?? {})) {
+      if (path === '/health' || path === '/docs' || path === '/openapi.json') continue;
+
+      for (const [method, operation] of Object.entries(methods)) {
+        const responses = (operation as { responses?: Record<string, { properties?: Record<string, unknown> }> }).responses;
+        if (!responses) continue;
+
+        for (const code of errorCodes) {
+          const errorResponse = responses[code];
+          if (!errorResponse) continue;
+
+          const props = errorResponse.properties;
+          expect(props, `${method.toUpperCase()} ${path} ${code} response should have properties`).toBeDefined();
+          expect(props?.['success'], `${method.toUpperCase()} ${path} ${code} response should have success field`).toBeDefined();
+          expect(props?.['error'], `${method.toUpperCase()} ${path} ${code} response should have error field`).toBeDefined();
+        }
+      }
+    }
   });
 });
