@@ -159,7 +159,7 @@ function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
             properties: {
               code: { $ref: '#/components/schemas/ErrorCode' },
               message: { type: 'string' },
-              details: { type: 'object' },
+              details: { type: 'object', additionalProperties: true },
             },
           },
           ErrorCode: {
@@ -327,7 +327,14 @@ function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
 }
 
 export async function buildServer(): Promise<FastifyInstance> {
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: true,
+    ajv: {
+      customOptions: {
+        removeAdditional: false,
+      },
+    },
+  });
 
   // CORS for cross-origin OpenAPI access (api-docs-hub)
   await app.register(fastifyCors, {
@@ -337,6 +344,45 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   await app.register(praxosFastifyPlugin);
   await app.register(fastifyAuthPlugin);
+
+  // Ensure Fastify validation errors are returned in PraxOS envelope
+  app.setErrorHandler(async (error, request, reply) => {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'validation' in error &&
+      Array.isArray((error as { validation?: unknown }).validation)
+    ) {
+      const validation = (
+        error as {
+          validation: {
+            instancePath?: string;
+            params?: { missingProperty?: string };
+            message?: string;
+          }[];
+          message?: string;
+        }
+      ).validation;
+
+      const errors = validation.map((v) => {
+        const rawPath = (v.instancePath ?? '').replace(/^\//, '').replaceAll('/', '.');
+        // When a required top-level property is missing, instancePath="" and missingProperty has the field name
+        const path = rawPath === '' ? (v.params?.missingProperty ?? 'body') : rawPath;
+
+        return {
+          path,
+          message: v.message ?? 'Invalid value',
+        };
+      });
+
+      reply.status(400);
+      return await reply.fail('INVALID_REQUEST', 'Validation failed', undefined, { errors });
+    }
+
+    request.log.error({ err: error }, 'Unhandled error');
+    reply.status(500);
+    return await reply.fail('INTERNAL_ERROR', 'Internal error');
+  });
 
   // Register shared schemas for $ref usage in routes
   app.addSchema({
@@ -373,7 +419,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     properties: {
       code: { $ref: 'ErrorCode#' },
       message: { type: 'string' },
-      details: { type: 'object' },
+      details: { type: 'object', additionalProperties: true },
     },
   });
 
