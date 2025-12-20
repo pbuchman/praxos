@@ -165,7 +165,9 @@ function main() {
 
   // Static assets are affected if files changed OR if force deploy is enabled
   const staticAssetsAffected = checkStaticAssetsAffected(changedFiles) || forceDeployEnabled;
-  console.log(`Static assets affected: ${staticAssetsAffected}${forceDeployEnabled ? ' (force deploy)' : ''}`);
+  console.log(
+    `Static assets affected: ${staticAssetsAffected}${forceDeployEnabled ? ' (force deploy)' : ''}`
+  );
 
   const output = {
     services: affectedServices,
