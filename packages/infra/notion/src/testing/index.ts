@@ -3,3 +3,4 @@
  * Exports mock adapters for use in tests across packages.
  */
 export { MockNotionApiAdapter, type CapturedPromptVaultNote } from './mockNotionApiAdapter.js';
+export { MockPromptRepository } from './mockPromptRepository.js';

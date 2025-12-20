@@ -14,4 +14,8 @@ export { NotionApiAdapter } from './adapter.js';
 export { NotionPromptRepository } from './adapters/notionPromptRepository.js';
 
 // Testing utilities (for use by consuming packages)
-export { MockNotionApiAdapter, type CapturedPromptVaultNote } from './testing/index.js';
+export {
+  MockNotionApiAdapter,
+  type CapturedPromptVaultNote,
+  MockPromptRepository,
+} from './testing/index.js';

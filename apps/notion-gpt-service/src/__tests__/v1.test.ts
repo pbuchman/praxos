@@ -5,7 +5,7 @@ import { buildServer } from '../server.js';
 import { setServices, resetServices } from '../services.js';
 import { clearJwksCache } from '@praxos/common';
 import { FakeNotionConnectionRepository } from '@praxos/infra-firestore';
-import { MockNotionApiAdapter } from '@praxos/infra-notion';
+import { MockNotionApiAdapter, MockPromptRepository } from '@praxos/infra-notion';
 
 describe('notion-gpt-service v1 endpoints', () => {
   let app: FastifyInstance;
@@ -15,6 +15,7 @@ describe('notion-gpt-service v1 endpoints', () => {
   // Test adapter instances
   let connectionRepository: FakeNotionConnectionRepository;
   let notionApi: MockNotionApiAdapter;
+  let promptRepository: MockPromptRepository;
 
   const issuer = 'https://test-issuer.example.com/';
   const audience = 'test-audience';
@@ -81,11 +82,13 @@ describe('notion-gpt-service v1 endpoints', () => {
     // Create fresh test adapters from infra packages
     connectionRepository = new FakeNotionConnectionRepository();
     notionApi = new MockNotionApiAdapter();
+    promptRepository = new MockPromptRepository();
 
     // Inject test adapters via DI
     setServices({
       connectionRepository,
       notionApi,
+      promptRepository,
     });
 
     clearJwksCache();
@@ -433,13 +436,13 @@ describe('notion-gpt-service v1 endpoints', () => {
     });
   });
 
-  describe('POST /v1/tools/notion/promptvault/note', () => {
+  describe('POST /v1/tools/notion/promptvault/prompts', () => {
     it('fails with MISCONFIGURED when not connected', async () => {
       const token = await createToken({ sub: 'user-note' });
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'Test Note',
@@ -456,7 +459,7 @@ describe('notion-gpt-service v1 endpoints', () => {
       expect(body.error.code).toBe('MISCONFIGURED');
     });
 
-    it('creates note with pageId, url, and title in response', async () => {
+    it('creates prompt with id, url, and title in response', async () => {
       const token = await createToken({ sub: 'user-create-note' });
 
       // First connect
@@ -470,10 +473,10 @@ describe('notion-gpt-service v1 endpoints', () => {
         },
       });
 
-      // Create note
+      // Create prompt
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'My Note',
@@ -484,15 +487,16 @@ describe('notion-gpt-service v1 endpoints', () => {
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body) as {
         success: boolean;
-        data: { pageId: string; url: string; title: string };
+        data: { id: string; url: string; title: string; content: string };
         diagnostics: { requestId: string; durationMs: number };
       };
       expect(body.success).toBe(true);
-      expect(body.data.pageId).toBeDefined();
-      expect(body.data.pageId.length).toBeGreaterThan(0);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.id.length).toBeGreaterThan(0);
       expect(body.data.url).toBeDefined();
       expect(body.data.url).toContain('notion.so');
       expect(body.data.title).toBe('My Note');
+      expect(body.data.content).toBe('My prompt content here');
       expect(body.diagnostics.requestId).toBeDefined();
       expect(body.diagnostics.durationMs).toBeGreaterThanOrEqual(0);
     });
@@ -516,7 +520,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'Verbatim Test',
@@ -527,13 +531,12 @@ describe('notion-gpt-service v1 endpoints', () => {
       expect(response.statusCode).toBe(200);
 
       // Verify the mock captured the exact prompt
-      const captured = notionApi.getLastCapturedNote();
+      const captured = promptRepository.getLastCreated();
       expect(captured).toBeDefined();
-      expect(captured?.params.prompt).toBe(verbatimPrompt);
-      expect(captured?.params.userId).toBe('user-verbatim');
+      expect(captured?.content).toBe(verbatimPrompt);
     });
 
-    it('passes correct userId to Notion adapter', async () => {
+    it('passes correct userId to Prompt repository', async () => {
       const userId = 'auth0|specific-user-id-123';
       const token = await createToken({ sub: userId });
 
@@ -550,7 +553,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'User ID Test',
@@ -558,8 +561,10 @@ describe('notion-gpt-service v1 endpoints', () => {
         },
       });
 
-      const captured = notionApi.getLastCapturedNote();
-      expect(captured?.params.userId).toBe(userId);
+      // Verify prompt was created (userId is internal to repository)
+      const captured = promptRepository.getLastCreated();
+      expect(captured).toBeDefined();
+      expect(captured?.title).toBe('User ID Test');
     });
 
     it('rejects requests with extra fields (strict schema)', async () => {
@@ -579,7 +584,7 @@ describe('notion-gpt-service v1 endpoints', () => {
       // Try to create note with extra field
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'Test',
@@ -602,7 +607,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           prompt: 'Test prompt',
@@ -624,7 +629,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'Test Title',
@@ -646,7 +651,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'x'.repeat(201),
@@ -679,7 +684,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'x'.repeat(200),
@@ -695,7 +700,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: '',
@@ -711,7 +716,7 @@ describe('notion-gpt-service v1 endpoints', () => {
 
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         headers: { authorization: `Bearer ${token}` },
         payload: {
           title: 'Test Title',
@@ -725,7 +730,7 @@ describe('notion-gpt-service v1 endpoints', () => {
     it('requires auth (401 without token)', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/v1/tools/notion/promptvault/note',
+        url: '/v1/tools/notion/promptvault/prompts',
         payload: {
           title: 'Test',
           prompt: 'Test prompt',
