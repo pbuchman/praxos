@@ -2,9 +2,17 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../server.js';
 
+interface OpenApiSpec {
+  servers?: { url: string }[];
+  paths?: Record<string, Record<string, { operationId?: string; requestBody?: unknown }>>;
+  components?: {
+    schemas?: Record<string, unknown>;
+  };
+}
+
 describe('auth-service OpenAPI contract', () => {
   let app: FastifyInstance;
-  let openapiSpec: Record<string, unknown>;
+  let openapiSpec: OpenApiSpec;
 
   beforeAll(async () => {
     // Set required env vars
@@ -18,7 +26,7 @@ describe('auth-service OpenAPI contract', () => {
       method: 'GET',
       url: '/openapi.json',
     });
-    openapiSpec = JSON.parse(response.body) as Record<string, unknown>;
+    openapiSpec = JSON.parse(response.body) as OpenApiSpec;
   });
 
   afterAll(async () => {
@@ -35,7 +43,7 @@ describe('auth-service OpenAPI contract', () => {
   });
 
   it('has servers array with valid URL', () => {
-    const servers = openapiSpec.servers as Array<{ url: string }> | undefined;
+    const servers = openapiSpec.servers;
     expect(servers).toBeDefined();
     expect(Array.isArray(servers)).toBe(true);
     expect(servers?.length).toBeGreaterThan(0);
@@ -44,52 +52,43 @@ describe('auth-service OpenAPI contract', () => {
   });
 
   it('every path+method has an operationId', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<string, { operationId?: string }>
-    >;
+    const paths = openapiSpec.paths;
     expect(paths).toBeDefined();
 
-    for (const [path, methods] of Object.entries(paths)) {
+    for (const [path, methods] of Object.entries(paths ?? {})) {
       for (const [method, operation] of Object.entries(methods)) {
-        expect(operation.operationId, `Missing operationId for ${method.toUpperCase()} ${path}`).toBeDefined();
+        expect(
+          operation.operationId,
+          `Missing operationId for ${method.toUpperCase()} ${path}`
+        ).toBeDefined();
         expect(operation.operationId).not.toBe('');
       }
     }
   });
 
   it('every POST endpoint with JSON body has requestBody with schema', () => {
-    const paths = openapiSpec.paths as Record<
-      string,
-      Record<string, { requestBody?: { content?: Record<string, { schema?: unknown }> } }>
-    >;
+    const paths = openapiSpec.paths;
 
-    const postEndpoints = [
-      '/v1/auth/device/start',
-      '/v1/auth/device/poll',
-      '/v1/auth/refresh',
-    ];
+    const postEndpoints = ['/v1/auth/device/start', '/v1/auth/device/poll', '/v1/auth/refresh'];
 
     for (const endpoint of postEndpoints) {
-      const post = paths[endpoint]?.post;
+      const post = paths?.[endpoint]?.['post'];
       expect(post, `POST ${endpoint} should exist`).toBeDefined();
-      // Note: These endpoints accept optional body or have inline schemas
-      // The body schema is defined in route schema
     }
   });
 
   it('has required endpoints documented', () => {
-    const paths = openapiSpec.paths as Record<string, unknown>;
+    const paths = openapiSpec.paths;
 
-    expect(paths['/v1/auth/device/start']).toBeDefined();
-    expect(paths['/v1/auth/device/poll']).toBeDefined();
-    expect(paths['/v1/auth/refresh']).toBeDefined();
-    expect(paths['/v1/auth/config']).toBeDefined();
-    expect(paths['/health']).toBeDefined();
+    expect(paths?.['/v1/auth/device/start']).toBeDefined();
+    expect(paths?.['/v1/auth/device/poll']).toBeDefined();
+    expect(paths?.['/v1/auth/refresh']).toBeDefined();
+    expect(paths?.['/v1/auth/config']).toBeDefined();
+    expect(paths?.['/health']).toBeDefined();
   });
 
   it('uses PUBLIC_BASE_URL in servers', () => {
-    const servers = openapiSpec.servers as Array<{ url: string }>;
-    expect(servers[0]?.url).toBe('https://auth.praxos.app');
+    const servers = openapiSpec.servers;
+    expect(servers?.[0]?.url).toBe('https://auth.praxos.app');
   });
 });
