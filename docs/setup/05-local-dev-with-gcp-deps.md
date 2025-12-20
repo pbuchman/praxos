@@ -70,7 +70,7 @@ GOOGLE_CLOUD_PROJECT=your-project-id
 # Option A: Direct values (faster, no GCP calls)
 AUTH_JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
 AUTH_ISSUER=https://your-tenant.auth0.com/
-AUTH_AUDIENCE=https://api.praxos.app
+AUTH_AUDIENCE=urn:praxos:api
 
 # Option B: Use Secret Manager (comment out Option A)
 # AUTH_USE_SECRET_MANAGER=true

@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { FastifyDynamicSwaggerOptions } from '@fastify/swagger';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyCors from '@fastify/cors';
 import { praxosFastifyPlugin } from '@praxos/common';
 import { v1AuthRoutes } from './v1/routes.js';
 
@@ -147,6 +148,12 @@ function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
 
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
+
+  // CORS for cross-origin OpenAPI access (api-docs-hub)
+  await app.register(fastifyCors, {
+    origin: true,
+    methods: ['GET', 'HEAD', 'OPTIONS'],
+  });
 
   await app.register(praxosFastifyPlugin);
 
