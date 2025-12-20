@@ -6,7 +6,14 @@
 /**
  * Status workflow for actions.
  */
-export type InboxActionStatus = 'Proposed' | 'Needs approval' | 'Approved' | 'Rejected' | 'Executing' | 'Done' | 'Failed';
+export type InboxActionStatus =
+  | 'Proposed'
+  | 'Needs approval'
+  | 'Approved'
+  | 'Rejected'
+  | 'Executing'
+  | 'Done'
+  | 'Failed';
 
 /**
  * Action operation types.
@@ -16,7 +23,12 @@ export type InboxActionType = 'Create' | 'Update' | 'Move' | 'Delete' | 'Notify'
 /**
  * Agent types that can handle actions.
  */
-export type InboxActionAgent = 'TodoAgent' | 'KnowledgeAgent' | 'CalendarAgent' | 'PromptAgent' | 'FinanceAgent';
+export type InboxActionAgent =
+  | 'TodoAgent'
+  | 'KnowledgeAgent'
+  | 'CalendarAgent'
+  | 'PromptAgent'
+  | 'FinanceAgent';
 
 /**
  * Priority levels for actions.

@@ -80,14 +80,14 @@ describe('whatsapp-service endpoints', () => {
     setServices({
       webhookEventRepository,
       inboxNotesRepository: {
-        create: async () => Promise.resolve({ ok: true, value: {} as never }),
-        getById: async () => Promise.resolve({ ok: true, value: null }),
-        getByExternalId: async () => Promise.resolve({ ok: true, value: null }),
-        update: async () => Promise.resolve({ ok: true, value: {} as never }),
-        queryByStatus: async () => Promise.resolve({ ok: true, value: [] }),
+        create: async () => await Promise.resolve({ ok: true, value: {} as never }),
+        getById: async () => await Promise.resolve({ ok: true, value: null }),
+        getByExternalId: async () => await Promise.resolve({ ok: true, value: null }),
+        update: async () => await Promise.resolve({ ok: true, value: {} as never }),
+        queryByStatus: async () => await Promise.resolve({ ok: true, value: [] }),
       },
       ingestWhatsAppMessage: {
-        execute: async () => Promise.resolve({ ok: true, value: {} as never }),
+        execute: async () => await Promise.resolve({ ok: true, value: {} as never }),
       } as never,
     });
 

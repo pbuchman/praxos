@@ -4,8 +4,16 @@
  * without depending on external SDKs (Notion, etc.).
  */
 import type { Result } from '@praxos/common';
-import type { InboxNote, CreateInboxNoteParams, UpdateInboxNoteParams } from '../models/InboxNote.js';
-import type { InboxAction, CreateInboxActionParams, UpdateInboxActionParams } from '../models/InboxAction.js';
+import type {
+  InboxNote,
+  CreateInboxNoteParams,
+  UpdateInboxNoteParams,
+} from '../models/InboxNote.js';
+import type {
+  InboxAction,
+  CreateInboxActionParams,
+  UpdateInboxActionParams,
+} from '../models/InboxAction.js';
 
 /**
  * Inbox error codes.

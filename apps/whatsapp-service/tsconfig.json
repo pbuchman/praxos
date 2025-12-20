@@ -7,5 +7,10 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../../packages/common" }, { "path": "../../packages/domain/inbox" }, { "path": "../../packages/infra/firestore" }, { "path": "../../packages/infra/notion" }]
+  "references": [
+    { "path": "../../packages/common" },
+    { "path": "../../packages/domain/inbox" },
+    { "path": "../../packages/infra/firestore" },
+    { "path": "../../packages/infra/notion" }
+  ]
 }

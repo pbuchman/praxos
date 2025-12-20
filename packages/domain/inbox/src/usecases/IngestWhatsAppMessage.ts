@@ -111,13 +111,18 @@ export class IngestWhatsAppMessage {
       externalId: message.messageId,
       type: 'Other', // Default classification
       topics: [], // No automatic topic assignment yet
-      media: (message.mediaUrl !== undefined && message.mediaUrl !== '' && 
-              message.mediaFilename !== undefined && message.mediaFilename !== '')
-        ? [{
-            name: message.mediaFilename,
-            url: message.mediaUrl,
-          }]
-        : [],
+      media:
+        message.mediaUrl !== undefined &&
+        message.mediaUrl !== '' &&
+        message.mediaFilename !== undefined &&
+        message.mediaFilename !== ''
+          ? [
+              {
+                name: message.mediaFilename,
+                url: message.mediaUrl,
+              },
+            ]
+          : [],
     };
 
     // Create the inbox note

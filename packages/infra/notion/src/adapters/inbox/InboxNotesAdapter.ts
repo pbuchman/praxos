@@ -196,9 +196,13 @@ function pageToInboxNote(page: { id: string; properties: Record<string, unknown>
   // Extract select values that might be missing
   const statusValue = extractSelect(props['Status']) as InboxNote['status'] | undefined;
   const sourceValue = extractSelect(props['Source']) as InboxNote['source'] | undefined;
-  const messageTypeValue = extractSelect(props['Message type']) as InboxNote['messageType'] | undefined;
+  const messageTypeValue = extractSelect(props['Message type']) as
+    | InboxNote['messageType']
+    | undefined;
   const typeValue = extractSelect(props['Type']) as InboxNote['type'] | undefined;
-  const processedByValue = extractSelect(props['Processed by']) as InboxNote['processedBy'] | undefined;
+  const processedByValue = extractSelect(props['Processed by']) as
+    | InboxNote['processedBy']
+    | undefined;
 
   return {
     id: page.id,
@@ -253,34 +257,39 @@ export class InboxNotesAdapter implements InboxNotesRepository {
           'Original text': {
             rich_text: [{ text: { content: params.originalText } }],
           },
-          ...(params.cleanText !== undefined && params.cleanText !== '' && {
-            'Clean text': {
-              rich_text: [{ text: { content: params.cleanText } }],
-            },
-          }),
-          ...(params.transcript !== undefined && params.transcript !== '' && {
-            Transcript: {
-              rich_text: [{ text: { content: params.transcript } }],
-            },
-          }),
-          ...(params.sender !== undefined && params.sender !== '' && {
-            Sender: {
-              rich_text: [{ text: { content: params.sender } }],
-            },
-          }),
-          ...(params.externalId !== undefined && params.externalId !== '' && {
-            'External ID': {
-              rich_text: [{ text: { content: params.externalId } }],
-            },
-          }),
+          ...(params.cleanText !== undefined &&
+            params.cleanText !== '' && {
+              'Clean text': {
+                rich_text: [{ text: { content: params.cleanText } }],
+              },
+            }),
+          ...(params.transcript !== undefined &&
+            params.transcript !== '' && {
+              Transcript: {
+                rich_text: [{ text: { content: params.transcript } }],
+              },
+            }),
+          ...(params.sender !== undefined &&
+            params.sender !== '' && {
+              Sender: {
+                rich_text: [{ text: { content: params.sender } }],
+              },
+            }),
+          ...(params.externalId !== undefined &&
+            params.externalId !== '' && {
+              'External ID': {
+                rich_text: [{ text: { content: params.externalId } }],
+              },
+            }),
           'Processed by': { select: { name: 'None' } },
           Errors: { rich_text: [{ text: { content: '' } }] },
           'Captured at': {
             date: { start: params.capturedAt.toISOString() },
           },
-          ...(params.url !== undefined && params.url !== '' && {
-            URL: { url: params.url },
-          }),
+          ...(params.url !== undefined &&
+            params.url !== '' && {
+              URL: { url: params.url },
+            }),
         },
       });
 
@@ -339,7 +348,9 @@ export class InboxNotesAdapter implements InboxNotesRepository {
 
       const firstResult = response.results[0];
       if (firstResult && 'properties' in firstResult) {
-        const note = pageToInboxNote(firstResult as { id: string; properties: Record<string, unknown> });
+        const note = pageToInboxNote(
+          firstResult as { id: string; properties: Record<string, unknown> }
+        );
         return ok(note);
       }
 

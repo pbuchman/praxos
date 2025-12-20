@@ -6,7 +6,12 @@
 /**
  * Status workflow for inbox notes.
  */
-export type InboxNoteStatus = 'Inbox' | 'Processing' | 'Processed' | 'Archived' | 'DeletedCandidate';
+export type InboxNoteStatus =
+  | 'Inbox'
+  | 'Processing'
+  | 'Processed'
+  | 'Archived'
+  | 'DeletedCandidate';
 
 /**
  * Source channels for inbox notes.
@@ -21,7 +26,16 @@ export type InboxNoteMessageType = 'Text' | 'Image' | 'Video' | 'Audio' | 'Docum
 /**
  * Content type classification.
  */
-export type InboxNoteType = 'Web' | 'Prompt' | 'Meeting' | 'Idea' | 'Task' | 'Log' | 'Quote' | 'Research' | 'Other';
+export type InboxNoteType =
+  | 'Web'
+  | 'Prompt'
+  | 'Meeting'
+  | 'Idea'
+  | 'Task'
+  | 'Log'
+  | 'Quote'
+  | 'Research'
+  | 'Other';
 
 /**
  * Topic tags for categorization.
