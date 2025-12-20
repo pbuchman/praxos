@@ -33,7 +33,6 @@ describe('whatsapp-service OpenAPI contract', () => {
     // Set required env vars
     process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'] = testConfig.verifyToken;
     process.env['PRAXOS_WHATSAPP_APP_SECRET'] = testConfig.appSecret;
-    process.env['SERVICE_URL'] = 'https://whatsapp-dev.example.com';
     process.env['VITEST'] = 'true';
 
     app = await buildServer(testConfig);
@@ -48,7 +47,6 @@ describe('whatsapp-service OpenAPI contract', () => {
     await app.close();
     delete process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'];
     delete process.env['PRAXOS_WHATSAPP_APP_SECRET'];
-    delete process.env['SERVICE_URL'];
     delete process.env['VITEST'];
   });
 
@@ -74,7 +72,7 @@ describe('whatsapp-service OpenAPI contract', () => {
     expect(servers?.[0]?.url).toBe('http://localhost:8082');
     expect(servers?.[0]?.description).toBe('Local development');
 
-    expect(servers?.[1]?.url).toBe('https://whatsapp-dev.example.com');
+    expect(servers?.[1]?.url).toBe('https://praxos-whatsapp-service-ooafxzbaua-lm.a.run.app');
     expect(servers?.[1]?.description).toBe('Cloud (Development)');
   });
 
