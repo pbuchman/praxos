@@ -7,3 +7,4 @@ output "public_base_url" {
   description = "Public base URL for static assets (https://storage.googleapis.com/bucket-name)"
   value       = "https://storage.googleapis.com/${google_storage_bucket.static_assets.name}"
 }
+
