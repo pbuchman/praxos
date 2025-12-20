@@ -58,6 +58,19 @@ describe('notion-gpt-service OpenAPI contract', () => {
     expect(servers?.[0]?.url).not.toBe('');
   });
 
+  it('includes both local and production servers', () => {
+    const servers = openapiSpec.servers;
+    expect(servers).toBeDefined();
+    
+    const localServer = servers?.find(s => s.url === 'http://localhost:8081');
+    const prodServer = servers?.find(s => s.url === 'https://notion.praxos.app');
+    
+    expect(localServer).toBeDefined();
+    expect(localServer?.description).toBe('Local development');
+    expect(prodServer).toBeDefined();
+    expect(prodServer?.description).toBe('Production (Cloud Run)');
+  });
+
   it('every path+method has an operationId', () => {
     const paths = openapiSpec.paths;
     expect(paths).toBeDefined();
@@ -94,7 +107,9 @@ describe('notion-gpt-service OpenAPI contract', () => {
 
   it('uses PUBLIC_BASE_URL in servers', () => {
     const servers = openapiSpec.servers;
-    expect(servers?.[0]?.url).toBe('https://notion.praxos.app');
+    // Should include production server and optional custom deployment
+    const prodServer = servers?.find(s => s.url === 'https://notion.praxos.app');
+    expect(prodServer).toBeDefined();
   });
 
   it('protected endpoints require bearerAuth security', () => {
@@ -122,6 +137,54 @@ describe('notion-gpt-service OpenAPI contract', () => {
         expect(hasBearerAuth, `${method.toUpperCase()} ${endpoint} should require bearerAuth`).toBe(
           true
         );
+      }
+    }
+  });
+
+  it('all non-health endpoints use envelope format for success responses', () => {
+    const paths = openapiSpec.paths;
+    expect(paths).toBeDefined();
+
+    for (const [path, methods] of Object.entries(paths ?? {})) {
+      if (path === '/health' || path === '/docs' || path === '/openapi.json') continue;
+
+      for (const [method, operation] of Object.entries(methods)) {
+        const responses = (operation as { responses?: Record<string, { properties?: Record<string, unknown> }> }).responses;
+        if (!responses) continue;
+
+        const response200 = responses['200'];
+        if (!response200) continue;
+
+        const props = response200.properties;
+        expect(props, `${method.toUpperCase()} ${path} 200 response should have properties`).toBeDefined();
+        expect(props?.['success'], `${method.toUpperCase()} ${path} 200 response should have success field`).toBeDefined();
+        expect(props?.['data'], `${method.toUpperCase()} ${path} 200 response should have data field`).toBeDefined();
+      }
+    }
+  });
+
+  it('all error responses use envelope format', () => {
+    const paths = openapiSpec.paths;
+    expect(paths).toBeDefined();
+
+    const errorCodes = ['400', '401', '403', '404', '409', '500', '502', '503'];
+
+    for (const [path, methods] of Object.entries(paths ?? {})) {
+      if (path === '/health' || path === '/docs' || path === '/openapi.json') continue;
+
+      for (const [method, operation] of Object.entries(methods)) {
+        const responses = (operation as { responses?: Record<string, { properties?: Record<string, unknown> }> }).responses;
+        if (!responses) continue;
+
+        for (const code of errorCodes) {
+          const errorResponse = responses[code];
+          if (!errorResponse) continue;
+
+          const props = errorResponse.properties;
+          expect(props, `${method.toUpperCase()} ${path} ${code} response should have properties`).toBeDefined();
+          expect(props?.['success'], `${method.toUpperCase()} ${path} ${code} response should have success field`).toBeDefined();
+          expect(props?.['error'], `${method.toUpperCase()} ${path} ${code} response should have error field`).toBeDefined();
+        }
       }
     }
   });
