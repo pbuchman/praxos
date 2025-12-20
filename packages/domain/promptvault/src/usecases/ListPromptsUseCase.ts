@@ -28,8 +28,9 @@ export class ListPromptsUseCase {
 
     // Delegate to repository
     return await this.repository.listPrompts(userId, {
-      ...options,
       limit,
+      cursor: options?.cursor ?? undefined,
+      includeContent: options?.includeContent ?? undefined,
     });
   }
 }
