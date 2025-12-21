@@ -194,17 +194,17 @@ PraxOS provides a central API documentation hub (`api-docs-hub`) that aggregates
 #### Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    api-docs-hub                             │
-│                                                             │
-│  GET /docs → Swagger UI with service selector dropdown      │
-│                                                             │
-│  Fetches specs at runtime from:                             │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ AUTH_SERVICE_OPENAPI_URL → Auth Service /openapi.json   ││
-│  │ NOTION_GPT_SERVICE_OPENAPI_URL → Notion GPT /openapi.json│
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    api-docs-hub                                 │
+│                                                                 │
+│  GET /docs → Swagger UI with service selector dropdown          │
+│                                                                 │
+│  Fetches specs at runtime from:                                 │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ AUTH_SERVICE_OPENAPI_URL → Auth Service /openapi.json       ││
+│  │ PROMPTVAULT_SERVICE_OPENAPI_URL → PromptVault /openapi.json ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 #### Key Characteristics
@@ -217,10 +217,10 @@ PraxOS provides a central API documentation hub (`api-docs-hub`) that aggregates
 
 #### Environment Variables
 
-| Variable                         | Description                            |
-| -------------------------------- | -------------------------------------- |
-| `AUTH_SERVICE_OPENAPI_URL`       | URL to auth-service OpenAPI JSON       |
-| `NOTION_GPT_SERVICE_OPENAPI_URL` | URL to notion-gpt-service OpenAPI JSON |
+| Variable                          | Description                             |
+| --------------------------------- | --------------------------------------- |
+| `AUTH_SERVICE_OPENAPI_URL`        | URL to auth-service OpenAPI JSON        |
+| `PROMPTVAULT_SERVICE_OPENAPI_URL` | URL to promptvault-service OpenAPI JSON |
 
 These values are constructed by Terraform from Cloud Run service URLs and injected as plain environment variables (not secrets).
 

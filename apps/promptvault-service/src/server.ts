@@ -7,7 +7,7 @@ import { praxosFastifyPlugin, fastifyAuthPlugin } from '@praxos/common';
 import { getFirestore } from '@praxos/infra-firestore';
 import { v1Routes } from './v1/routes.js';
 
-const SERVICE_NAME = 'notion-gpt-service';
+const SERVICE_NAME = 'promptvault-service';
 const SERVICE_VERSION = '0.0.1';
 
 type HealthStatus = 'ok' | 'degraded' | 'down';
@@ -103,16 +103,19 @@ function buildOpenApiOptions(): FastifyDynamicSwaggerOptions {
   const servers = [
     { url: 'http://localhost:8081', description: 'Local' },
     {
+      // LEGACY URL: This URL will be updated when the service is redeployed with the new name.
+      // The Cloud Run service name change requires a manual redeployment.
       url: 'https://praxos-notion-gpt-service-ooafxzbaua-lm.a.run.app',
-      description: 'Cloud (Development)',
+      description: 'Cloud (Development) - Legacy URL',
     },
   ];
 
   return {
     openapi: {
       info: {
-        title: SERVICE_NAME,
-        description: 'PraxOS Notion GPT Service - Integration layer for GPT Actions with Notion',
+        title: 'PromptVaultService',
+        description:
+          'PraxOS PromptVault Service - CRUD operations for PromptVault prompts backed by Notion',
         version: SERVICE_VERSION,
       },
       servers,

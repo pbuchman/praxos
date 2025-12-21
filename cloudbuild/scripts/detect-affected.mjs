@@ -36,8 +36,8 @@ const SERVICE_DEPS = {
     'tsconfig.json',
     'tsconfig.base.json',
   ],
-  'notion-gpt-service': [
-    'apps/notion-gpt-service/',
+  'promptvault-service': [
+    'apps/promptvault-service/',
     'packages/common/',
     'packages/domain/',
     'packages/infra/',

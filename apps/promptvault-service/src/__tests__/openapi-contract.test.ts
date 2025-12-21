@@ -15,7 +15,7 @@ interface OpenApiSpec {
   };
 }
 
-describe('notion-gpt-service OpenAPI contract', () => {
+describe('promptvault-service OpenAPI contract', () => {
   let app: FastifyInstance;
   let openapiSpec: OpenApiSpec;
 
@@ -64,8 +64,9 @@ describe('notion-gpt-service OpenAPI contract', () => {
     expect(servers?.[0]?.url).toBe('http://localhost:8081');
     expect(servers?.[0]?.description).toBe('Local');
 
+    // Legacy URL is kept until service is redeployed with new name
     expect(servers?.[1]?.url).toBe('https://praxos-notion-gpt-service-ooafxzbaua-lm.a.run.app');
-    expect(servers?.[1]?.description).toBe('Cloud (Development)');
+    expect(servers?.[1]?.description).toBe('Cloud (Development) - Legacy URL');
   });
 
   it('every path+method has an operationId', () => {

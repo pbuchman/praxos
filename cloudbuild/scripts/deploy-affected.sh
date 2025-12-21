@@ -19,7 +19,7 @@ set -euo pipefail
 
 WORKSPACE="${WORKSPACE:-/workspace}"
 AFFECTED_FILE="${WORKSPACE}/affected.json"
-ALL_SERVICES="auth-service notion-gpt-service whatsapp-service api-docs-hub"
+ALL_SERVICES="auth-service promptvault-service whatsapp-service api-docs-hub"
 
 echo "=== Deploy Affected Services ==="
 echo "REGION: ${REGION:-not set}"
@@ -94,8 +94,8 @@ get_cloud_run_name() {
     auth-service)
       echo "praxos-auth-service"
       ;;
-    notion-gpt-service)
-      echo "praxos-notion-gpt-service"
+    promptvault-service)
+      echo "praxos-promptvault-service"
       ;;
     whatsapp-service)
       echo "praxos-whatsapp-service"

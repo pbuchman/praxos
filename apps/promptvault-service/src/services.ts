@@ -1,5 +1,5 @@
 /**
- * Service container for notion-gpt-service.
+ * Service container for promptvault-service.
  * Provides dependency injection for adapters.
  */
 import type {
