@@ -6,6 +6,7 @@ import { setServices, resetServices } from '../services.js';
 import {
   FakeWhatsAppWebhookEventRepository,
   FakeWhatsAppUserMappingRepository,
+  FakeNotionConnectionRepository,
 } from '@praxos/infra-firestore';
 import type { Config } from '../config.js';
 
@@ -13,6 +14,7 @@ describe('whatsapp-service endpoints', () => {
   let app: FastifyInstance;
   let webhookEventRepository: FakeWhatsAppWebhookEventRepository;
   let userMappingRepository: FakeWhatsAppUserMappingRepository;
+  let notionConnectionRepository: FakeNotionConnectionRepository;
 
   const testConfig: Config = {
     verifyToken: 'test-verify-token-12345',
@@ -79,11 +81,14 @@ describe('whatsapp-service endpoints', () => {
     // Create fresh test adapters
     webhookEventRepository = new FakeWhatsAppWebhookEventRepository();
     userMappingRepository = new FakeWhatsAppUserMappingRepository();
+    notionConnectionRepository = new FakeNotionConnectionRepository();
 
     // Inject test adapters via DI
     setServices({
       webhookEventRepository,
       userMappingRepository,
+      notionConnectionRepository,
+      inboxNotesRepository: null,
     });
 
     // Set test environment to skip real Firestore health check
