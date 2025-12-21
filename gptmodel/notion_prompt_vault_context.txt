@@ -43,29 +43,22 @@ Expected: Save works, shows success URL
 
 ---
 
-## C. Auth Flow
+## C. Auth Flow (OAuth - Handled by ChatGPT)
 
-### C1. Start auth
-Command: `/auth start`
-Expected: Return device code, user instructions
+### C1. Session expired
+Command: `/save <prompt>`
+Response: API returns 401
+Expected: "Session expired. Please sign out and back in."
 
-### C2. Poll auth (success)
-Command: `/auth poll`
-Expected: Store token, set `ACCESS_TOKEN`, `EXPIRES_AT`
+### C2. First use (not signed in)
+Command: `/save <prompt>`
+State: User has not completed OAuth sign-in
+Expected: ChatGPT prompts user to sign in via OAuth flow
 
-### C3. Poll auth (pending)
-Command: `/auth poll`
-Response: `authorization_pending`
-Expected: "Pending authorization. Complete login, then retry /auth poll."
-
-### C4. Poll auth (slow down)
-Command: `/auth poll`
-Response: `slow_down`
-Expected: "Slow down. Wait 5–10 seconds, then retry /auth poll."
-
-### C5. Poll auth (timeout)
-State: 12 unsuccessful polls
-Expected: Error "Auth timed out: run /auth start again" + diagnostics
+### C3. Successful auth
+State: User completed OAuth sign-in
+Command: `/save <prompt>`
+Expected: API call includes Authorization header automatically, save succeeds
 
 ---
 
@@ -83,10 +76,10 @@ Expected: Exit loop, allow `/save` immediately
 State: `IMPROVEMENT_ITERATIONS = 10`, Score = 7.5
 Expected: Force loop exit, allow `/save`
 
-### D4. Token expiry during session
-State: `EXPIRES_AT` is 3 minutes ago
+### D4. Session expired during use
 Command: `/save`
-Expected: Error "Unauthorized: token expired", diagnostics, suggest `/auth start`
+Response: API returns 401
+Expected: "Session expired. Please sign out and back in." + diagnostics
 
 ### D5. Dimension tie-breaker
 State: Goal clarity = 5, Edge cases = 5 (both tied for lowest)
@@ -101,14 +94,6 @@ Expected: Error, must re-run `/review` first
 Score = 7.5, user answers "no" to improvement question
 Expected: Loop ends, allow `/save`
 
-### D8. Token refresh triggered
-State: `REFRESH_TOKEN` present, `EXPIRES_AT` in 3 minutes
-Command: `/save`
-Expected: Silent refresh, then proceed with save
-
-### D9. Token refresh fails
-State: `REFRESH_TOKEN` present, refresh API returns error
-Expected: Error "Unauthorized: token expired, run /auth start"
 
 ---
 
@@ -132,8 +117,8 @@ Expected: Fail immediately, no retry, show diagnostics
 
 ### F1. Config without auth
 Command: `/config notion`
-State: No `ACCESS_TOKEN`
-Expected: Error "Unauthorized: run /auth start"
+State: User not signed in (no OAuth session)
+Expected: ChatGPT prompts user to sign in first
 
 ### F2. Connection test fails
 Command: `/config notion`
@@ -182,9 +167,6 @@ Example:
 
 On session start, all state resets to defaults:
 ```
-ACCESS_TOKEN = null
-REFRESH_TOKEN = null
-EXPIRES_AT = null
 SAVE_ALLOWED = false
 LAST_REVIEWED_PROMPT = null
 LAST_REVIEW_SCORE = null
@@ -196,16 +178,19 @@ NOTION_PARENT_PAGE_ID = null
 NOTION_PARENT_PAGE_TITLE = null
 ```
 
+Note: Authentication state is managed by ChatGPT OAuth, not tracked in model state.
+
 ---
 
 # API ENDPOINTS REFERENCE
 
 ## Auth Service
 Base: `https://praxos-auth-service-ooafxzbaua-lm.a.run.app`
-- `POST /v1/auth/device/start` — Initiate device flow
-- `POST /v1/auth/device/poll` — Poll for token
+- OAuth token exchange handled automatically by ChatGPT Actions
+- `POST /v1/auth/oauth/token` — Token endpoint (used by ChatGPT, not called directly)
 
 ## PromptVault Service
+Base: `https://praxos-promptvault-service-ooafxzbaua-lm.a.run.app`
 - `GET /v1/integrations/notion/status` — Check Notion connection
 - `POST /v1/tools/notion/promptvault/prompts` — Save prompt to Notion
 
