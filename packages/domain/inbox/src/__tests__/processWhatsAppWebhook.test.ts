@@ -431,7 +431,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     it('ignores payload with empty messages array first element', async (): Promise<void> => {
       const payload = createValidPayload();
       if (payload.entry?.[0]?.changes?.[0]?.value.messages !== undefined) {
-        // Create a sparse array where [0] is undefined  
+        // Create a sparse array where [0] is undefined
         payload.entry[0].changes[0].value.messages = new Array(1) as never;
       }
 

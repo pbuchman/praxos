@@ -538,8 +538,218 @@ describe('FirestoreWhatsAppUserMappingRepository', () => {
 });
 
 describe('FakeWhatsAppUserMappingRepository', () => {
-  it('provides in-memory test implementation', () => {
-    const repo = new FakeWhatsAppUserMappingRepository();
-    expect(repo).toBeDefined();
+  let fakeRepo: FakeWhatsAppUserMappingRepository;
+
+  beforeEach((): void => {
+    fakeRepo = new FakeWhatsAppUserMappingRepository();
+  });
+
+  it('provides in-memory test implementation', (): void => {
+    expect(fakeRepo).toBeDefined();
+  });
+
+  describe('saveMapping', () => {
+    it('saves new mapping successfully', async (): Promise<void> => {
+      const result = await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.phoneNumbers).toEqual(['+1234567890']);
+        expect(result.value.inboxNotesDbId).toBe('db-id');
+        expect(result.value.connected).toBe(true);
+      }
+    });
+
+    it('updates existing mapping preserving createdAt', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      const firstResult = await fakeRepo.getMapping('user-1');
+
+      expect(firstResult.ok).toBe(true);
+      const firstCreatedAt = firstResult.ok ? firstResult.value?.createdAt : undefined;
+
+      await fakeRepo.saveMapping('user-1', ['+0987654321'], 'new-db-id');
+      const secondResult = await fakeRepo.getMapping('user-1');
+
+      expect(secondResult.ok).toBe(true);
+      if (secondResult.ok && secondResult.value !== null) {
+        expect(secondResult.value.createdAt).toBe(firstCreatedAt);
+        expect(secondResult.value.phoneNumbers).toEqual(['+0987654321']);
+        expect(secondResult.value.inboxNotesDbId).toBe('new-db-id');
+      }
+    });
+
+    it('rejects mapping when phone number is already mapped to another user', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+
+      const result = await fakeRepo.saveMapping('user-2', ['+1234567890'], 'other-db-id');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('VALIDATION_ERROR');
+        expect(result.error.message).toContain('already mapped');
+      }
+    });
+
+    it('allows same user to update their own phone numbers', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      const result = await fakeRepo.saveMapping('user-1', ['+1234567890', '+0987654321'], 'db-id');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.phoneNumbers).toEqual(['+1234567890', '+0987654321']);
+      }
+    });
+
+    it('allows reusing phone number from disconnected user', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      await fakeRepo.disconnectMapping('user-1');
+
+      const result = await fakeRepo.saveMapping('user-2', ['+1234567890'], 'other-db-id');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.phoneNumbers).toEqual(['+1234567890']);
+      }
+    });
+  });
+
+  describe('getMapping', () => {
+    it('returns mapping when it exists', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+
+      const result = await fakeRepo.getMapping('user-1');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).not.toBeNull();
+        expect(result.value?.phoneNumbers).toEqual(['+1234567890']);
+      }
+    });
+
+    it('returns null when mapping does not exist', async (): Promise<void> => {
+      const result = await fakeRepo.getMapping('non-existent-user');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeNull();
+      }
+    });
+  });
+
+  describe('findUserByPhoneNumber', () => {
+    it('finds user by phone number', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890', '+0987654321'], 'db-id');
+
+      const result = await fakeRepo.findUserByPhoneNumber('+1234567890');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe('user-1');
+      }
+    });
+
+    it('returns null when phone number not found', async (): Promise<void> => {
+      const result = await fakeRepo.findUserByPhoneNumber('+9999999999');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeNull();
+      }
+    });
+
+    it('ignores disconnected mappings', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      await fakeRepo.disconnectMapping('user-1');
+
+      const result = await fakeRepo.findUserByPhoneNumber('+1234567890');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeNull();
+      }
+    });
+  });
+
+  describe('disconnectMapping', () => {
+    it('disconnects existing mapping', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+
+      const result = await fakeRepo.disconnectMapping('user-1');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.connected).toBe(false);
+        expect(result.value.phoneNumbers).toEqual(['+1234567890']);
+      }
+    });
+
+    it('returns error when mapping not found', async (): Promise<void> => {
+      const result = await fakeRepo.disconnectMapping('non-existent-user');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('NOT_FOUND');
+      }
+    });
+  });
+
+  describe('isConnected', () => {
+    it('returns true for connected mapping', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+
+      const result = await fakeRepo.isConnected('user-1');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe(true);
+      }
+    });
+
+    it('returns false for disconnected mapping', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      await fakeRepo.disconnectMapping('user-1');
+
+      const result = await fakeRepo.isConnected('user-1');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe(false);
+      }
+    });
+
+    it('returns false for non-existent mapping', async (): Promise<void> => {
+      const result = await fakeRepo.isConnected('non-existent-user');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe(false);
+      }
+    });
+  });
+
+  describe('clear', () => {
+    it('clears all mappings', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      await fakeRepo.saveMapping('user-2', ['+0987654321'], 'db-id-2');
+
+      fakeRepo.clear();
+
+      expect(fakeRepo.getAll()).toHaveLength(0);
+    });
+  });
+
+  describe('getAll', () => {
+    it('returns all mappings', async (): Promise<void> => {
+      await fakeRepo.saveMapping('user-1', ['+1234567890'], 'db-id');
+      await fakeRepo.saveMapping('user-2', ['+0987654321'], 'db-id-2');
+
+      const all = fakeRepo.getAll();
+
+      expect(all).toHaveLength(2);
+    });
+
+    it('returns empty array when no mappings', (): void => {
+      expect(fakeRepo.getAll()).toHaveLength(0);
+    });
   });
 });
