@@ -25,22 +25,22 @@ import type {
  */
 export interface WhatsAppWebhookPayload {
   object: string;
-  entry?: Array<{
+  entry?: {
     id: string;
-    changes?: Array<{
+    changes?: {
       value: {
         messaging_product: string;
         metadata?: {
           display_phone_number?: string;
           phone_number_id?: string;
         };
-        contacts?: Array<{
+        contacts?: {
           profile?: {
             name?: string;
           };
           wa_id?: string;
-        }>;
-        messages?: Array<{
+        }[];
+        messages?: {
           from: string;
           id: string;
           timestamp: string;
@@ -48,16 +48,16 @@ export interface WhatsAppWebhookPayload {
           text?: {
             body: string;
           };
-        }>;
-        statuses?: Array<{
+        }[];
+        statuses?: {
           id: string;
           status: string;
           timestamp: string;
-        }>;
+        }[];
       };
       field: string;
-    }>;
-  }>;
+    }[];
+  }[];
 }
 
 /**
@@ -129,17 +129,7 @@ export class ProcessWhatsAppWebhookUseCase {
       });
     }
 
-    if (!classification.message) {
-      // Should not happen, but handle gracefully
-      const reason: IgnoredReason = {
-        code: 'NO_MESSAGE_DATA',
-        message: 'No message data found in webhook',
-      };
-      await this.webhookRepo.updateEventStatus(eventId, 'IGNORED', {
-        ignoredReason: reason,
-      });
-      return ok({ status: 'IGNORED', ignoredReason: reason });
-    }
+    // classification.status === 'VALID' here, so classification.message is defined
 
     // Step 2: Check user mapping
     const userResult = await this.mappingRepo.findUserByPhoneNumber(classification.message.from);
@@ -169,7 +159,7 @@ export class ProcessWhatsAppWebhookUseCase {
       return err(mappingResult.error);
     }
 
-    if (!mappingResult.value || !mappingResult.value.connected) {
+    if (mappingResult.value?.connected === false || mappingResult.value === null) {
       const reason: IgnoredReason = {
         code: 'USER_DISCONNECTED',
         message: 'User mapping exists but is disconnected',
@@ -202,7 +192,7 @@ export class ProcessWhatsAppWebhookUseCase {
     const createdNote = createResult.value;
 
     // Step 6: Update event status to PROCESSED (only if we got an ID back)
-    if (createdNote.id) {
+    if (createdNote.id !== undefined) {
       await this.webhookRepo.updateEventStatus(eventId, 'PROCESSED', {
         inboxNoteId: createdNote.id,
       });
@@ -219,9 +209,7 @@ export class ProcessWhatsAppWebhookUseCase {
   /**
    * Classify webhook and extract message if applicable.
    */
-  private classifyWebhook(
-    payload: WhatsAppWebhookPayload
-  ):
+  private classifyWebhook(payload: WhatsAppWebhookPayload):
     | {
         status: 'VALID';
         message: {
@@ -295,7 +283,7 @@ export class ProcessWhatsAppWebhookUseCase {
 
     // Check phone number ID
     const phoneNumberId = value.metadata?.phone_number_id;
-    if (!phoneNumberId) {
+    if (phoneNumberId === undefined || phoneNumberId === '') {
       return {
         status: 'IGNORED',
         ignoredReason: {
@@ -352,7 +340,7 @@ export class ProcessWhatsAppWebhookUseCase {
     }
 
     const textBody = message.text?.body;
-    if (!textBody) {
+    if (textBody === undefined || textBody === '') {
       return {
         status: 'IGNORED',
         ignoredReason: {
@@ -372,7 +360,7 @@ export class ProcessWhatsAppWebhookUseCase {
         text: textBody,
         messageId: message.id,
         timestamp: message.timestamp,
-        ...(senderName && { senderName }),
+        ...(senderName !== undefined && senderName !== '' && { senderName }),
       },
     };
   }
@@ -388,10 +376,12 @@ export class ProcessWhatsAppWebhookUseCase {
     senderName?: string;
   }): InboxNote {
     // Create a title from first 50 chars of text
-    const titleText = message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text;
+    const titleText =
+      message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text;
     const title = `WA: ${titleText}`;
 
-    const sender = message.senderName ? `${message.senderName} (${message.from})` : message.from;
+    const sender =
+      message.senderName !== undefined ? `${message.senderName} (${message.from})` : message.from;
 
     const note: InboxNote = {
       title,

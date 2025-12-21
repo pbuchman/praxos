@@ -90,6 +90,7 @@ describe('whatsapp-service endpoints', () => {
     process.env['VITEST'] = 'true';
     process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'] = testConfig.verifyToken;
     process.env['PRAXOS_WHATSAPP_APP_SECRET'] = testConfig.appSecret;
+    process.env['PRAXOS_WHATSAPP_PHONE_NUMBER_ID'] = testConfig.allowedPhoneNumberIds.join(',');
 
     app = await buildServer(testConfig);
   });
@@ -100,6 +101,7 @@ describe('whatsapp-service endpoints', () => {
     delete process.env['VITEST'];
     delete process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'];
     delete process.env['PRAXOS_WHATSAPP_APP_SECRET'];
+    delete process.env['PRAXOS_WHATSAPP_PHONE_NUMBER_ID'];
   });
 
   describe('GET /health', () => {
@@ -516,6 +518,7 @@ describe('config validation', () => {
 
     process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'] = 'test';
     process.env['PRAXOS_WHATSAPP_APP_SECRET'] = 'test';
+    process.env['PRAXOS_WHATSAPP_PHONE_NUMBER_ID'] = 'test';
 
     const missing = validateConfigEnv();
     expect(missing).toHaveLength(0);

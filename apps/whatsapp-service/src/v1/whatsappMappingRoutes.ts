@@ -43,12 +43,10 @@ export const createWhatsAppMappingRoutes: FastifyPluginCallback = (fastify, _opt
               type: 'array',
               items: { type: 'string' },
               description: 'WhatsApp phone numbers to map to this user (E.164 format recommended)',
-              example: ['+1234567890', '+48123456789'],
             },
             inboxNotesDbId: {
               type: 'string',
               description: 'Notion Inbox Notes database ID (data source ID)',
-              example: 'fd13e74a-1128-495f-ae24-8a70acf30f62',
             },
           },
         },
@@ -133,7 +131,12 @@ export const createWhatsAppMappingRoutes: FastifyPluginCallback = (fastify, _opt
 
       if (!result.ok) {
         if (result.error.code === 'VALIDATION_ERROR') {
-          return await reply.fail('CONFLICT', result.error.message, undefined, result.error.details);
+          return await reply.fail(
+            'CONFLICT',
+            result.error.message,
+            undefined,
+            result.error.details
+          );
         }
         return await reply.fail('INTERNAL_ERROR', result.error.message);
       }
@@ -151,7 +154,8 @@ export const createWhatsAppMappingRoutes: FastifyPluginCallback = (fastify, _opt
       schema: {
         operationId: 'getWhatsAppMappingStatus',
         summary: 'Get WhatsApp mapping status',
-        description: 'Retrieve the current WhatsApp mapping configuration for the authenticated user.',
+        description:
+          'Retrieve the current WhatsApp mapping configuration for the authenticated user.',
         tags: ['whatsapp'],
         response: {
           200: {
