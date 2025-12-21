@@ -3,8 +3,13 @@
  * This is the main repository interface for the PromptVault domain.
  */
 import type { Result } from '@praxos/common';
-import type { Prompt, PromptId, CreatePromptInput, UpdatePromptInput } from '../models/Prompt.js';
-import type { PromptVaultError } from '../models/PromptVaultError.js';
+import type {
+  Prompt,
+  PromptId,
+  CreatePromptInput,
+  UpdatePromptInput,
+  PromptVaultError,
+} from '../models/index.js';
 
 /**
  * Repository port for Prompt CRUD operations.

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createNotionPromptRepository } from '../promptRepository.js';
-import { MockNotionApiAdapter } from '../testing/mockNotionApiAdapter.js';
+import { MockNotionApiAdapter } from '../testing/index.js';
 import { FakeNotionConnectionRepository } from '@praxos/infra-firestore';
 
 describe('createNotionPromptRepository', () => {

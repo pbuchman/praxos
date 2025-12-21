@@ -2,9 +2,9 @@
  * Use case for creating a new prompt in the PromptVault.
  */
 import { err, type Result } from '@praxos/common';
-import type { Prompt } from '../models/Prompt.js';
-import { createPromptVaultError, type PromptVaultError } from '../models/PromptVaultError.js';
-import type { PromptRepository } from '../ports/PromptRepository.js';
+import type { Prompt, PromptVaultError } from '../models/index.js';
+import { createPromptVaultError } from '../models/index.js';
+import type { PromptRepository } from '../ports/index.js';
 
 /**
  * Input for the CreatePrompt use case.
