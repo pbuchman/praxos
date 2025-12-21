@@ -522,6 +522,8 @@ export async function buildServer(): Promise<FastifyInstance> {
     properties: {
       connected: { type: 'boolean' },
       promptVaultPageId: { type: 'string' },
+      pageTitle: { type: 'string', description: 'Title of the validated Notion page' },
+      pageUrl: { type: 'string', description: 'URL of the validated Notion page' },
       createdAt: { type: 'string', format: 'date-time' },
       updatedAt: { type: 'string', format: 'date-time' },
     },

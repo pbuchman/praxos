@@ -40,19 +40,56 @@ export class MockNotionApiAdapter implements NotionApiPort {
   private pageCounter = 0;
   private capturedNotes: CapturedPromptVaultNote[] = [];
   private storedPages = new Map<string, StoredPromptPage>();
+  private inaccessiblePageIds = new Set<string>();
+  private invalidTokens = new Set<string>(['invalid-token']);
+
+  /**
+   * Configure a page ID to simulate "not found" / "not shared with integration" error.
+   * Use this to test error handling when page validation fails.
+   */
+  setPageInaccessible(pageId: string): void {
+    this.inaccessiblePageIds.add(pageId);
+  }
+
+  /**
+   * Configure a token to be treated as invalid.
+   */
+  setTokenInvalid(token: string): void {
+    this.invalidTokens.add(token);
+  }
 
   async validateToken(token: string): Promise<Result<boolean, NotionError>> {
     // Simulate invalid token for testing
-    if (token === 'invalid-token') {
+    if (this.invalidTokens.has(token)) {
       return await Promise.resolve(ok(false));
     }
     return await Promise.resolve(ok(true));
   }
 
   async getPageWithPreview(
-    _token: string,
+    token: string,
     pageId: string
   ): Promise<Result<{ page: NotionPage; blocks: NotionBlock[] }, NotionError>> {
+    // Check for invalid token
+    if (this.invalidTokens.has(token)) {
+      return await Promise.resolve(
+        err({
+          code: 'UNAUTHORIZED',
+          message: 'Invalid Notion token',
+        })
+      );
+    }
+
+    // Check for inaccessible page
+    if (this.inaccessiblePageIds.has(pageId)) {
+      return await Promise.resolve(
+        err({
+          code: 'NOT_FOUND',
+          message: `Could not find block with ID: ${pageId}. Make sure the relevant pages and databases are shared with your integration.`,
+        })
+      );
+    }
+
     const page: NotionPage = {
       id: pageId,
       title: 'Prompt Vault',
@@ -212,5 +249,8 @@ export class MockNotionApiAdapter implements NotionApiPort {
     this.pageCounter = 0;
     this.capturedNotes = [];
     this.storedPages.clear();
+    this.inaccessiblePageIds.clear();
+    this.invalidTokens.clear();
+    this.invalidTokens.add('invalid-token'); // Re-add default invalid token
   }
 }

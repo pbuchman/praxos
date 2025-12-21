@@ -213,7 +213,7 @@ describe('promptvault-service v1 endpoints', () => {
   });
 
   describe('POST /v1/integrations/notion/connect', () => {
-    it('connects successfully and does not leak token', async () => {
+    it('connects successfully, validates page access, and includes page info in response', async () => {
       const token = await createToken({ sub: 'user-123' });
 
       const response = await app.inject({
@@ -232,17 +232,76 @@ describe('promptvault-service v1 endpoints', () => {
         data: {
           connected: boolean;
           promptVaultPageId: string;
+          pageTitle: string;
+          pageUrl: string;
         };
         diagnostics: { requestId: string };
       };
       expect(body.success).toBe(true);
       expect(body.data.connected).toBe(true);
       expect(body.data.promptVaultPageId).toBe('page-123');
+      // Verify page info from validation is included
+      expect(body.data.pageTitle).toBe('Prompt Vault');
+      expect(body.data.pageUrl).toContain('page-123');
       expect(body.diagnostics.requestId).toBeDefined();
 
       // Verify token is NOT in response
       const bodyStr = response.body;
       expect(bodyStr).not.toContain('secret-notion-token');
+    });
+
+    it('returns 400 INVALID_REQUEST when page is not accessible (not shared with integration)', async () => {
+      const token = await createToken({ sub: 'user-inaccessible' });
+
+      // Configure the mock to return NOT_FOUND for this page
+      notionApi.setPageInaccessible('inaccessible-page-id');
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/integrations/notion/connect',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          notionToken: 'valid-token',
+          promptVaultPageId: 'inaccessible-page-id',
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body) as {
+        success: boolean;
+        error: { code: string; message: string; details?: { pageId: string } };
+      };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_REQUEST');
+      expect(body.error.message).toContain('Could not access page');
+      expect(body.error.message).toContain('shared with your Notion integration');
+      expect(body.error.details?.pageId).toBe('inaccessible-page-id');
+    });
+
+    it('returns 401 UNAUTHORIZED when Notion token is invalid', async () => {
+      const token = await createToken({ sub: 'user-bad-notion' });
+
+      // Configure the mock to treat this token as invalid
+      notionApi.setTokenInvalid('bad-notion-token');
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/integrations/notion/connect',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          notionToken: 'bad-notion-token',
+          promptVaultPageId: 'some-page-id',
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.body) as {
+        success: boolean;
+        error: { code: string; message: string };
+      };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UNAUTHORIZED');
+      expect(body.error.message).toContain('Invalid Notion token');
     });
 
     it('returns 400 INVALID_REQUEST when notionToken is missing', async () => {

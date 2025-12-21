@@ -120,8 +120,37 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
       }
 
       const { notionToken, promptVaultPageId } = parseResult.data;
-      const { connectionRepository } = getServices();
+      const { connectionRepository, notionApi } = getServices();
 
+      // Validate page access BEFORE saving connection
+      // This ensures the page exists and is shared with the integration
+      const pageValidation = await notionApi.getPageWithPreview(notionToken, promptVaultPageId);
+      if (!pageValidation.ok) {
+        const errorCode = pageValidation.error.code;
+        if (errorCode === 'NOT_FOUND') {
+          return await reply.fail(
+            'INVALID_REQUEST',
+            `Could not access page with ID "${promptVaultPageId}". ` +
+              'Make sure the page exists and is shared with your Notion integration. ' +
+              'You can share a page by clicking "..." menu → "Add connections" → select your integration.',
+            undefined,
+            { pageId: promptVaultPageId, notionError: pageValidation.error.message }
+          );
+        }
+        if (errorCode === 'UNAUTHORIZED') {
+          return await reply.fail(
+            'UNAUTHORIZED',
+            'Invalid Notion token. Please reconnect your Notion integration.',
+            undefined,
+            { notionError: pageValidation.error.message }
+          );
+        }
+        return await reply.fail('DOWNSTREAM_ERROR', pageValidation.error.message, undefined, {
+          notionError: pageValidation.error.code,
+        });
+      }
+
+      // Page is accessible - save the connection
       const result = await connectionRepository.saveConnection(
         user.userId,
         promptVaultPageId,
@@ -138,6 +167,9 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
         promptVaultPageId: config.promptVaultPageId,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
+        // Include validated page info in response
+        pageTitle: pageValidation.value.page.title,
+        pageUrl: pageValidation.value.page.url,
       });
     }
   );
@@ -821,6 +853,15 @@ export const v1Routes: FastifyPluginCallback = (fastify, _opts, done) => {
       },
     },
     async (request, reply) => {
+      // Log incoming webhook request for debugging
+      request.log.info(
+        {
+          webhookHeaders: request.headers,
+          webhookBody: request.body,
+        },
+        'Notion webhook received'
+      );
+
       const parseResult = webhookRequestSchema.safeParse(request.body);
       if (!parseResult.success) {
         return await handleValidationError(parseResult.error, reply);
