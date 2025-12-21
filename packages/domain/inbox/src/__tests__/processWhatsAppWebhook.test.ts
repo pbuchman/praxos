@@ -10,6 +10,7 @@ import type {
   InboxNotesRepository,
   WhatsAppWebhookEvent,
   WhatsAppUserMapping,
+  WebhookProcessingStatus,
 } from '../ports/repositories.js';
 import type { InboxNote, InboxError } from '../models/InboxNote.js';
 
@@ -69,7 +70,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     // Create mock repositories
     webhookRepo = {
       /* eslint-disable @typescript-eslint/require-await */
-      saveEvent: async (): Promise<Result<WhatsAppWebhookEvent, Error>> =>
+      saveEvent: async (): Promise<Result<WhatsAppWebhookEvent, InboxError>> =>
         ok({
           id: 'event-1',
           payload: {},
@@ -78,7 +79,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
           phoneNumberId: '123456789012345',
           status: 'PENDING',
         }),
-      updateEventStatus: async (): Promise<Result<WhatsAppWebhookEvent, Error>> =>
+      updateEventStatus: async (): Promise<Result<WhatsAppWebhookEvent, InboxError>> =>
         ok({
           id: 'event-1',
           payload: {},
@@ -87,7 +88,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
           phoneNumberId: '123456789012345',
           status: 'PROCESSED',
         }),
-      getEvent: async (): Promise<Result<WhatsAppWebhookEvent, Error>> =>
+      getEvent: async (): Promise<Result<WhatsAppWebhookEvent, InboxError>> =>
         ok({
           id: 'event-1',
           payload: {},
@@ -99,32 +100,35 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     };
 
     mappingRepo = {
-      saveMapping: async (): Promise<Result<WhatsAppUserMapping, Error>> =>
+      saveMapping: async (): Promise<Result<WhatsAppUserMapping, InboxError>> =>
         ok({
+          userId: 'user-1',
           phoneNumbers: ['15551234567'],
           inboxNotesDbId: 'notion-db-id',
           connected: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
-      getMapping: async (): Promise<Result<WhatsAppUserMapping, Error>> =>
+      getMapping: async (): Promise<Result<WhatsAppUserMapping, InboxError>> =>
         ok({
+          userId: 'user-1',
           phoneNumbers: ['15551234567'],
           inboxNotesDbId: 'notion-db-id',
           connected: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
-      findUserByPhoneNumber: async (): Promise<Result<string, Error>> => ok('user-1'),
-      disconnectMapping: async (): Promise<Result<WhatsAppUserMapping, Error>> =>
+      findUserByPhoneNumber: async (): Promise<Result<string, InboxError>> => ok('user-1'),
+      disconnectMapping: async (): Promise<Result<WhatsAppUserMapping, InboxError>> =>
         ok({
+          userId: 'user-1',
           phoneNumbers: ['15551234567'],
           inboxNotesDbId: 'notion-db-id',
           connected: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
-      isConnected: async (): Promise<Result<boolean, Error>> => ok(true),
+      isConnected: async (): Promise<Result<boolean, InboxError>> => ok(true),
     };
 
     const sampleNote: InboxNote = {
@@ -142,9 +146,9 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     };
 
     notesRepo = {
-      createNote: async (note: InboxNote): Promise<Result<InboxNote, Error>> => ok({ ...note, id: 'note-1' }),
-      getNote: async (): Promise<Result<InboxNote | null, Error>> => ok(null),
-      updateNote: async (noteId: string, updates: Partial<InboxNote>): Promise<Result<InboxNote, Error>> =>
+      createNote: async (note: InboxNote): Promise<Result<InboxNote, InboxError>> => ok({ ...note, id: 'note-1' }),
+      getNote: async (): Promise<Result<InboxNote | null, InboxError>> => ok(null),
+      updateNote: async (noteId: string, updates: Partial<InboxNote>): Promise<Result<InboxNote, InboxError>> =>
         ok({ ...sampleNote, id: noteId, ...updates }),
       /* eslint-enable @typescript-eslint/require-await */
     };
@@ -404,7 +408,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
 
   describe('user mapping', () => {
     it('returns USER_UNMAPPED when no mapping found', async (): Promise<void> => {
-      mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, Error>> => ok(null);
+      mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, InboxError>> => ok(null);
 
       const payload = createValidPayload();
       const result = await useCase.execute('event-1', payload);
@@ -417,7 +421,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('returns USER_UNMAPPED when mapping is disconnected', async (): Promise<void> => {
-      mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, Error>> =>
+      mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, InboxError>> =>
         ok({
           userId: 'user-1',
           phoneNumbers: ['15551234567'],
@@ -438,7 +442,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('returns USER_UNMAPPED when mapping is null', async (): Promise<void> => {
-      mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, Error>> => ok(null);
+      mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, InboxError>> => ok(null);
 
       const payload = createValidPayload();
       const result = await useCase.execute('event-1', payload);
@@ -455,7 +459,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Database error',
       };
-      mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, Error>> => err(error);
+      mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, InboxError>> => err(error);
 
       const payload = createValidPayload();
       const result = await useCase.execute('event-1', payload);
@@ -471,7 +475,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Database error',
       };
-      mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, Error>> => err(error);
+      mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, InboxError>> => err(error);
 
       const payload = createValidPayload();
       const result = await useCase.execute('event-1', payload);
@@ -489,7 +493,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Notion API error',
       };
-      notesRepo.createNote = async (): Promise<Result<InboxNote, Error>> => err(error);
+      notesRepo.createNote = async (): Promise<Result<InboxNote, InboxError>> => err(error);
 
       const payload = createValidPayload();
       const result = await useCase.execute('event-1', payload);
@@ -505,7 +509,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
       let capturedStatus: string | undefined;
       let capturedData: object | undefined;
 
-      webhookRepo.updateEventStatus = async (_id: string, status: string, data?: object): Promise<Result<WhatsAppWebhookEvent, Error>> => {
+      webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         capturedData = data;
         const dataObj = data as Record<string, unknown> | undefined;
@@ -516,10 +520,10 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
           receivedAt: new Date().toISOString(),
           phoneNumberId: '123456789012345',
           status,
-          ...(dataObj?.['ignoredReason'] !== undefined && { ignoredReason: dataObj['ignoredReason'] }),
-          ...(dataObj?.['failureDetails'] !== undefined && { failureDetails: dataObj['failureDetails'] }),
-          ...(dataObj?.['inboxNoteId'] !== undefined && { inboxNoteId: dataObj['inboxNoteId'] }),
-        });
+          ...(dataObj?.['ignoredReason'] !== undefined && { ignoredReason: dataObj['ignoredReason'] as unknown }),
+          ...(dataObj?.['failureDetails'] !== undefined && { failureDetails: dataObj['failureDetails'] as string }),
+          ...(dataObj?.['inboxNoteId'] !== undefined && { inboxNoteId: dataObj['inboxNoteId'] as string }),
+        } as WhatsAppWebhookEvent);
       };
 
       const payload = createValidPayload();
@@ -530,10 +534,10 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('updates webhook event status to PROCESSED without note ID if undefined', async (): Promise<void> => {
-      notesRepo.createNote = async (note: InboxNote): Promise<Result<InboxNote, Error>> => ok({ ...note });
+      notesRepo.createNote = async (note: InboxNote): Promise<Result<InboxNote, InboxError>> => ok({ ...note });
 
       let capturedData: object | undefined;
-      webhookRepo.updateEventStatus = async (_id: string, status: string, data?: object): Promise<Result<WhatsAppWebhookEvent, Error>> => {
+      webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedData = data;
         return ok({
           id: 'event-1',
@@ -555,7 +559,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
       let capturedStatus: string | undefined;
       let capturedData: object | undefined;
 
-      webhookRepo.updateEventStatus = async (_id: string, status: string, data?: object): Promise<Result<WhatsAppWebhookEvent, Error>> => {
+      webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         capturedData = data;
         return ok({
@@ -579,10 +583,10 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('updates webhook event status to USER_UNMAPPED with reason', async (): Promise<void> => {
-      mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, Error>> => ok(null);
+      mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, InboxError>> => ok(null);
 
       let capturedStatus: string | undefined;
-      webhookRepo.updateEventStatus = async (_id: string, status: string): Promise<Result<WhatsAppWebhookEvent, Error>> => {
+      webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         return ok({
           id: 'event-1',
@@ -605,12 +609,12 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Notion API error',
       };
-      notesRepo.createNote = async (): Promise<Result<InboxNote, Error>> => err(error);
+      notesRepo.createNote = async (): Promise<Result<InboxNote, InboxError>> => err(error);
 
       let capturedStatus: string | undefined;
       let capturedData: object | undefined;
 
-      webhookRepo.updateEventStatus = async (_id: string, status: string, data?: object): Promise<Result<WhatsAppWebhookEvent, Error>> => {
+      webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         capturedData = data;
         const dataObj = data as Record<string, unknown> | undefined;
