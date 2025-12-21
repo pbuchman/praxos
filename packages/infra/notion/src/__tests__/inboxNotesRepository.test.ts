@@ -74,7 +74,7 @@ describe('NotionInboxNotesRepository', () => {
       expect(mockClient.pages.create).toHaveBeenCalledWith(
         expect.objectContaining({
           parent: { database_id: 'test-db-id' },
-          properties: expect.any(Object),
+          properties: expect.any(Object) as object,
         })
       );
     });
@@ -83,11 +83,11 @@ describe('NotionInboxNotesRepository', () => {
       mockClient.pages.create.mockResolvedValue({
         id: 'notion-page-id',
         object: 'page',
-      });
+      } as never);
 
       await repo.createNote(sampleNote);
 
-      const createCall = mockClient.pages.create.mock.calls[0]?.[0];
+      const createCall = mockClient.pages.create.mock.calls[0]?.[0] as { properties: Record<string, unknown> } | undefined;
       expect(createCall).toBeDefined();
       if (createCall !== undefined) {
         const properties = createCall.properties;
@@ -183,11 +183,14 @@ describe('NotionInboxNotesRepository', () => {
       const result = await repo.getNote('notion-page-id');
 
       expect(result.ok).toBe(true);
-      if (result.ok && result.value !== undefined) {
-        expect(result.value.id).toBe('notion-page-id');
-        expect(result.value.title).toBe('Test Note');
-        expect(result.value.status).toBe('Inbox');
-        expect(result.value.source).toBe('WhatsApp');
+      if (result.ok) {
+        expect(result.value).not.toBeNull();
+        if (result.value !== null) {
+          expect(result.value.id).toBe('notion-page-id');
+          expect(result.value.title).toBe('Test Note');
+          expect(result.value.status).toBe('Inbox');
+          expect(result.value.source).toBe('WhatsApp');
+        }
       }
     });
 
@@ -276,7 +279,7 @@ describe('NotionInboxNotesRepository', () => {
       expect(mockClient.pages.update).toHaveBeenCalledWith(
         expect.objectContaining({
           page_id: 'notion-page-id',
-          properties: expect.any(Object),
+          properties: expect.any(Object) as object,
         })
       );
     });
