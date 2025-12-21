@@ -20,7 +20,7 @@ import type {
  */
 function mapNotionError(error: unknown): NotionError {
   if (isNotionClientError(error)) {
-    let code: NotionErrorCode = 'INTERNAL_ERROR';
+    let code: NotionErrorCode;
 
     switch (error.code) {
       case APIErrorCode.Unauthorized:

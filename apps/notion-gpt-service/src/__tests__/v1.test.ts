@@ -61,10 +61,9 @@ describe('notion-gpt-service v1 endpoints', () => {
     await jwksServer.listen({ port: 0, host: '127.0.0.1' });
     const address = jwksServer.server.address();
     if (address !== null && typeof address === 'object') {
-      const jwksUrl = `http://127.0.0.1:${String(address.port)}/.well-known/jwks.json`;
-
       // Set environment variables for JWT auth
-      process.env['AUTH_JWKS_URL'] = jwksUrl;
+      process.env['AUTH_JWKS_URL'] =
+        `http://127.0.0.1:${String(address.port)}/.well-known/jwks.json`;
       process.env['AUTH_ISSUER'] = issuer;
       process.env['AUTH_AUDIENCE'] = audience;
     }

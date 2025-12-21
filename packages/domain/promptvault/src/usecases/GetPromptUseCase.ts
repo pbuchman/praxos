@@ -2,9 +2,9 @@
  * Use case for getting a single prompt by ID.
  */
 import { err, type Result } from '@praxos/common';
-import type { Prompt, PromptId } from '../models/Prompt.js';
-import { createPromptVaultError, type PromptVaultError } from '../models/PromptVaultError.js';
-import type { PromptRepository } from '../ports/PromptRepository.js';
+import type { Prompt, PromptId, PromptVaultError } from '../models/index.js';
+import { createPromptVaultError } from '../models/index.js';
+import type { PromptRepository } from '../ports/index.js';
 
 /**
  * Input for the GetPrompt use case.

@@ -2,9 +2,8 @@
  * Use case for listing all prompts in the PromptVault.
  */
 import type { Result } from '@praxos/common';
-import type { Prompt } from '../models/Prompt.js';
-import type { PromptVaultError } from '../models/PromptVaultError.js';
-import type { PromptRepository } from '../ports/PromptRepository.js';
+import type { Prompt, PromptVaultError } from '../models/index.js';
+import type { PromptRepository } from '../ports/index.js';
 
 /**
  * Input for the ListPrompts use case.
