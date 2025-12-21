@@ -110,7 +110,9 @@ export class NotionInboxNotesRepository implements InboxNotesRepository {
   /**
    * Map domain InboxNote to Notion properties structure.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapNoteToNotionProperties(note: Partial<InboxNote>): Record<string, any> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const properties: Record<string, any> = {};
 
     if (note.title !== undefined) {
@@ -216,7 +218,10 @@ export class NotionInboxNotesRepository implements InboxNotesRepository {
    * Map Notion page to domain InboxNote.
    * This is a minimal implementation for reading back created notes.
    */
-  private mapNotionPageToNote(page: { id: string; properties: Record<string, unknown> }): InboxNote {
+  private mapNotionPageToNote(page: {
+    id: string;
+    properties: Record<string, unknown>;
+  }): InboxNote {
     // Extract properties (simplified for phase 1)
     const props = page.properties;
 
@@ -235,15 +240,15 @@ export class NotionInboxNotesRepository implements InboxNotesRepository {
       contentType: this.extractSelect(props['Type']) as InboxNote['contentType'],
       topics: this.extractMultiSelect(props['Topic']) as InboxNote['topics'],
       originalText: this.extractRichText(props['Original text']),
-      ...(cleanText && { cleanText }),
-      ...(transcript && { transcript }),
+      ...(cleanText !== '' && { cleanText }),
+      ...(transcript !== '' && { transcript }),
       capturedAt: this.extractDate(props['Captured at']) ?? new Date().toISOString(),
       sender: this.extractRichText(props['Sender']),
       externalId: this.extractRichText(props['External ID']),
-      ...(processingRunId && { processingRunId }),
+      ...(processingRunId !== '' && { processingRunId }),
       processedBy: this.extractSelect(props['Processed by']) as InboxNote['processedBy'],
-      ...(errors && { errors }),
-      ...(url && { url }),
+      ...(errors !== '' && { errors }),
+      ...(url !== undefined && { url }),
     };
   }
 
@@ -254,7 +259,7 @@ export class NotionInboxNotesRepository implements InboxNotesRepository {
       'title' in prop &&
       Array.isArray((prop as { title: unknown }).title)
     ) {
-      const titleArray = (prop as { title: Array<{ plain_text?: string }> }).title;
+      const titleArray = (prop as { title: { plain_text?: string }[] }).title;
       return titleArray.map((t) => t.plain_text ?? '').join('');
     }
     return '';
@@ -281,7 +286,7 @@ export class NotionInboxNotesRepository implements InboxNotesRepository {
       'multi_select' in prop &&
       Array.isArray((prop as { multi_select: unknown }).multi_select)
     ) {
-      const multiSelect = (prop as { multi_select: Array<{ name?: string }> }).multi_select;
+      const multiSelect = (prop as { multi_select: { name?: string }[] }).multi_select;
       return multiSelect.map((item) => item.name ?? '');
     }
     return [];
@@ -294,7 +299,7 @@ export class NotionInboxNotesRepository implements InboxNotesRepository {
       'rich_text' in prop &&
       Array.isArray((prop as { rich_text: unknown }).rich_text)
     ) {
-      const richText = (prop as { rich_text: Array<{ plain_text?: string }> }).rich_text;
+      const richText = (prop as { rich_text: { plain_text?: string }[] }).rich_text;
       return richText.map((t) => t.plain_text ?? '').join('');
     }
     return '';

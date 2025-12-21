@@ -80,13 +80,13 @@ export class FirestoreWhatsAppWebhookEventRepository implements WhatsAppWebhookE
         processedAt: new Date().toISOString(),
       };
 
-      if (metadata.ignoredReason) {
+      if (metadata.ignoredReason !== undefined) {
         update.ignoredReason = metadata.ignoredReason;
       }
-      if (metadata.failureDetails) {
+      if (metadata.failureDetails !== undefined) {
         update.failureDetails = metadata.failureDetails;
       }
-      if (metadata.inboxNoteId) {
+      if (metadata.inboxNoteId !== undefined) {
         update.inboxNoteId = metadata.inboxNoteId;
       }
 
@@ -103,10 +103,10 @@ export class FirestoreWhatsAppWebhookEventRepository implements WhatsAppWebhookE
         receivedAt: data.receivedAt,
         phoneNumberId: data.phoneNumberId,
         status: data.status,
-        ...(data.ignoredReason && { ignoredReason: data.ignoredReason }),
-        ...(data.failureDetails && { failureDetails: data.failureDetails }),
-        ...(data.inboxNoteId && { inboxNoteId: data.inboxNoteId }),
-        ...(data.processedAt && { processedAt: data.processedAt }),
+        ...(data.ignoredReason !== undefined && { ignoredReason: data.ignoredReason }),
+        ...(data.failureDetails !== undefined && { failureDetails: data.failureDetails }),
+        ...(data.inboxNoteId !== undefined && { inboxNoteId: data.inboxNoteId }),
+        ...(data.processedAt !== undefined && { processedAt: data.processedAt }),
       };
 
       return ok(event);
@@ -137,10 +137,10 @@ export class FirestoreWhatsAppWebhookEventRepository implements WhatsAppWebhookE
         receivedAt: data.receivedAt,
         phoneNumberId: data.phoneNumberId,
         status: data.status,
-        ...(data.ignoredReason && { ignoredReason: data.ignoredReason }),
-        ...(data.failureDetails && { failureDetails: data.failureDetails }),
-        ...(data.inboxNoteId && { inboxNoteId: data.inboxNoteId }),
-        ...(data.processedAt && { processedAt: data.processedAt }),
+        ...(data.ignoredReason !== undefined && { ignoredReason: data.ignoredReason }),
+        ...(data.failureDetails !== undefined && { failureDetails: data.failureDetails }),
+        ...(data.inboxNoteId !== undefined && { inboxNoteId: data.inboxNoteId }),
+        ...(data.processedAt !== undefined && { processedAt: data.processedAt }),
       };
       return ok(event);
     } catch (error) {

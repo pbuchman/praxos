@@ -13,10 +13,7 @@
 // Adapters
 export { NotionApiAdapter, type NotionLogger } from './adapter.js';
 export { createNotionPromptRepository } from './promptRepository.js';
-export {
-  NotionInboxNotesRepository,
-  type NotionInboxNotesConfig,
-} from './inboxNotesRepository.js';
+export { NotionInboxNotesRepository, type NotionInboxNotesConfig } from './inboxNotesRepository.js';
 
 // Testing utilities (for use by consuming packages)
 export { MockNotionApiAdapter, type CapturedPromptVaultNote } from './testing/index.js';

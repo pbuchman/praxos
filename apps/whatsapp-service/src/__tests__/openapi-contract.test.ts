@@ -34,6 +34,7 @@ describe('whatsapp-service OpenAPI contract', () => {
     // Set required env vars
     process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'] = testConfig.verifyToken;
     process.env['PRAXOS_WHATSAPP_APP_SECRET'] = testConfig.appSecret;
+    process.env['PRAXOS_WHATSAPP_PHONE_NUMBER_ID'] = testConfig.allowedPhoneNumberIds.join(',');
     process.env['VITEST'] = 'true';
 
     app = await buildServer(testConfig);
@@ -48,6 +49,7 @@ describe('whatsapp-service OpenAPI contract', () => {
     await app.close();
     delete process.env['PRAXOS_WHATSAPP_VERIFY_TOKEN'];
     delete process.env['PRAXOS_WHATSAPP_APP_SECRET'];
+    delete process.env['PRAXOS_WHATSAPP_PHONE_NUMBER_ID'];
     delete process.env['VITEST'];
   });
 

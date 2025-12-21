@@ -31,7 +31,7 @@ export class FakeWhatsAppWebhookEventRepository implements WhatsAppWebhookEventR
     return await Promise.resolve(ok(fullEvent));
   }
 
-  async updateEventStatus(
+  updateEventStatus(
     eventId: string,
     status: WebhookProcessingStatus,
     metadata: {
@@ -41,29 +41,31 @@ export class FakeWhatsAppWebhookEventRepository implements WhatsAppWebhookEventR
     }
   ): Promise<Result<WhatsAppWebhookEvent, InboxError>> {
     const event = this.events.get(eventId);
-    if (!event) {
-      return err({
-        code: 'NOT_FOUND',
-        message: 'Event not found',
-      });
+    if (event === undefined) {
+      return Promise.resolve(
+        err({
+          code: 'NOT_FOUND',
+          message: 'Event not found',
+        })
+      );
     }
 
     const updated: WhatsAppWebhookEvent = {
       ...event,
       status,
       processedAt: new Date().toISOString(),
-      ...(metadata.ignoredReason && { ignoredReason: metadata.ignoredReason }),
-      ...(metadata.failureDetails && { failureDetails: metadata.failureDetails }),
-      ...(metadata.inboxNoteId && { inboxNoteId: metadata.inboxNoteId }),
+      ...(metadata.ignoredReason !== undefined && { ignoredReason: metadata.ignoredReason }),
+      ...(metadata.failureDetails !== undefined && { failureDetails: metadata.failureDetails }),
+      ...(metadata.inboxNoteId !== undefined && { inboxNoteId: metadata.inboxNoteId }),
     };
 
     this.events.set(eventId, updated);
-    return ok(updated);
+    return Promise.resolve(ok(updated));
   }
 
-  async getEvent(eventId: string): Promise<Result<WhatsAppWebhookEvent | null, InboxError>> {
+  getEvent(eventId: string): Promise<Result<WhatsAppWebhookEvent | null, InboxError>> {
     const event = this.events.get(eventId);
-    return ok(event ?? null);
+    return Promise.resolve(ok(event ?? null));
   }
 
   /**

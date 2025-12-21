@@ -31,7 +31,12 @@ export type InboxContentType =
 /**
  * Processing status lifecycle.
  */
-export type InboxNoteStatus = 'Inbox' | 'Processing' | 'Processed' | 'Archived' | 'DeletedCandidate';
+export type InboxNoteStatus =
+  | 'Inbox'
+  | 'Processing'
+  | 'Processed'
+  | 'Archived'
+  | 'DeletedCandidate';
 
 /**
  * Processor that handled the note.
