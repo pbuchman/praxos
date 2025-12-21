@@ -11,6 +11,7 @@ import type {
   WhatsAppWebhookEvent,
   WhatsAppUserMapping,
   WebhookProcessingStatus,
+  IgnoredReason,
 } from '../ports/repositories.js';
 import type { InboxNote, InboxError } from '../models/InboxNote.js';
 
@@ -408,6 +409,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
 
   describe('user mapping', () => {
     it('returns USER_UNMAPPED when no mapping found', async (): Promise<void> => {
+      // eslint-disable-next-line @typescript-eslint/require-await
       mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, InboxError>> => ok(null);
 
       const payload = createValidPayload();
@@ -421,6 +423,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('returns USER_UNMAPPED when mapping is disconnected', async (): Promise<void> => {
+      // eslint-disable-next-line @typescript-eslint/require-await
       mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, InboxError>> =>
         ok({
           userId: 'user-1',
@@ -442,6 +445,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('returns USER_UNMAPPED when mapping is null', async (): Promise<void> => {
+      // eslint-disable-next-line @typescript-eslint/require-await
       mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, InboxError>> => ok(null);
 
       const payload = createValidPayload();
@@ -459,6 +463,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Database error',
       };
+      // eslint-disable-next-line @typescript-eslint/require-await
       mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, InboxError>> => err(error);
 
       const payload = createValidPayload();
@@ -475,6 +480,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Database error',
       };
+      // eslint-disable-next-line @typescript-eslint/require-await
       mappingRepo.getMapping = async (): Promise<Result<WhatsAppUserMapping | null, InboxError>> => err(error);
 
       const payload = createValidPayload();
@@ -493,6 +499,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Notion API error',
       };
+      // eslint-disable-next-line @typescript-eslint/require-await
       notesRepo.createNote = async (): Promise<Result<InboxNote, InboxError>> => err(error);
 
       const payload = createValidPayload();
@@ -509,6 +516,7 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
       let capturedStatus: string | undefined;
       let capturedData: object | undefined;
 
+      // eslint-disable-next-line @typescript-eslint/require-await
       webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         capturedData = data;
@@ -534,9 +542,11 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('updates webhook event status to PROCESSED without note ID if undefined', async (): Promise<void> => {
+      // eslint-disable-next-line @typescript-eslint/require-await
       notesRepo.createNote = async (note: InboxNote): Promise<Result<InboxNote, InboxError>> => ok({ ...note });
 
       let capturedData: object | undefined;
+      // eslint-disable-next-line @typescript-eslint/require-await
       webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedData = data;
         return ok({
@@ -559,18 +569,25 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
       let capturedStatus: string | undefined;
       let capturedData: object | undefined;
 
+      // eslint-disable-next-line @typescript-eslint/require-await
       webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         capturedData = data;
-        return ok({
+        const dataObj = data as Record<string, unknown> | undefined;
+        const baseEvent = {
           id: 'event-1',
           payload: {},
           signatureValid: true,
           receivedAt: new Date().toISOString(),
           phoneNumberId: '123456789012345',
           status,
-          ...(data !== undefined && 'ignoredReason' in data && data.ignoredReason !== undefined && { ignoredReason: data.ignoredReason }),
-        });
+        };
+        
+        if (dataObj !== undefined && 'ignoredReason' in dataObj && dataObj['ignoredReason'] !== undefined) {
+          return ok({ ...baseEvent, ignoredReason: dataObj['ignoredReason'] as IgnoredReason });
+        }
+        
+        return ok(baseEvent);
       };
 
       const payload = createValidPayload();
@@ -583,9 +600,11 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
     });
 
     it('updates webhook event status to USER_UNMAPPED with reason', async (): Promise<void> => {
+      // eslint-disable-next-line @typescript-eslint/require-await
       mappingRepo.findUserByPhoneNumber = async (): Promise<Result<string | null, InboxError>> => ok(null);
 
       let capturedStatus: string | undefined;
+      // eslint-disable-next-line @typescript-eslint/require-await
       webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         return ok({
@@ -609,24 +628,31 @@ describe('ProcessWhatsAppWebhookUseCase', () => {
         code: 'PERSISTENCE_ERROR',
         message: 'Notion API error',
       };
+      // eslint-disable-next-line @typescript-eslint/require-await
       notesRepo.createNote = async (): Promise<Result<InboxNote, InboxError>> => err(error);
 
       let capturedStatus: string | undefined;
       let capturedData: object | undefined;
 
+      // eslint-disable-next-line @typescript-eslint/require-await
       webhookRepo.updateEventStatus = async (_id: string, status: WebhookProcessingStatus, data?: object): Promise<Result<WhatsAppWebhookEvent, InboxError>> => {
         capturedStatus = status;
         capturedData = data;
         const dataObj = data as Record<string, unknown> | undefined;
-        return ok({
+        const baseEvent = {
           id: 'event-1',
           payload: {},
           signatureValid: true,
           receivedAt: new Date().toISOString(),
           phoneNumberId: '123456789012345',
           status,
-          ...(dataObj?.['failureDetails'] !== undefined && { failureDetails: dataObj['failureDetails'] }),
-        });
+        };
+        
+        if (dataObj?.['failureDetails'] !== undefined) {
+          return ok({ ...baseEvent, failureDetails: dataObj['failureDetails'] as string });
+        }
+        
+        return ok(baseEvent);
       };
 
       const payload = createValidPayload();
