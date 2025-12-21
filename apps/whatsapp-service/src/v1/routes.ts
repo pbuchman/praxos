@@ -81,7 +81,7 @@ function extractSenderPhoneNumber(payload: unknown): string | null {
         typeof (change as { value: unknown }).value === 'object' &&
         (change as { value: unknown }).value !== null
       ) {
-        const value = (change as { value: { messages?: Array<{ from?: string }> } }).value;
+        const value = (change as { value: { messages?: { from?: string }[] } }).value;
         if (
           value.messages !== undefined &&
           Array.isArray(value.messages) &&
@@ -124,7 +124,7 @@ function extractMessageId(payload: unknown): string | null {
         typeof (change as { value: unknown }).value === 'object' &&
         (change as { value: unknown }).value !== null
       ) {
-        const value = (change as { value: { messages?: Array<{ id?: string }> } }).value;
+        const value = (change as { value: { messages?: { id?: string }[] } }).value;
         if (
           value.messages !== undefined &&
           Array.isArray(value.messages) &&
@@ -319,7 +319,7 @@ export function createV1Routes(config: Config): FastifyPluginCallback {
 
         // Process webhook asynchronously (don't block the response)
         // Fire and forget - errors are logged and stored in the event record
-        void (async () => {
+        void (async (): Promise<void> => {
           try {
             // Find user by phone number to get their Notion config
             const fromNumber = extractSenderPhoneNumber(request.body);

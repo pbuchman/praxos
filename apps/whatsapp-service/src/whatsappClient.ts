@@ -54,14 +54,14 @@ export async function sendWhatsAppMessage(
       const errorBody = await response.text();
       return {
         success: false,
-        error: `WhatsApp API error: ${response.status} - ${errorBody}`,
+        error: `WhatsApp API error: ${String(response.status)} - ${errorBody}`,
       };
     }
 
     const data = (await response.json()) as {
       messaging_product: string;
-      contacts: Array<{ input: string; wa_id: string }>;
-      messages: Array<{ id: string }>;
+      contacts: { input: string; wa_id: string }[];
+      messages: { id: string }[];
     };
 
     const messageId = data.messages[0]?.id;
