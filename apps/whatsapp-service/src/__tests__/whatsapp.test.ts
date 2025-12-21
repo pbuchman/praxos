@@ -36,8 +36,7 @@ describe('whatsapp-service endpoints', () => {
   /**
    * Create a sample WhatsApp webhook payload.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function createWebhookPayload(): any {
+  function createWebhookPayload(): object {
     return {
       object: 'whatsapp_business_account',
       entry: [
