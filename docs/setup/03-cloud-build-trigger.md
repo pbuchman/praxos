@@ -130,7 +130,7 @@ packages/common/** → all services
 packages/domain/** → all services
 packages/infra/** → all services
 apps/auth-service/** → auth-service only
-apps/notion-gpt-service/** → notion-gpt-service only
+apps/promptvault-service/** → promptvault-service only
 apps/whatsapp-service/** → whatsapp-service only
 apps/api-docs-hub/** → api-docs-hub only
 package.json, package-lock.json → all services

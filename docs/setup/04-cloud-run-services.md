@@ -39,7 +39,7 @@ gcloud run services list
 
 # Get specific service details
 gcloud run services describe praxos-auth-service --region=europe-central2
-gcloud run services describe praxos-notion-gpt-service --region=europe-central2
+gcloud run services describe praxos-promptvault-service --region=europe-central2
 
 # Get service URL
 gcloud run services describe praxos-auth-service \
@@ -74,12 +74,12 @@ Verify services are healthy:
 # Get service URLs
 AUTH_URL=$(gcloud run services describe praxos-auth-service \
   --region=europe-central2 --format="value(status.url)")
-NOTION_URL=$(gcloud run services describe praxos-notion-gpt-service \
+PROMPTVAULT_URL=$(gcloud run services describe praxos-promptvault-service \
   --region=europe-central2 --format="value(status.url)")
 
 # Check health endpoints
 curl -s $AUTH_URL/health | jq
-curl -s $NOTION_URL/health | jq
+curl -s $PROMPTVAULT_URL/health | jq
 ```
 
 Expected response:
@@ -120,9 +120,9 @@ gcloud run deploy praxos-auth-service \
   --region=europe-central2 \
   --platform=managed
 
-# Deploy notion-gpt-service
-gcloud run deploy praxos-notion-gpt-service \
-  --image=europe-central2-docker.pkg.dev/PROJECT_ID/praxos-dev/notion-gpt-service:latest \
+# Deploy promptvault-service
+gcloud run deploy praxos-promptvault-service \
+  --image=europe-central2-docker.pkg.dev/PROJECT_ID/praxos-dev/promptvault-service:latest \
   --region=europe-central2 \
   --platform=managed
 ```

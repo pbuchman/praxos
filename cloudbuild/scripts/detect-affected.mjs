@@ -7,13 +7,13 @@
  * - packages/domain/** affects all services (except api-docs-hub)
  * - packages/infra/** affects all services (except api-docs-hub)
  * - apps/auth-service/** affects auth-service
- * - apps/notion-gpt-service/** affects notion-gpt-service
+ * - apps/promptvault-service/** affects promptvault-service
  * - apps/whatsapp-service/** affects whatsapp-service
  * - apps/api-docs-hub/** affects api-docs-hub
  *
  * Output: /workspace/affected.json
  * Format: {
- *   "services": ["auth-service", "notion-gpt-service", "whatsapp-service", "api-docs-hub"]
+ *   "services": ["auth-service", "promptvault-service", "whatsapp-service", "api-docs-hub"]
  * }
  */
 
