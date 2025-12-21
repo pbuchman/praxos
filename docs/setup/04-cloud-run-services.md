@@ -4,10 +4,10 @@ This document describes the Cloud Run service configuration and operations.
 
 ## Services Overview
 
-| Service            | Cloud Run Name              | Port | Health Endpoint |
-| ------------------ | --------------------------- | ---- | --------------- |
-| Auth Service       | `praxos-auth-service`       | 8080 | `/health`       |
-| Notion GPT Service | `praxos-notion-gpt-service` | 8080 | `/health`       |
+| Service             | Cloud Run Name               | Port | Health Endpoint |
+| ------------------- | ---------------------------- | ---- | --------------- |
+| Auth Service        | `praxos-auth-service`        | 8080 | `/health`       |
+| PromptVault Service | `praxos-promptvault-service` | 8080 | `/health`       |
 
 ## Service Configuration
 
@@ -102,12 +102,12 @@ Expected response:
 Each service exposes Swagger UI:
 
 - Auth Service: `$AUTH_URL/docs`
-- Notion GPT Service: `$NOTION_URL/docs`
+- PromptVault Service: `$PROMPTVAULT_URL/docs`
 
 OpenAPI spec:
 
 - Auth Service: `$AUTH_URL/openapi.json`
-- Notion GPT Service: `$NOTION_URL/openapi.json`
+- PromptVault Service: `$PROMPTVAULT_URL/openapi.json`
 
 ## Manual Deployment
 

@@ -92,8 +92,8 @@ LOG_LEVEL=debug
 cd apps/auth-service
 npm run dev
 
-# Terminal 2: Notion GPT service
-cd apps/notion-gpt-service
+# Terminal 2: PromptVault service
+cd apps/promptvault-service
 npm run dev
 ```
 

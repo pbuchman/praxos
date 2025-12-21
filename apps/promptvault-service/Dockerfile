@@ -1,4 +1,4 @@
-# PraxOS Notion GPT Service Dockerfile
+# PraxOS PromptVault Service Dockerfile
 # Multi-stage build for minimal production image.
 
 # Stage 1: Build
@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Copy package files for all required workspaces
 COPY package*.json ./
-COPY apps/notion-gpt-service/package*.json ./apps/notion-gpt-service/
+COPY apps/promptvault-service/package*.json ./apps/promptvault-service/
 COPY packages/common/package*.json ./packages/common/
 COPY packages/domain/identity/package*.json ./packages/domain/identity/
 COPY packages/domain/promptvault/package*.json ./packages/domain/promptvault/
@@ -28,7 +28,7 @@ COPY packages/domain/promptvault/ ./packages/domain/promptvault/
 COPY packages/domain/actions/ ./packages/domain/actions/
 COPY packages/infra/notion/ ./packages/infra/notion/
 COPY packages/infra/firestore/ ./packages/infra/firestore/
-COPY apps/notion-gpt-service/ ./apps/notion-gpt-service/
+COPY apps/promptvault-service/ ./apps/promptvault-service/
 
 # Build all packages in dependency order
 RUN npm run build --workspace=@praxos/common
@@ -37,7 +37,7 @@ RUN npm run build --workspace=@praxos/domain-promptvault
 RUN npm run build --workspace=@praxos/domain-actions
 RUN npm run build --workspace=@praxos/infra-notion
 RUN npm run build --workspace=@praxos/infra-firestore
-RUN npm run build --workspace=@praxos/notion-gpt-service
+RUN npm run build --workspace=@praxos/promptvault-service
 
 # Stage 2: Production
 FROM node:22-alpine AS production
@@ -46,7 +46,7 @@ WORKDIR /app
 
 # Copy package files for all required workspaces
 COPY package*.json ./
-COPY apps/notion-gpt-service/package*.json ./apps/notion-gpt-service/
+COPY apps/promptvault-service/package*.json ./apps/promptvault-service/
 COPY packages/common/package*.json ./packages/common/
 COPY packages/domain/identity/package*.json ./packages/domain/identity/
 COPY packages/domain/promptvault/package*.json ./packages/domain/promptvault/
@@ -62,7 +62,7 @@ RUN npm ci --omit=dev \
     --workspace=@praxos/domain-actions \
     --workspace=@praxos/infra-notion \
     --workspace=@praxos/infra-firestore \
-    --workspace=@praxos/notion-gpt-service
+    --workspace=@praxos/promptvault-service
 
 # Copy built files from all packages
 COPY --from=builder /app/packages/common/dist ./packages/common/dist
@@ -71,7 +71,7 @@ COPY --from=builder /app/packages/domain/promptvault/dist ./packages/domain/prom
 COPY --from=builder /app/packages/domain/actions/dist ./packages/domain/actions/dist
 COPY --from=builder /app/packages/infra/notion/dist ./packages/infra/notion/dist
 COPY --from=builder /app/packages/infra/firestore/dist ./packages/infra/firestore/dist
-COPY --from=builder /app/apps/notion-gpt-service/dist ./apps/notion-gpt-service/dist
+COPY --from=builder /app/apps/promptvault-service/dist ./apps/promptvault-service/dist
 
 # Set environment
 ENV NODE_ENV=production
@@ -84,4 +84,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Start the service
-CMD ["node", "apps/notion-gpt-service/dist/index.js"]
+CMD ["node", "apps/promptvault-service/dist/index.js"]

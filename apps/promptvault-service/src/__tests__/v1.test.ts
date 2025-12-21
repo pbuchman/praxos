@@ -7,7 +7,7 @@ import { clearJwksCache } from '@praxos/common';
 import { FakeNotionConnectionRepository } from '@praxos/infra-firestore';
 import { MockNotionApiAdapter, createNotionPromptRepository } from '@praxos/infra-notion';
 
-describe('notion-gpt-service v1 endpoints', () => {
+describe('promptvault-service v1 endpoints', () => {
   let app: FastifyInstance;
   let jwksServer: FastifyInstance;
   let privateKey: jose.KeyLike;
@@ -747,7 +747,7 @@ describe('notion-gpt-service v1 endpoints', () => {
       };
       // Health is NOT wrapped in success/data envelope
       expect(body.status).toBeDefined();
-      expect(body.serviceName).toBe('notion-gpt-service');
+      expect(body.serviceName).toBe('promptvault-service');
       expect(body.checks).toBeDefined();
       expect((body as { success?: boolean }).success).toBeUndefined();
     });
@@ -765,7 +765,7 @@ describe('notion-gpt-service v1 endpoints', () => {
         components: { securitySchemes: unknown };
       };
       expect(body.openapi).toMatch(/^3\./);
-      expect(body.info.title).toBe('notion-gpt-service');
+      expect(body.info.title).toBe('PromptVaultService');
       expect(body.components.securitySchemes).toBeDefined();
     });
   });
