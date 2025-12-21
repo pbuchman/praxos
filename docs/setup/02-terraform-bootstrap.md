@@ -175,11 +175,11 @@ Expected outputs:
 ```
 artifact_registry_url = "europe-central2-docker.pkg.dev/praxos-dev-yourname/praxos-dev"
 auth_service_url = "https://praxos-auth-service-xxxxx-ew.a.run.app"
-notion_gpt_service_url = "https://praxos-notion-gpt-service-xxxxx-ew.a.run.app"
+promptvault_service_url = "https://praxos-promptvault-service-xxxxx-ew.a.run.app"
 firestore_database = "(default)"
 service_accounts = {
   auth_service = "praxos-auth-svc-dev@praxos-dev-yourname.iam.gserviceaccount.com"
-  notion_gpt_service = "praxos-notion-svc-dev@praxos-dev-yourname.iam.gserviceaccount.com"
+  promptvault_service = "praxos-pv-svc-dev@praxos-dev-yourname.iam.gserviceaccount.com"
 }
 ```
 
@@ -197,10 +197,10 @@ docker build --platform linux/amd64 -f apps/auth-service/Dockerfile \
   -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/auth-service:latest .
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/auth-service:latest
 
-# Build and push notion-gpt-service
-docker build --platform linux/amd64 -f apps/notion-gpt-service/Dockerfile \
-  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/notion-gpt-service:latest .
-docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/notion-gpt-service:latest
+# Build and push promptvault-service
+docker build --platform linux/amd64 -f apps/promptvault-service/Dockerfile \
+  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/promptvault-service:latest .
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/praxos-dev/promptvault-service:latest
 
 # Build and push whatsapp-service
 docker build --platform linux/amd64 -f apps/whatsapp-service/Dockerfile \

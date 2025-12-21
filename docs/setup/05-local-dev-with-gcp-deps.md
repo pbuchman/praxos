@@ -77,7 +77,7 @@ AUTH_AUDIENCE=urn:praxos:api
 
 # Service ports (defaults)
 AUTH_SERVICE_PORT=8080
-NOTION_GPT_SERVICE_PORT=8081
+PROMPTVAULT_SERVICE_PORT=8081
 
 # Logging
 LOG_LEVEL=debug
@@ -155,7 +155,7 @@ praxos/
 ├── apps/
 │   ├── auth-service/
 │   │   └── .env        # Service-specific overrides (gitignored)
-│   └── notion-gpt-service/
+│   └── promptvault-service/
 │       └── .env        # Service-specific overrides (gitignored)
 ```
 
