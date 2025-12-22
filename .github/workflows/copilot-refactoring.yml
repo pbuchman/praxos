@@ -8,6 +8,7 @@ on:
 jobs:
   create-refactoring-issue:
     runs-on: ubuntu-latest
+    environment: copilot
     steps:
       - name: Create refactoring issue and assign to Copilot
         env:
