@@ -3,7 +3,7 @@ name: Copilot Refactoring Pass
 on:
   push:
     branches:
-      - main
+      - development
 
 jobs:
   create-refactoring-issue:
@@ -41,14 +41,32 @@ jobs:
 
             console.log(`Created issue #${issue.data.number}`);
 
-            // Trigger Copilot Coding Agent via comment
-            // Note: assignees API doesn't support 'copilot' - use @copilot mention instead
-            // https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/create-a-pr
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.data.number,
-              body: `@copilot use model claude-opus-4\n\nPlease follow the instructions in \`.github/prompts/refactoring.prompt.md\` to complete this task.`
+            // Assign Copilot via agent_assignments endpoint
+            // This is the internal GitHub endpoint used by the UI
+            const response = await fetch(`https://github.com/${context.repo.owner}/${context.repo.repo}/issues/agent_assignments`, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+              },
+              body: JSON.stringify({
+                issue_ids: [issue.data.number],
+                repo_name_with_owner: `${context.repo.owner}/${context.repo.repo}`,
+                base_ref: 'main',
+                custom_instructions: '',
+                model: 'claude-opus-4.5'
+              })
             });
 
-            console.log(`Triggered Copilot on issue #${issue.data.number} with Claude Opus`);
+            if (!response.ok) {
+              const text = await response.text();
+              console.log(`Agent assignment response: ${response.status} - ${text}`);
+              // Fallback: the issue is created, user can manually assign Copilot
+              console.log(`Issue created: https://github.com/${context.repo.owner}/${context.repo.repo}/issues/${issue.data.number}`);
+              console.log('Manual Copilot assignment may be required.');
+            } else {
+              console.log(`Assigned Copilot to issue #${issue.data.number} with Claude Opus`);
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
