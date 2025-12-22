@@ -5,12 +5,15 @@ description: 'Session start prompt - use before any task'
 
 # Session Start
 
-**Read and apply these instruction files:**
+**You MUST read and apply these instruction files:**
 
 - `.github/copilot-instructions.md` — global rules
 - `.github/instructions/apps.instructions.md` — if working in `apps/`
 - `.github/instructions/packages.instructions.md` — if working in `packages/`
 - `.github/instructions/terraform.instructions.md` — if working in `terraform/`
+
+THIS IS NON-NEGOTIABLE REQUIREMENT.
+You must confirm you have read and understood these instructions before proceeding.
 
 **After any code change:**
 
@@ -24,10 +27,8 @@ npm run ci
 cd terraform && terraform fmt -check -recursive && terraform validate
 ```
 
-**Do not claim task complete until all verification passes.**
+**YOU MUST NOT claim task complete until all verification passes.**
 
 ---
 
 ## Task
-
-<!-- Replace this line with your actual task -->

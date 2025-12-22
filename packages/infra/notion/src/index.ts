@@ -1,7 +1,7 @@
 /**
  * @praxos/infra-notion
  *
- * Notion infrastructure adapter - implements promptvault, actions, and inbox domain ports.
+ * Notion infrastructure adapter - implements promptvault, and inbox domain ports.
  *
  * Structure:
  * - adapter.ts            NotionApiPort implementation using Notion SDK

@@ -106,7 +106,8 @@ Use ` ```ts-example ` (not ` ```typescript `) to prevent IDE parsing errors.
 
 ## Task Completion
 
-1. Run `npm run ci`
-2. If terraform changed: `terraform fmt -check -recursive && terraform validate`
-3. If CI fails → fix → repeat
-4. Only when all pass → task complete
+1. If output is non-trivial, show it with `show_content` tool. Do not output it to the conversation directly.
+2. Run `npm run ci`
+3. If terraform changed: `terraform fmt -check -recursive && terraform validate`
+4. If CI fails → fix → repeat
+5. Only when all pass → task complete

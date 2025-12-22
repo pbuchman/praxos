@@ -1,63 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/**
+ * Tests for WhatsApp webhook event repository implementations.
+ *
+ * FakeWhatsAppWebhookEventRepository - for domain package testing.
+ * FirestoreWhatsAppWebhookEventRepository - uses real Firestore against emulator.
+ */
+import { describe, it, expect, beforeEach } from 'vitest';
 import { FakeWhatsAppWebhookEventRepository } from '../testing/fakeWhatsAppWebhookEventRepository.js';
 import { FirestoreWhatsAppWebhookEventRepository } from '../whatsappWebhookEventRepository.js';
-
-// Mock the client module
-vi.mock('../client.js', () => ({
-  getFirestore: vi.fn(),
-}));
-
-// Import after mock setup
-import { getFirestore } from '../client.js';
-
-interface MockDocRef {
-  set: (data: unknown) => Promise<void>;
-}
-
-interface MockCollectionRef {
-  doc: (id: string) => MockDocRef;
-}
-
-interface MockFirestoreInstance {
-  collection: (name: string) => MockCollectionRef;
-}
-
-/**
- * Create an in-memory mock Firestore for testing.
- */
-function createMockFirestore(): {
-  savedDocs: Map<string, unknown>;
-  shouldFail: boolean;
-  failWith: Error | null;
-  instance: MockFirestoreInstance;
-} {
-  const savedDocs = new Map<string, unknown>();
-  const result = {
-    savedDocs,
-    shouldFail: false,
-    failWith: null as Error | null,
-    instance: null as unknown as MockFirestoreInstance,
-  };
-
-  result.instance = {
-    collection: (_name: string): MockCollectionRef => ({
-      doc: (id: string): MockDocRef => ({
-        set: (data: unknown): Promise<void> => {
-          if (result.shouldFail) {
-            if (result.failWith !== null) {
-              return Promise.reject(result.failWith);
-            }
-            return Promise.reject(new Error('Mock Firestore error'));
-          }
-          savedDocs.set(id, data);
-          return Promise.resolve();
-        },
-      }),
-    }),
-  };
-
-  return result;
-}
 
 describe('FakeWhatsAppWebhookEventRepository', () => {
   let repository: FakeWhatsAppWebhookEventRepository;
@@ -66,7 +15,7 @@ describe('FakeWhatsAppWebhookEventRepository', () => {
     repository = new FakeWhatsAppWebhookEventRepository();
   });
 
-  it('saves an event and generates an ID', async () => {
+  it('saves an event and generates an ID', async (): Promise<void> => {
     const event = {
       payload: { test: 'data' },
       signatureValid: true,
@@ -87,7 +36,7 @@ describe('FakeWhatsAppWebhookEventRepository', () => {
     }
   });
 
-  it('retrieves all saved events', async () => {
+  it('retrieves all saved events', async (): Promise<void> => {
     const event1 = {
       payload: { msg: 'first' },
       signatureValid: true,
@@ -110,7 +59,7 @@ describe('FakeWhatsAppWebhookEventRepository', () => {
     expect(events.length).toBe(2);
   });
 
-  it('retrieves event by ID', async () => {
+  it('retrieves event by ID', async (): Promise<void> => {
     const event = {
       payload: { test: 'byId' },
       signatureValid: true,
@@ -128,12 +77,12 @@ describe('FakeWhatsAppWebhookEventRepository', () => {
     }
   });
 
-  it('returns undefined for non-existent ID', () => {
+  it('returns undefined for non-existent ID', (): void => {
     const retrieved = repository.getById('non-existent-id');
     expect(retrieved).toBeUndefined();
   });
 
-  it('clears all events', async () => {
+  it('clears all events', async (): Promise<void> => {
     await repository.saveEvent({
       payload: {},
       signatureValid: true,
@@ -148,7 +97,7 @@ describe('FakeWhatsAppWebhookEventRepository', () => {
     expect(events.length).toBe(0);
   });
 
-  it('handles null phoneNumberId', async () => {
+  it('handles null phoneNumberId', async (): Promise<void> => {
     const event = {
       payload: {},
       signatureValid: true,
@@ -167,91 +116,149 @@ describe('FakeWhatsAppWebhookEventRepository', () => {
 });
 
 describe('FirestoreWhatsAppWebhookEventRepository', () => {
-  let repository: FirestoreWhatsAppWebhookEventRepository;
-  let mockFirestore: ReturnType<typeof createMockFirestore>;
+  function createRepo(): FirestoreWhatsAppWebhookEventRepository {
+    return new FirestoreWhatsAppWebhookEventRepository();
+  }
 
-  beforeEach(() => {
-    repository = new FirestoreWhatsAppWebhookEventRepository();
-    mockFirestore = createMockFirestore();
-    vi.mocked(getFirestore).mockReturnValue(
-      mockFirestore.instance as unknown as ReturnType<typeof getFirestore>
-    );
+  describe('saveEvent', () => {
+    it('saves event to Firestore successfully', async (): Promise<void> => {
+      const repo = createRepo();
+      const event = {
+        payload: { test: 'data' },
+        signatureValid: true,
+        receivedAt: '2025-01-01T00:00:00.000Z',
+        phoneNumberId: '123456789',
+        status: 'PENDING' as const,
+      };
+
+      const result = await repo.saveEvent(event);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.id).toBeDefined();
+        expect(result.value.payload).toEqual(event.payload);
+        expect(result.value.signatureValid).toBe(true);
+        expect(result.value.phoneNumberId).toBe('123456789');
+        expect(result.value.status).toBe('PENDING');
+      }
+    });
+
+    it('handles null phoneNumberId', async (): Promise<void> => {
+      const repo = createRepo();
+      const event = {
+        payload: {},
+        signatureValid: true,
+        receivedAt: '2025-01-01T00:00:00.000Z',
+        phoneNumberId: null,
+        status: 'PENDING' as const,
+      };
+
+      const result = await repo.saveEvent(event);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.phoneNumberId).toBeNull();
+      }
+    });
   });
 
-  it('saves event to Firestore successfully', async () => {
-    const event = {
-      payload: { test: 'data' },
-      signatureValid: true,
-      receivedAt: '2025-01-01T00:00:00.000Z',
-      phoneNumberId: '123456789',
-      status: 'PENDING' as const,
-    };
+  describe('getEvent', () => {
+    it('retrieves saved event by ID', async (): Promise<void> => {
+      const repo = createRepo();
+      const event = {
+        payload: { test: 'retrieve' },
+        signatureValid: true,
+        receivedAt: '2025-01-01T00:00:00.000Z',
+        phoneNumberId: '999',
+        status: 'PENDING' as const,
+      };
 
-    const result = await repository.saveEvent(event);
+      const saveResult = await repo.saveEvent(event);
+      expect(saveResult.ok).toBe(true);
+      if (!saveResult.ok) return;
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.id).toBeDefined();
-      expect(result.value.payload).toEqual(event.payload);
-      expect(result.value.signatureValid).toBe(true);
-      expect(result.value.phoneNumberId).toBe('123456789');
-    }
+      const result = await repo.getEvent(saveResult.value.id);
 
-    // Verify document was saved
-    expect(mockFirestore.savedDocs.size).toBe(1);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).not.toBeNull();
+        expect(result.value?.payload).toEqual(event.payload);
+      }
+    });
+
+    it('returns null for non-existent event', async (): Promise<void> => {
+      const repo = createRepo();
+
+      const result = await repo.getEvent('non-existent-id');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeNull();
+      }
+    });
   });
 
-  it('returns error when Firestore throws', async () => {
-    mockFirestore.shouldFail = true;
-    mockFirestore.failWith = new Error('Firestore unavailable');
+  describe('updateEventStatus', () => {
+    it('updates event status', async (): Promise<void> => {
+      const repo = createRepo();
+      const event = {
+        payload: {},
+        signatureValid: true,
+        receivedAt: '2025-01-01T00:00:00.000Z',
+        phoneNumberId: '123',
+        status: 'PENDING' as const,
+      };
 
-    const event = {
-      payload: {},
-      signatureValid: true,
-      receivedAt: '2025-01-01T00:00:00.000Z',
-      phoneNumberId: null,
-      status: 'PENDING' as const,
-    };
+      const saveResult = await repo.saveEvent(event);
+      expect(saveResult.ok).toBe(true);
+      if (!saveResult.ok) return;
 
-    const result = await repository.saveEvent(event);
+      const result = await repo.updateEventStatus(saveResult.value.id, 'PROCESSED', {
+        inboxNoteId: 'note-123',
+      });
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.code).toBe('PERSISTENCE_ERROR');
-      expect(result.error.message).toContain('Failed to save webhook event');
-      expect(result.error.message).toContain('Firestore unavailable');
-    }
-  });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.status).toBe('PROCESSED');
+        expect(result.value.inboxNoteId).toBe('note-123');
+      }
+    });
 
-  it('handles non-Error exceptions', async () => {
-    // Create a custom mock that throws a non-Error value
-    // We use Object.create(null) to create an object that's not an Error instance
-    const nonErrorValue = Object.create(null) as unknown;
-    vi.mocked(getFirestore).mockReturnValue({
-      collection: (): MockCollectionRef => ({
-        doc: (): MockDocRef => ({
-          set: (): Promise<void> => {
-            // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-            return Promise.reject(nonErrorValue);
-          },
-        }),
-      }),
-    } as unknown as ReturnType<typeof getFirestore>);
+    it('updates event status with error', async (): Promise<void> => {
+      const repo = createRepo();
+      const event = {
+        payload: {},
+        signatureValid: true,
+        receivedAt: '2025-01-01T00:00:00.000Z',
+        phoneNumberId: '123',
+        status: 'PENDING' as const,
+      };
 
-    const event = {
-      payload: {},
-      signatureValid: true,
-      receivedAt: '2025-01-01T00:00:00.000Z',
-      phoneNumberId: null,
-      status: 'PENDING' as const,
-    };
+      const saveResult = await repo.saveEvent(event);
+      expect(saveResult.ok).toBe(true);
+      if (!saveResult.ok) return;
 
-    const result = await repository.saveEvent(event);
+      const result = await repo.updateEventStatus(saveResult.value.id, 'FAILED', {
+        failureDetails: 'Processing failed',
+      });
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.code).toBe('PERSISTENCE_ERROR');
-      expect(result.error.message).toContain('Unknown Firestore error');
-    }
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.status).toBe('FAILED');
+        expect(result.value.failureDetails).toBe('Processing failed');
+      }
+    });
+
+    it('returns error for non-existent event', async (): Promise<void> => {
+      const repo = createRepo();
+
+      const result = await repo.updateEventStatus('non-existent-id', 'PROCESSED', {});
+
+      // Firestore update() on non-existent doc throws, which causes PERSISTENCE_ERROR
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('PERSISTENCE_ERROR');
+      }
+    });
   });
 });
