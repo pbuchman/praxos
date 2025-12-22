@@ -152,22 +152,18 @@ This application enables OAuth for ChatGPT custom GPTs.
 
 In your ChatGPT GPT builder, go to **Actions** → **Authentication**:
 
-| Field                     | Value                                                                     |
-| ------------------------- | ------------------------------------------------------------------------- |
-| **Authentication Type**   | `OAuth`                                                                   |
-| **Client ID**             | From Auth0 → Your App → Settings → Client ID                              |
-| **Client Secret**         | From Auth0 → Your App → Settings → Client Secret                          |
-| **Authorization URL**     | `https://YOUR_AUTH0_DOMAIN/authorize`                                     |
-| **Token URL**             | `https://praxos-auth-service-ooafxzbaua-lm.a.run.app/v1/auth/oauth/token` |
-| **Scope**                 | `openid profile email offline_access`                                     |
-| **Token Exchange Method** | `Default (POST request)`                                                  |
+| Field                     | Value                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| **Authentication Type**   | `OAuth`                                                                       |
+| **Client ID**             | From Auth0 → Your App → Settings → Client ID                                  |
+| **Client Secret**         | From Auth0 → Your App → Settings → Client Secret                              |
+| **Authorization URL**     | `https://praxos-auth-service-ooafxzbaua-lm.a.run.app/v1/auth/oauth/authorize` |
+| **Token URL**             | `https://praxos-auth-service-ooafxzbaua-lm.a.run.app/v1/auth/oauth/token`     |
+| **Scope**                 | `openid profile email offline_access`                                         |
+| **Token Exchange Method** | `Default (POST request)`                                                      |
 
-Example values:
-
-```
-Authorization URL: https://praxos-dev.eu.auth0.com/authorize
-Token URL: https://praxos-auth-service-ooafxzbaua-lm.a.run.app/v1/auth/oauth/token
-```
+> **Important**: Both Authorization URL and Token URL must be on the same root domain as your API.
+> The auth-service `/authorize` endpoint redirects to Auth0 to satisfy ChatGPT's domain requirement.
 
 ### Update Callback URL After GPT Creation
 
