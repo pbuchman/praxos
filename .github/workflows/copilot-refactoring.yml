@@ -3,7 +3,7 @@ name: Copilot Refactoring Pass
 on:
   push:
     branches:
-      - main
+      - development
 
 jobs:
   create-refactoring-issue:
