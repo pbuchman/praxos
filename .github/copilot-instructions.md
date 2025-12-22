@@ -142,6 +142,29 @@ async function safeFetch(url: string): Promise<Response | null> {
 }
 ```
 
+**Redundant defensive check after type guard** — trust TypeScript's type narrowing:
+
+```ts-example
+// ❌ Redundant check after isErr()
+const result = await operation();
+if (isErr(result)) {
+  return handleError(result.error);
+}
+if (!result.ok) {
+  // Unreachable: isErr() already narrowed the type
+  return handleError();
+}
+const value = result.value;
+
+// ✅ Direct access after type guard
+const result = await operation();
+if (isErr(result)) {
+  return handleError(result.error);
+}
+// TypeScript knows result.ok is true here
+const value = result.value;
+```
+
 ---
 
 ## Testing

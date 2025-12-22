@@ -456,19 +456,14 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
           );
         }
 
-        if (!refreshTokenResult.ok) {
-          // Should never reach here due to isErr check above, but TypeScript needs this
-          return await reply.fail('INTERNAL_ERROR', 'Unexpected error state');
-        }
-
-        if (refreshTokenResult.value === null) {
+        // After isErr check, result must be successful (type assertion needed for TypeScript)
+        const refreshToken = (refreshTokenResult as { ok: true; value: string | null }).value;
+        if (refreshToken === null) {
           return await reply.fail(
             'UNAUTHORIZED',
             'No refresh token found. User must re-authenticate.'
           );
         }
-
-        const refreshToken = refreshTokenResult.value;
 
         // Refresh access token
         const refreshResult = await auth0Client.refreshAccessToken(refreshToken);
