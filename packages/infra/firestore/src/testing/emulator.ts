@@ -48,6 +48,7 @@ async function waitForEmulator(timeoutMs = 30000): Promise<void> {
  * Sets FIRESTORE_EMULATOR_HOST environment variable.
  *
  * @returns true if a new emulator was started, false if existing emulator was detected
+ * @throws Error if emulator is not running and cannot be started
  */
 export async function ensureEmulator(): Promise<boolean> {
   // Set emulator host for Firestore SDK to pick up
@@ -58,24 +59,40 @@ export async function ensureEmulator(): Promise<boolean> {
     return false;
   }
 
-  // Start emulator process
-  emulatorProcess = spawn(
-    'gcloud',
-    ['emulators', 'firestore', 'start', `--host-port=${EMULATOR_HOST_PORT}`],
-    {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: false,
-    }
-  );
+  // Try to start emulator process
+  // This requires gcloud CLI to be installed
+  return await new Promise((resolve, reject) => {
+    emulatorProcess = spawn(
+      'gcloud',
+      ['emulators', 'firestore', 'start', `--host-port=${EMULATOR_HOST_PORT}`],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: false,
+      }
+    );
 
-  emulatorProcess.on('error', (err) => {
-    throw new Error(`Failed to start Firestore emulator: ${err.message}`);
+    emulatorProcess.on('error', (err) => {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        reject(
+          new Error(
+            'Firestore emulator not running and gcloud CLI not found.\n' +
+              'Either:\n' +
+              '  1. Start the emulator: npm run emulator:start\n' +
+              '  2. Or install gcloud CLI: https://cloud.google.com/sdk/docs/install'
+          )
+        );
+      } else {
+        reject(new Error(`Failed to start Firestore emulator: ${err.message}`));
+      }
+    });
+
+    // Wait for emulator to be ready
+    waitForEmulator()
+      .then(() => {
+        resolve(true);
+      })
+      .catch(reject);
   });
-
-  // Wait for emulator to be ready
-  await waitForEmulator();
-
-  return true;
 }
 
 /**
@@ -96,18 +113,17 @@ export async function clearEmulatorData(): Promise<void> {
   const projectId = process.env['GCLOUD_PROJECT'] ?? 'test-project';
   const url = `http://${EMULATOR_HOST_PORT}/emulator/v1/projects/${projectId}/databases/(default)/documents`;
 
+  let response: Response;
   try {
-    const response = await fetch(url, { method: 'DELETE' });
-    if (!response.ok && response.status !== 404) {
-      throw new Error(`Failed to clear emulator data: ${response.statusText}`);
-    }
-  } catch (error) {
-    // Ignore network errors - emulator might not support this endpoint in older versions
-    if (error instanceof Error && !error.message.includes('Failed to clear')) {
-      // Network error, try alternative approach by deleting collections
-      return;
-    }
-    throw error;
+    response = await fetch(url, { method: 'DELETE' });
+  } catch {
+    // Network error - emulator might not be running or support this endpoint
+    // Silently ignore as this is best-effort cleanup
+    return;
+  }
+
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Failed to clear emulator data: ${response.statusText}`);
   }
 }
 
