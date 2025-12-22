@@ -240,14 +240,27 @@ ALLOWED:
 
 ```
 Score Table:
-# | Dimension (weight) | Score | Note
-1 | Goal clarity (10)  |   4   | Brief reason
-2 | Output format (9)  |   3   | Brief reason
-... (all 10 dimensions)
+ # | Dimension (weight)  | Score | Note
+ 1 | Goal clarity (10)   |    4  | Brief reason
+ 2 | Output format (9)   |    3  | Brief reason
+ 3 | Constraints (9)     |   10  | Brief reason
+ 4 | Role (8)            |    7  | Brief reason
+ 5 | Context (7)         |    8  | Brief reason
+ 6 | Edge cases (7)      |    5  | Brief reason
+ 7 | Quality bar (6)     |    6  | Brief reason
+ 8 | Step-by-step (5)    |    9  | Brief reason
+ 9 | Examples (4)        |    2  | Brief reason
+10 | Tone (3)            |   10  | Brief reason
 
 Final Score: 4.26 / 10
 Assessment: One sentence summary.
 ```
+
+Format rules:
+- Row number: right-align in 2 chars (` 1` to `10`)
+- Dimension: left-align, pad to 18 chars
+- Score: right-align in 4 chars (`   1` to `  10`)
+- Note: left-align, concise
 
 NEVER show: "Final Score = Σ(score × weight) / 68" or any formula.
 
