@@ -643,4 +643,71 @@ describe('auth-service v1 endpoints', () => {
       expect(body.error).toBe('invalid_grant');
     });
   });
+
+  describe('GET /v1/auth/oauth/authorize', () => {
+    beforeEach(() => {
+      process.env['AUTH0_DOMAIN'] = AUTH0_DOMAIN;
+      process.env['AUTH0_CLIENT_ID'] = AUTH0_CLIENT_ID;
+      process.env['AUTH_AUDIENCE'] = AUTH_AUDIENCE;
+    });
+
+    it('returns 400 when config missing', async () => {
+      delete process.env['AUTH0_DOMAIN'];
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/v1/auth/oauth/authorize?redirect_uri=https://example.com/callback',
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body) as { error: string };
+      expect(body.error).toBe('server_error');
+    });
+
+    it('returns 400 when redirect_uri missing', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/v1/auth/oauth/authorize',
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body) as { error: string; error_description: string };
+      expect(body.error).toBe('invalid_request');
+      expect(body.error_description).toContain('redirect_uri');
+    });
+
+    it('redirects to Auth0 with correct parameters', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/v1/auth/oauth/authorize?redirect_uri=https://chat.openai.com/callback&scope=openid&state=abc123',
+      });
+
+      expect(response.statusCode).toBe(302);
+      const location = String(response.headers.location);
+      expect(location).toContain(`https://${AUTH0_DOMAIN}/authorize`);
+      expect(location).toContain('redirect_uri=https%3A%2F%2Fchat.openai.com%2Fcallback');
+      expect(location).toContain('scope=openid');
+      expect(location).toContain('state=abc123');
+      expect(location).toContain(`audience=${encodeURIComponent(AUTH_AUDIENCE)}`);
+    });
+
+    it('uses default scope when not provided', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/v1/auth/oauth/authorize?redirect_uri=https://example.com/callback',
+      });
+
+      expect(response.statusCode).toBe(302);
+      const location = String(response.headers.location);
+      // URLSearchParams encodes spaces as +
+      expect(location).toContain('scope=openid+profile+email+offline_access');
+    });
+  });
 });

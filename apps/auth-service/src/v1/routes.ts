@@ -764,5 +764,87 @@ export const v1AuthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     }
   );
 
+  // GET /v1/auth/oauth/authorize
+  // OAuth2 authorization endpoint - redirects to Auth0
+  // This allows ChatGPT Actions to use the same domain for auth and token URLs
+  fastify.get(
+    '/v1/auth/oauth/authorize',
+    {
+      schema: {
+        operationId: 'oauthAuthorize',
+        summary: 'OAuth2 Authorization Endpoint',
+        description:
+          'Redirects to Auth0 authorization page. Used by ChatGPT Actions to initiate OAuth flow.',
+        tags: ['auth'],
+        querystring: {
+          type: 'object',
+          properties: {
+            response_type: { type: 'string', description: 'OAuth response type (code)' },
+            client_id: { type: 'string', description: 'Client ID' },
+            redirect_uri: { type: 'string', description: 'Redirect URI after authorization' },
+            scope: { type: 'string', description: 'OAuth scopes' },
+            state: { type: 'string', description: 'State parameter for CSRF protection' },
+            audience: { type: 'string', description: 'API audience' },
+          },
+        },
+        response: {
+          302: {
+            description: 'Redirect to Auth0 authorization page',
+            type: 'null',
+          },
+          400: {
+            description: 'Missing required parameters',
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              error_description: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const config = loadAuth0Config();
+      if (config === null) {
+        return await reply.status(400).send({
+          error: 'server_error',
+          error_description: 'Auth0 is not configured',
+        });
+      }
+
+      const query = request.query as Record<string, string | undefined>;
+      const responseType = query['response_type'] ?? 'code';
+      const clientId = query['client_id'] ?? config.clientId;
+      const redirectUri = query['redirect_uri'];
+      const scope = query['scope'] ?? 'openid profile email offline_access';
+      const state = query['state'] ?? '';
+      const audience = query['audience'] ?? config.audience;
+
+      if (redirectUri === undefined || redirectUri === '') {
+        return await reply.status(400).send({
+          error: 'invalid_request',
+          error_description: 'redirect_uri is required',
+        });
+      }
+
+      // Build Auth0 authorization URL
+      const params = new URLSearchParams({
+        response_type: responseType,
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        scope,
+        audience,
+      });
+
+      if (state !== '') {
+        params.set('state', state);
+      }
+
+      const auth0AuthUrl = `https://${config.domain}/authorize?${params.toString()}`;
+
+      return await reply.code(302).redirect(auth0AuthUrl);
+    }
+  );
+
   done();
 };
