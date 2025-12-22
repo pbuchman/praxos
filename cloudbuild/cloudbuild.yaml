@@ -169,7 +169,13 @@ steps:
   # Step 13: Deploy affected services to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-affected'
-    waitFor: ['push-auth-service', 'push-promptvault-service', 'push-whatsapp-service', 'push-api-docs-hub']
+    waitFor:
+      [
+        'push-auth-service',
+        'push-promptvault-service',
+        'push-whatsapp-service',
+        'push-api-docs-hub',
+      ]
     entrypoint: 'bash'
     args: ['-c', 'bash cloudbuild/scripts/deploy-affected.sh']
     env:
