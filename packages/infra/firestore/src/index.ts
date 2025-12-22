@@ -11,7 +11,7 @@
  * - idempotencyLedger.ts                Idempotency tracking
  * - whatsappWebhookEventRepository.ts   WhatsApp webhook event storage
  * - encryption.ts                       Token encryption utilities
- * - testing/                            Test fakes for use in other packages
+ * - testing/                            Test utilities (fakes + emulator)
  */
 
 // Client
@@ -27,10 +27,20 @@ export { FirestoreWhatsAppWebhookEventRepository } from './whatsappWebhookEventR
 // Encryption utilities
 export { encryptToken, decryptToken, generateEncryptionKey } from './encryption.js';
 
-// Testing utilities (for use by consuming packages)
+// Testing utilities - fakes for domain package testing
 export {
   FakeNotionConnectionRepository,
   FakeIdempotencyLedger,
   FakeWhatsAppWebhookEventRepository,
   FakeWhatsAppUserMappingRepository,
+} from './testing/index.js';
+
+// Testing utilities - emulator for infra/apps testing
+export {
+  ensureEmulator,
+  stopEmulator,
+  clearEmulatorData,
+  isEmulatorRunning,
+  getEmulatorHost,
+  createEmulatorFirestore,
 } from './testing/index.js';
