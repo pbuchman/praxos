@@ -174,6 +174,75 @@ Violations:
 
 ---
 
+## TypeScript Patterns (ESLint-Compliant)
+
+### Forbidden: Non-null assertions (`!`)
+
+```typescript
+// ❌ FORBIDDEN - no-non-null-assertion
+const value = obj.prop!;
+const item = array[0]!;
+```
+
+### Allowed: Type assertions with `as`
+
+```typescript
+// ✅ ALLOWED - use `as Type` for type narrowing
+const location = response.headers.location as string;
+const body = JSON.parse(response.body) as { error: string };
+```
+
+### Allowed: Runtime checks or type guards
+
+```typescript
+// ✅ PREFERRED - runtime validation
+if (response.headers.location !== undefined) {
+  const location = response.headers.location;
+}
+
+// ✅ PREFERRED - String() for safe conversion
+const location = String(response.headers.location);
+```
+
+### Rationale
+
+The rule `@typescript-eslint/no-non-null-assertion` is enabled to prevent runtime errors.
+The conflicting rule `@typescript-eslint/non-nullable-type-assertion-style` is disabled.
+Use `as Type` assertions when you're confident the value exists, or add runtime checks.
+
+---
+
+## ESLint Error Learning Protocol
+
+**When you encounter an ESLint error that requires a code pattern change:**
+
+1. **Do NOT try multiple random fixes** — understand the rule first
+2. **Check if the pattern is already documented** in this file (TypeScript Patterns section)
+3. **If not documented, add it immediately** to the TypeScript Patterns section above
+4. **Format:**
+   - `### Forbidden: <pattern name>` with ❌ example
+   - `### Allowed: <alternative>` with ✅ example
+   - Brief rationale
+
+**Known ESLint rules requiring specific patterns:**
+
+| Rule                            | Forbidden        | Use Instead                              |
+| ------------------------------- | ---------------- | ---------------------------------------- |
+| `no-non-null-assertion`         | `obj.prop!`      | `obj.prop as Type` or `String(obj.prop)` |
+| `return-await`                  | `return promise` | `return await promise`                   |
+| `dot-notation`                  | `obj['prop']`    | `obj.prop`                               |
+| `strict-boolean-expressions`    | `if (str)`       | `if (str !== '')`                        |
+| `prefer-nullish-coalescing`     | `x \|\| default` | `x ?? default`                           |
+| `explicit-function-return-type` | implicit returns | Add `: ReturnType`                       |
+
+**When you see a NEW ESLint error not in this table:**
+
+1. Add it to the table above
+2. Add detailed examples to TypeScript Patterns section if complex
+3. Then fix the code
+
+---
+
 ## Verification Commands
 
 Run from repo root:
