@@ -12,7 +12,6 @@ import { buildServer } from '../server.js';
 import { resetServices, type ServiceContainer, setServices } from '../services.js';
 import {
   createFailingSynthesizer,
-  createFakeLlmProviders,
   createFakeLlmResearchProvider,
   createFakeSynthesizer,
   createFakeTitleGenerator,
@@ -21,6 +20,7 @@ import {
   FakePricingRepository,
   FakeResearchEventPublisher,
   FakeResearchRepository,
+  FakeUsageStatsRepository,
   FakeUserServiceClient,
 } from './fakes.js';
 import type { Research } from '../domain/research/index.js';
@@ -36,8 +36,8 @@ function createTestResearch(overrides?: Partial<Research>): Research {
     userId: TEST_USER_ID,
     title: 'Test Research',
     prompt: 'Test prompt',
-    selectedLlms: ['google'],
-    synthesisLlm: 'google',
+    selectedModels: ['gemini-2.5-pro'],
+    synthesisModel: 'gemini-2.5-pro',
     status: 'pending',
     llmResults: [
       {
@@ -69,6 +69,7 @@ describe('Research Routes - Unauthenticated', () => {
     const services: ServiceContainer = {
       researchRepo: fakeRepo,
       pricingRepo: new FakePricingRepository(),
+      usageStatsRepo: new FakeUsageStatsRepository(),
       generateId: (): string => 'generated-id-123',
       researchEventPublisher: fakeResearchEventPublisher,
       llmCallPublisher: fakeLlmCallPublisher,
@@ -76,7 +77,6 @@ describe('Research Routes - Unauthenticated', () => {
       notificationSender: fakeNotificationSender,
       shareStorage: null,
       shareConfig: null,
-      createLlmProviders: () => createFakeLlmProviders(),
       createResearchProvider: () => createFakeLlmResearchProvider(),
       createSynthesizer: () => createFakeSynthesizer(),
       createTitleGenerator: () => createFakeTitleGenerator(),
@@ -97,8 +97,8 @@ describe('Research Routes - Unauthenticated', () => {
       url: '/research',
       payload: {
         prompt: 'Test prompt',
-        selectedLlms: ['google'],
-        synthesisLlm: 'google',
+        selectedModels: ['gemini-2.5-pro'],
+        synthesisModel: 'gemini-2.5-pro',
       },
     });
 
@@ -266,6 +266,7 @@ describe('Research Routes - Authenticated', () => {
     const services: ServiceContainer = {
       researchRepo: fakeRepo,
       pricingRepo: new FakePricingRepository(),
+      usageStatsRepo: new FakeUsageStatsRepository(),
       generateId: (): string => 'generated-id-123',
       researchEventPublisher: fakeResearchEventPublisher,
       llmCallPublisher: fakeLlmCallPublisher,
@@ -273,7 +274,6 @@ describe('Research Routes - Authenticated', () => {
       notificationSender: fakeNotificationSender,
       shareStorage: null,
       shareConfig: null,
-      createLlmProviders: () => createFakeLlmProviders(),
       createResearchProvider: () => createFakeLlmResearchProvider(),
       createSynthesizer: () => createFakeSynthesizer(),
       createTitleGenerator: () => createFakeTitleGenerator(),
@@ -298,8 +298,8 @@ describe('Research Routes - Authenticated', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: {
           prompt: 'Test prompt',
-          selectedLlms: ['google'],
-          synthesisLlm: 'google',
+          selectedModels: ['gemini-2.5-pro'],
+          synthesisModel: 'gemini-2.5-pro',
         },
       });
 
@@ -322,8 +322,8 @@ describe('Research Routes - Authenticated', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: {
           prompt: 'Test prompt',
-          selectedLlms: ['google'],
-          synthesisLlm: 'anthropic',
+          selectedModels: ['gemini-2.5-pro'],
+          synthesisModel: 'claude-opus-4-5-20251101',
           externalReports: [{ content: 'External report content', model: 'Custom Model' }],
         },
       });
@@ -344,8 +344,8 @@ describe('Research Routes - Authenticated', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: {
           prompt: 'Test prompt',
-          selectedLlms: ['google'],
-          synthesisLlm: 'google',
+          selectedModels: ['gemini-2.5-pro'],
+          synthesisModel: 'gemini-2.5-pro',
         },
       });
 
@@ -395,8 +395,8 @@ describe('Research Routes - Authenticated', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: {
           prompt: 'Test prompt',
-          selectedLlms: ['google', 'openai'],
-          synthesisLlm: 'anthropic',
+          selectedModels: ['gemini-2.5-pro', 'o4-mini-deep-research'],
+          synthesisModel: 'claude-opus-4-5-20251101',
           externalReports: [{ content: 'Test report', model: 'Test Model' }],
         },
       });
@@ -406,8 +406,8 @@ describe('Research Routes - Authenticated', () => {
       const saved = fakeRepo.getAll()[0];
       expect(saved).toBeDefined();
       if (saved !== undefined) {
-        expect(saved.selectedLlms).toEqual(['google', 'openai']);
-        expect(saved.synthesisLlm).toBe('anthropic');
+        expect(saved.selectedModels).toEqual(['gemini-2.5-pro', 'o4-mini-deep-research']);
+        expect(saved.synthesisModel).toBe('claude-opus-4-5-20251101');
         expect(saved.externalReports).toHaveLength(1);
       }
     });
@@ -429,8 +429,12 @@ describe('Research Routes - Authenticated', () => {
       const saved = fakeRepo.getAll()[0];
       expect(saved).toBeDefined();
       if (saved !== undefined) {
-        expect(saved.selectedLlms).toEqual(['google', 'openai', 'anthropic']);
-        expect(saved.synthesisLlm).toBe('google');
+        expect(saved.selectedModels).toEqual([
+          'gemini-2.5-pro',
+          'claude-opus-4-5-20251101',
+          'o4-mini-deep-research',
+        ]);
+        expect(saved.synthesisModel).toBe('gemini-2.5-pro');
       }
     });
 
@@ -486,8 +490,8 @@ describe('Research Routes - Authenticated', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: {
           prompt: 'Updated prompt',
-          selectedLlms: ['anthropic'],
-          synthesisLlm: 'google',
+          selectedModels: ['claude-opus-4-5-20251101'],
+          synthesisModel: 'gemini-2.5-pro',
         },
       });
 
@@ -495,8 +499,43 @@ describe('Research Routes - Authenticated', () => {
       const body = JSON.parse(response.body) as { success: boolean; data: Research };
       expect(body.success).toBe(true);
       expect(body.data.prompt).toBe('Updated prompt');
-      expect(body.data.selectedLlms).toEqual(['anthropic']);
-      expect(body.data.synthesisLlm).toBe('google');
+      expect(body.data.selectedModels).toEqual(['claude-opus-4-5-20251101']);
+      expect(body.data.synthesisModel).toBe('gemini-2.5-pro');
+      expect(body.data.llmResults).toHaveLength(1);
+      expect(body.data.llmResults[0]?.provider).toBe('anthropic');
+      expect(body.data.llmResults[0]?.status).toBe('pending');
+    });
+
+    it('regenerates llmResults when selectedModels changes', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const draft = createTestResearch({
+        id: 'draft-456',
+        status: 'draft',
+        selectedModels: ['gemini-2.5-pro'],
+        llmResults: [{ provider: 'google', model: 'gemini-2.5-pro', status: 'pending' }],
+      });
+      fakeRepo.addResearch(draft);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/research/draft-456',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          prompt: 'Test prompt',
+          selectedModels: ['o4-mini-deep-research', 'claude-opus-4-5-20251101'],
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.data.selectedModels).toEqual([
+        'o4-mini-deep-research',
+        'claude-opus-4-5-20251101',
+      ]);
+      expect(body.data.llmResults).toHaveLength(2);
+      expect(body.data.llmResults[0]?.provider).toBe('openai');
+      expect(body.data.llmResults[1]?.provider).toBe('anthropic');
+      expect(body.data.llmResults.every((r) => r.status === 'pending')).toBe(true);
     });
 
     it('regenerates title when prompt changes', async () => {
@@ -1026,6 +1065,187 @@ describe('Research Routes - Authenticated', () => {
     });
   });
 
+  describe('POST /research/:id/enhance', () => {
+    function createCompletedResearch(overrides?: Partial<Research>): Research {
+      return createTestResearch({
+        status: 'completed',
+        llmResults: [
+          {
+            provider: 'google',
+            model: 'gemini-2.0-flash',
+            status: 'completed',
+            result: 'Google result',
+          },
+        ],
+        completedAt: '2024-01-01T00:05:00Z',
+        ...overrides,
+      });
+    }
+
+    it('creates enhanced research with additional LLMs', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch();
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { additionalModels: ['claude-opus-4-5-20251101'] },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+      expect(body.data.sourceResearchId).toBe(source.id);
+      expect(body.data.selectedModels).toContain('claude-opus-4-5-20251101');
+    });
+
+    it('returns 404 when source research not found', async () => {
+      const token = await createToken(TEST_USER_ID);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/research/nonexistent/enhance',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { additionalModels: ['claude-opus-4-5-20251101'] },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.body) as { success: boolean; error: { code: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 403 for other users research', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch({ userId: OTHER_USER_ID });
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { additionalModels: ['claude-opus-4-5-20251101'] },
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.body) as { success: boolean; error: { code: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('returns 409 when source research is not completed', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createTestResearch({ status: 'processing' });
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { additionalModels: ['claude-opus-4-5-20251101'] },
+      });
+
+      expect(response.statusCode).toBe(409);
+      const body = JSON.parse(response.body) as { success: boolean; error: { code: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('CONFLICT');
+    });
+
+    it('returns 409 when no changes provided', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch();
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: {},
+      });
+
+      expect(response.statusCode).toBe(409);
+      const body = JSON.parse(response.body) as { success: boolean; error: { code: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('CONFLICT');
+    });
+
+    it('creates enhanced research with new synthesis LLM', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch();
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { synthesisModel: 'claude-opus-4-5-20251101' },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+      expect(body.data.synthesisModel).toBe('claude-opus-4-5-20251101');
+    });
+
+    it('creates enhanced research with additional contexts', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch();
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { additionalContexts: [{ content: 'Additional context' }] },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+      expect(body.data.externalReports?.length).toBeGreaterThan(0);
+    });
+
+    it('creates enhanced research with removed contexts', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch({
+        externalReports: [{ id: 'ctx-1', content: 'Context', addedAt: '2024-01-01T00:00:00Z' }],
+      });
+      fakeRepo.addResearch(source);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { removeContextIds: ['ctx-1'] },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+    });
+
+    it('returns 500 when save fails', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const source = createCompletedResearch();
+      fakeRepo.addResearch(source);
+      fakeRepo.setFailNextSave(true);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${source.id}/enhance`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { additionalModels: ['claude-opus-4-5-20251101'] },
+      });
+
+      expect(response.statusCode).toBe(500);
+      const body = JSON.parse(response.body) as { success: boolean; error: { code: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
   describe('DELETE /research/:id/share', () => {
     function createSharedResearch(overrides?: Partial<Research>): Research {
       return createTestResearch({
@@ -1126,7 +1346,7 @@ describe('Research Routes - Authenticated', () => {
           },
         ],
         partialFailure: {
-          failedProviders: ['openai'],
+          failedModels: ['o4-mini-deep-research'],
           detectedAt: '2024-01-01T10:00:00Z',
           retryCount: 0,
         },
@@ -1179,7 +1399,7 @@ describe('Research Routes - Authenticated', () => {
       };
       expect(body.success).toBe(true);
       expect(body.data.action).toBe('retry');
-      expect(body.data.message).toContain('openai');
+      expect(body.data.message).toContain('o4-mini-deep-research');
 
       const updatedResearch = fakeRepo.getAll().find((r) => r.id === research.id);
       expect(updatedResearch?.status).toBe('retrying');
@@ -1271,8 +1491,8 @@ describe('Research Routes - Authenticated', () => {
         userId: TEST_USER_ID,
         title: 'Test Research',
         prompt: 'Test prompt',
-        selectedLlms: ['google'],
-        synthesisLlm: 'google',
+        selectedModels: ['gemini-2.5-pro'],
+        synthesisModel: 'gemini-2.5-pro',
         status: 'awaiting_confirmation',
         llmResults: [
           { provider: 'google', model: 'gemini-2.0-flash', status: 'completed', result: 'Result' },
@@ -1386,6 +1606,7 @@ describe('Research Routes - Authenticated', () => {
       const services: ServiceContainer = {
         researchRepo: newFakeRepo,
         pricingRepo: new FakePricingRepository(),
+        usageStatsRepo: new FakeUsageStatsRepository(),
         generateId: (): string => 'generated-id-123',
         researchEventPublisher: newFakeResearchEventPublisher,
         llmCallPublisher: newFakeLlmCallPublisher,
@@ -1393,7 +1614,6 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: newFakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
-        createLlmProviders: () => createFakeLlmProviders(),
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFailingSynthesizer('LLM API unavailable'),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -1440,7 +1660,7 @@ describe('Research Routes - Authenticated', () => {
       const token = await createToken(TEST_USER_ID);
       const research = createAwaitingConfirmationResearch({
         partialFailure: {
-          failedProviders: ['openai'],
+          failedModels: ['o4-mini-deep-research'],
           detectedAt: '2024-01-01T10:00:00Z',
           retryCount: 2,
         },
@@ -1506,11 +1726,11 @@ describe('Research Routes - Authenticated', () => {
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body) as {
         success: boolean;
-        data: { action: string; message: string; retriedProviders?: string[] };
+        data: { action: string; message: string; retriedModels?: string[] };
       };
       expect(body.success).toBe(true);
       expect(body.data.action).toBe('retried_llms');
-      expect(body.data.retriedProviders).toContain('openai');
+      expect(body.data.retriedModels).toContain('o4-mini-deep-research');
 
       const updatedResearch = fakeRepo.getAll().find((r) => r.id === research.id);
       expect(updatedResearch?.status).toBe('retrying');
@@ -1653,9 +1873,9 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: new FakeNotificationSender(),
         llmCallPublisher: new FakeLlmCallPublisher(),
         pricingRepo: new FakePricingRepository(),
+        usageStatsRepo: new FakeUsageStatsRepository(),
         shareStorage: null,
         shareConfig: null,
-        createLlmProviders: () => createFakeLlmProviders(),
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFailingSynthesizer('LLM API unavailable'),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -1699,6 +1919,32 @@ describe('Research Routes - Authenticated', () => {
       }
     });
   });
+
+  describe('GET /llm/usage-stats', () => {
+    it('returns 401 without auth', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/llm/usage-stats',
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns empty array when no stats exist', async () => {
+      const token = await createToken(TEST_USER_ID);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/llm/usage-stats',
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as { success: boolean; data: unknown[] };
+      expect(body.success).toBe(true);
+      expect(body.data).toEqual([]);
+    });
+  });
 });
 
 describe('System Endpoints', () => {
@@ -1718,6 +1964,7 @@ describe('System Endpoints', () => {
     const services: ServiceContainer = {
       researchRepo: fakeRepo,
       pricingRepo: new FakePricingRepository(),
+      usageStatsRepo: new FakeUsageStatsRepository(),
       generateId: (): string => 'generated-id-123',
       researchEventPublisher: fakeResearchEventPublisher,
       llmCallPublisher: fakeLlmCallPublisher,
@@ -1725,7 +1972,6 @@ describe('System Endpoints', () => {
       notificationSender: fakeNotificationSender,
       shareStorage: null,
       shareConfig: null,
-      createLlmProviders: () => createFakeLlmProviders(),
       createResearchProvider: () => createFakeLlmResearchProvider(),
       createSynthesizer: () => createFakeSynthesizer(),
       createTitleGenerator: () => createFakeTitleGenerator(),
@@ -1781,6 +2027,7 @@ describe('Internal Routes', () => {
     const services: ServiceContainer = {
       researchRepo: fakeRepo,
       pricingRepo: new FakePricingRepository(),
+      usageStatsRepo: new FakeUsageStatsRepository(),
       generateId: (): string => 'generated-id-123',
       researchEventPublisher: fakeResearchEventPublisher,
       llmCallPublisher: fakeLlmCallPublisher,
@@ -1788,7 +2035,6 @@ describe('Internal Routes', () => {
       notificationSender: fakeNotificationSender,
       shareStorage: null,
       shareConfig: null,
-      createLlmProviders: () => createFakeLlmProviders(),
       createResearchProvider: () => createFakeLlmResearchProvider(),
       createSynthesizer: () => createFakeSynthesizer(),
       createTitleGenerator: () => createFakeTitleGenerator(),
@@ -1814,7 +2060,7 @@ describe('Internal Routes', () => {
           userId: TEST_USER_ID,
           title: 'Test Draft Research',
           prompt: 'Test prompt content',
-          selectedLlms: ['google', 'openai'],
+          selectedModels: ['gemini-2.5-pro', 'o4-mini-deep-research'],
         },
       });
 
@@ -1825,7 +2071,7 @@ describe('Internal Routes', () => {
       expect(body.data.userId).toBe(TEST_USER_ID);
       expect(body.data.title).toBe('Test Draft Research');
       expect(body.data.status).toBe('draft');
-      expect(body.data.selectedLlms).toEqual(['google', 'openai']);
+      expect(body.data.selectedModels).toEqual(['gemini-2.5-pro', 'o4-mini-deep-research']);
     });
 
     it('creates draft research with sourceActionId', async () => {
@@ -1837,7 +2083,7 @@ describe('Internal Routes', () => {
           userId: TEST_USER_ID,
           title: 'Test Draft Research',
           prompt: 'Test prompt content',
-          selectedLlms: ['anthropic'],
+          selectedModels: ['claude-opus-4-5-20251101'],
           sourceActionId: 'action-123',
         },
       });
@@ -1856,7 +2102,7 @@ describe('Internal Routes', () => {
           userId: TEST_USER_ID,
           title: 'Test Draft Research',
           prompt: 'Test prompt content',
-          selectedLlms: ['google'],
+          selectedModels: ['gemini-2.5-pro'],
         },
       });
 
@@ -1874,7 +2120,7 @@ describe('Internal Routes', () => {
           userId: TEST_USER_ID,
           title: 'Test Draft Research',
           prompt: 'Test prompt content',
-          selectedLlms: ['google'],
+          selectedModels: ['gemini-2.5-pro'],
         },
       });
 
@@ -1894,7 +2140,7 @@ describe('Internal Routes', () => {
           userId: TEST_USER_ID,
           title: 'Test Draft Research',
           prompt: 'Test prompt content',
-          selectedLlms: ['google'],
+          selectedModels: ['gemini-2.5-pro'],
         },
       });
 
@@ -1914,7 +2160,7 @@ describe('Internal Routes', () => {
           userId: TEST_USER_ID,
           title: 'Test Draft Research',
           prompt: 'Test prompt content',
-          selectedLlms: ['google'],
+          selectedModels: ['gemini-2.5-pro'],
         },
       });
 
@@ -2184,7 +2430,7 @@ describe('Internal Routes', () => {
         type: string;
         researchId: string;
         userId: string;
-        provider: string;
+        model: string;
         prompt: string;
       }>
     ): object {
@@ -2192,7 +2438,7 @@ describe('Internal Routes', () => {
         type: 'llm.call',
         researchId: 'research-123',
         userId: TEST_USER_ID,
-        provider: 'google',
+        model: 'gemini-2.5-pro',
         prompt: 'Test prompt',
         ...overrides,
       };
@@ -2202,9 +2448,9 @@ describe('Internal Routes', () => {
       return createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google', 'openai'],
+        selectedModels: ['gemini-2.5-pro', 'o4-mini-deep-research'],
         llmResults: [
-          { provider: 'google', model: 'gemini-2.0-flash', status: 'pending' },
+          { provider: 'google', model: 'gemini-2.5-pro', status: 'pending' },
           { provider: 'openai', model: 'o4-mini-deep-research', status: 'pending' },
         ],
       });
@@ -2217,6 +2463,7 @@ describe('Internal Routes', () => {
       const services: ServiceContainer = {
         researchRepo: fakeRepo,
         pricingRepo: new FakePricingRepository(),
+        usageStatsRepo: new FakeUsageStatsRepository(),
         generateId: (): string => 'generated-id-123',
         researchEventPublisher: new FakeResearchEventPublisher(),
         llmCallPublisher: fakeLlmCallPublisher,
@@ -2224,7 +2471,6 @@ describe('Internal Routes', () => {
         notificationSender: fakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
-        createLlmProviders: () => createFakeLlmProviders(),
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFakeSynthesizer(),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2360,11 +2606,11 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
+        selectedModels: ['gemini-2.5-pro'],
         llmResults: [
           {
             provider: 'google',
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-pro',
             status: 'completed',
             result: 'Already done',
           },
@@ -2394,11 +2640,11 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
+        selectedModels: ['gemini-2.5-pro'],
         llmResults: [
           {
             provider: 'google',
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-pro',
             status: 'failed',
             error: 'Previous error',
           },
@@ -2462,7 +2708,7 @@ describe('Internal Routes', () => {
         headers: { from: 'noreply@google.com' },
         payload: {
           message: {
-            data: encodePubSubMessage(createLlmCallEvent({ provider: 'google' })),
+            data: encodePubSubMessage(createLlmCallEvent({ model: 'gemini-2.5-pro' })),
             messageId: 'msg-123',
           },
           subscription: 'test-sub',
@@ -2476,7 +2722,7 @@ describe('Internal Routes', () => {
 
       const failures = fakeNotificationSender.getSentFailures();
       expect(failures.length).toBe(1);
-      expect(failures[0]?.provider).toBe('google');
+      expect(failures[0]?.model).toBe('gemini-2.5-pro');
     });
 
     it('processes LLM call and updates result on success', async () => {
@@ -2514,9 +2760,9 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
-        synthesisLlm: 'google',
-        llmResults: [{ provider: 'google', model: 'gemini-2.0-flash', status: 'pending' }],
+        selectedModels: ['gemini-2.5-pro'],
+        synthesisModel: 'gemini-2.5-pro',
+        llmResults: [{ provider: 'google', model: 'gemini-2.5-pro', status: 'pending' }],
         externalReports: [
           { id: 'ext-1', content: 'External report', addedAt: '2024-01-01T10:00:00Z' },
         ],
@@ -2550,9 +2796,9 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
-        synthesisLlm: 'google',
-        llmResults: [{ provider: 'google', model: 'gemini-2.0-flash', status: 'pending' }],
+        selectedModels: ['gemini-2.5-pro'],
+        synthesisModel: 'gemini-2.5-pro',
+        llmResults: [{ provider: 'google', model: 'gemini-2.5-pro', status: 'pending' }],
       });
       fakeRepo.addResearch(research);
       fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'google-key' });
@@ -2583,9 +2829,9 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
-        synthesisLlm: 'google',
-        llmResults: [{ provider: 'google', model: 'gemini-2.0-flash', status: 'pending' }],
+        selectedModels: ['gemini-2.5-pro'],
+        synthesisModel: 'gemini-2.5-pro',
+        llmResults: [{ provider: 'google', model: 'gemini-2.5-pro', status: 'pending' }],
       });
       fakeRepo.addResearch(research);
       fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'google-key' });
@@ -2612,8 +2858,8 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
-        llmResults: [{ provider: 'google', model: 'gemini-2.0-flash', status: 'pending' }],
+        selectedModels: ['gemini-2.5-pro'],
+        llmResults: [{ provider: 'google', model: 'gemini-2.5-pro', status: 'pending' }],
       });
       fakeRepo.addResearch(research);
       fakeUserServiceClient.setApiKeys(TEST_USER_ID, {});
@@ -2641,9 +2887,9 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google', 'openai'],
+        selectedModels: ['gemini-2.5-pro', 'o4-mini-deep-research'],
         llmResults: [
-          { provider: 'google', model: 'gemini-2.0-flash', status: 'completed', result: 'Done' },
+          { provider: 'google', model: 'gemini-2.5-pro', status: 'completed', result: 'Done' },
           { provider: 'openai', model: 'o4-mini-deep-research', status: 'pending' },
         ],
       });
@@ -2656,7 +2902,7 @@ describe('Internal Routes', () => {
         headers: { from: 'noreply@google.com' },
         payload: {
           message: {
-            data: encodePubSubMessage(createLlmCallEvent({ provider: 'openai' })),
+            data: encodePubSubMessage(createLlmCallEvent({ model: 'o4-mini-deep-research' })),
             messageId: 'msg-123',
           },
           subscription: 'test-sub',
@@ -2667,18 +2913,18 @@ describe('Internal Routes', () => {
 
       const updatedResearch = fakeRepo.getAll()[0];
       expect(updatedResearch?.status).toBe('awaiting_confirmation');
-      expect(updatedResearch?.partialFailure?.failedProviders).toContain('openai');
+      expect(updatedResearch?.partialFailure?.failedModels).toContain('o4-mini-deep-research');
     });
 
     it('handles partial failure when LLM succeeds but another already failed', async () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google', 'openai'],
+        selectedModels: ['gemini-2.5-pro', 'o4-mini-deep-research'],
         llmResults: [
           {
             provider: 'google',
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-pro',
             status: 'failed',
             error: 'Previous failure',
           },
@@ -2694,7 +2940,7 @@ describe('Internal Routes', () => {
         headers: { from: 'noreply@google.com' },
         payload: {
           message: {
-            data: encodePubSubMessage(createLlmCallEvent({ provider: 'openai' })),
+            data: encodePubSubMessage(createLlmCallEvent({ model: 'o4-mini-deep-research' })),
             messageId: 'msg-123',
           },
           subscription: 'test-sub',
@@ -2705,7 +2951,7 @@ describe('Internal Routes', () => {
 
       const updatedResearch = fakeRepo.getAll()[0];
       expect(updatedResearch?.status).toBe('awaiting_confirmation');
-      expect(updatedResearch?.partialFailure?.failedProviders).toContain('google');
+      expect(updatedResearch?.partialFailure?.failedModels).toContain('gemini-2.5-pro');
       expect(updatedResearch?.llmResults.find((r) => r.provider === 'openai')?.status).toBe(
         'completed'
       );
@@ -2715,9 +2961,9 @@ describe('Internal Routes', () => {
       const research = createTestResearch({
         id: 'research-123',
         status: 'processing',
-        selectedLlms: ['google'],
-        synthesisLlm: 'anthropic',
-        llmResults: [{ provider: 'google', model: 'gemini-2.0-flash', status: 'pending' }],
+        selectedModels: ['gemini-2.5-pro'],
+        synthesisModel: 'claude-opus-4-5-20251101',
+        llmResults: [{ provider: 'google', model: 'gemini-2.5-pro', status: 'pending' }],
       });
       fakeRepo.addResearch(research);
       fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'google-key' });
@@ -2740,6 +2986,30 @@ describe('Internal Routes', () => {
       const updatedResearch = fakeRepo.getAll()[0];
       expect(updatedResearch?.status).toBe('failed');
       expect(updatedResearch?.synthesisError).toContain('API key required');
+    });
+  });
+
+  describe('GET /internal/llm/usage-stats', () => {
+    it('returns 401 without auth', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/internal/llm/usage-stats',
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns empty array when no stats exist with valid auth', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/internal/llm/usage-stats',
+        headers: { 'x-internal-auth': TEST_INTERNAL_TOKEN },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as { success: boolean; data: unknown[] };
+      expect(body.success).toBe(true);
+      expect(body.data).toEqual([]);
     });
   });
 });
