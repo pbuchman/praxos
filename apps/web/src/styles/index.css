@@ -21,6 +21,12 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
+/* Global text overflow handling - prevents long URLs and non-breakable text from overflowing */
+* {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
 /* Focus styles */
 :focus-visible {
   @apply outline-2 outline-offset-2 outline-blue-600;

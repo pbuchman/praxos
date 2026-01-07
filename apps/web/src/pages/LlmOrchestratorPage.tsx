@@ -637,8 +637,8 @@ export function LlmOrchestratorPage(): React.JSX.Element {
       </div>
 
       {showSingleProviderConfirm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-amber-500" />
               <div>
@@ -674,8 +674,8 @@ export function LlmOrchestratorPage(): React.JSX.Element {
       ) : null}
 
       {showDiscardConfirm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-start gap-3">
               <Trash2 className="mt-0.5 h-6 w-6 shrink-0 text-red-500" />
               <div>

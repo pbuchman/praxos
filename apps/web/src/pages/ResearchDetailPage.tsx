@@ -985,8 +985,8 @@ export function ResearchDetailPage(): React.JSX.Element {
       })()}
 
       {showEnhanceModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-8">
-          <div className="mx-4 w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold">Enhance Research</h3>
             <p className="mb-4 text-sm text-slate-600">
               Add more AI models, change synthesis model, or modify context.
