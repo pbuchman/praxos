@@ -10,7 +10,7 @@ export const internalRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
    * Used by apps at startup to load pricing into PricingContext.
    */
   fastify.get(
-    '/internal/settings/pricing',
+    '/settings/pricing',
     {
       schema: {
         operationId: 'getAllPricing',
@@ -25,10 +25,10 @@ export const internalRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
               data: {
                 type: 'object',
                 properties: {
-                  google: { $ref: '#/components/schemas/ProviderPricing' },
-                  openai: { $ref: '#/components/schemas/ProviderPricing' },
-                  anthropic: { $ref: '#/components/schemas/ProviderPricing' },
-                  perplexity: { $ref: '#/components/schemas/ProviderPricing' },
+                  google: { $ref: 'ProviderPricing#' },
+                  openai: { $ref: 'ProviderPricing#' },
+                  anthropic: { $ref: 'ProviderPricing#' },
+                  perplexity: { $ref: 'ProviderPricing#' },
                 },
                 required: ['google', 'openai', 'anthropic', 'perplexity'],
               },

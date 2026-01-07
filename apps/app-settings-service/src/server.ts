@@ -136,6 +136,43 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   registerCoreSchemas(app);
 
+  // Register custom schemas for routes
+  app.addSchema({
+    $id: 'ModelPricing',
+    type: 'object',
+    required: ['inputPricePerMillion', 'outputPricePerMillion'],
+    properties: {
+      inputPricePerMillion: { type: 'number' },
+      outputPricePerMillion: { type: 'number' },
+      cacheReadMultiplier: { type: 'number' },
+      cacheWriteMultiplier: { type: 'number' },
+      webSearchCostPerCall: { type: 'number' },
+      groundingCostPerRequest: { type: 'number' },
+      imagePricing: {
+        type: 'object',
+        additionalProperties: { type: 'number' },
+      },
+      useProviderCost: { type: 'boolean' },
+    },
+  });
+
+  app.addSchema({
+    $id: 'ProviderPricing',
+    type: 'object',
+    required: ['provider', 'models', 'updatedAt'],
+    properties: {
+      provider: {
+        type: 'string',
+        enum: ['google', 'openai', 'anthropic', 'perplexity'],
+      },
+      models: {
+        type: 'object',
+        additionalProperties: { $ref: 'ModelPricing#' },
+      },
+      updatedAt: { type: 'string', format: 'date-time' },
+    },
+  });
+
   // Register routes
   await app.register(publicRoutes);
   await app.register(internalRoutes, { prefix: '/internal' });
