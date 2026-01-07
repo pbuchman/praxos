@@ -21,10 +21,21 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
-/* Global text overflow handling - prevents long URLs and non-breakable text from overflowing */
-* {
+/* Text overflow handling - prevents long URLs and non-breakable text from overflowing containers */
+p,
+span,
+a,
+li,
+td,
+th,
+label,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   overflow-wrap: break-word;
-  word-wrap: break-word;
 }
 
 /* Focus styles */

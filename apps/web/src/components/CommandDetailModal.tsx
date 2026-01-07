@@ -118,7 +118,7 @@ export function CommandDetailModal({
           </button>
         </div>
 
-        {/* Content */}
+        {/* Content - min-h-0 enables flex shrinking with overflow-y-auto */}
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
           {/* Command text */}
           <div>
