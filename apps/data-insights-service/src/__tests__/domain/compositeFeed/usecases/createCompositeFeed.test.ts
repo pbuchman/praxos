@@ -178,7 +178,7 @@ describe('createCompositeFeed', () => {
   describe('name generation', () => {
     it('returns NAME_GENERATION_ERROR when name generation fails', async () => {
       fakeFeedNameService.setError({
-        code: 'GENERATION_FAILED',
+        code: 'GENERATION_ERROR',
         message: 'Failed to generate name',
       });
 
