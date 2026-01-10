@@ -174,6 +174,7 @@ describe('createCompositeFeed', () => {
 
       // Set name generation to fail
       fakeFeedNameService.setError({
+        code: 'GENERATION_ERROR',
         message: 'AI service unavailable',
       });
 
