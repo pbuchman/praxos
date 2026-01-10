@@ -702,6 +702,116 @@ describe('Research Routes - Authenticated', () => {
       expect(body.data.title).toBe('New prompt for title generation test that is long enough');
     });
 
+
+    it('regenerates title with Google API key when prompt changes', async () => {
+      const token = await createToken(TEST_USER_ID);
+      fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'test-google-key' });
+      const draft = createTestResearch({
+        id: 'draft-123',
+        status: 'draft',
+        prompt: 'Old prompt',
+        title: 'Old Title',
+      });
+      fakeRepo.addResearch(draft);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/research/draft-123',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          prompt: 'New prompt for title generation',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+      // Fake title generator returns 'Generated Title'
+      expect(body.data.title).toBe('Generated Title');
+    });
+
+    it('falls back to prompt slice when title generation fails during PATCH', async () => {
+      const token = await createToken(TEST_USER_ID);
+      fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'test-google-key' });
+
+      // Create a title generator that fails
+      const failingTitleGenerator: TitleGenerator = {
+        async generateTitle(_prompt: string) {
+          return err({ code: 'API_ERROR', message: 'Title generation failed' });
+        },
+        async generateContextLabel(_content: string) {
+          return ok({ label: 'Label', usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 } });
+        },
+      };
+
+      const newServices: ServiceContainer = {
+        researchRepo: fakeRepo,
+        pricingRepo: new FakePricingRepository(),
+        pricingContext: fakePricingContext,
+        generateId: (): string => 'generated-id-123',
+        researchEventPublisher: fakeResearchEventPublisher,
+        llmCallPublisher: new FakeLlmCallPublisher(),
+        userServiceClient: fakeUserServiceClient,
+        imageServiceClient: null,
+        notificationSender: fakeNotificationSender,
+        shareStorage: null,
+        shareConfig: null,
+        webAppUrl: 'https://app.example.com',
+        createResearchProvider: () => createFakeLlmResearchProvider(),
+        createSynthesizer: () => createFakeSynthesizer(),
+        createTitleGenerator: () => failingTitleGenerator,
+        createContextInferrer: () => createFakeContextInferrer(),
+        createInputValidator: (_model, _apiKey, _userId, _pricing) => createFakeInputValidator(),
+      };
+      setServices(newServices);
+
+      const draft = createTestResearch({
+        id: 'draft-123',
+        status: 'draft',
+        prompt: 'Old prompt',
+        title: 'Old Title',
+      });
+      fakeRepo.addResearch(draft);
+
+      const newApp = await buildServer();
+      try {
+        const response = await newApp.inject({
+          method: 'PATCH',
+          url: '/research/draft-123',
+          headers: { authorization: `Bearer ${token}` },
+          payload: {
+            prompt: 'This is a test prompt that will be used as fallback title',
+          },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.body) as { success: boolean; data: Research };
+        expect(body.success).toBe(true);
+        // Should fallback to first 60 chars of prompt when title generation fails
+        expect(body.data.title).toBe('This is a test prompt that will be used as fallback title');
+      } finally {
+        await newApp.close();
+        setServices({
+          researchRepo: fakeRepo,
+          pricingRepo: new FakePricingRepository(),
+          pricingContext: fakePricingContext,
+          generateId: (): string => 'generated-id-123',
+          researchEventPublisher: fakeResearchEventPublisher,
+          llmCallPublisher: new FakeLlmCallPublisher(),
+          userServiceClient: fakeUserServiceClient,
+          imageServiceClient: null,
+          notificationSender: fakeNotificationSender,
+          shareStorage: null,
+          shareConfig: null,
+          webAppUrl: 'https://app.example.com',
+          createResearchProvider: () => createFakeLlmResearchProvider(),
+          createSynthesizer: () => createFakeSynthesizer(),
+          createTitleGenerator: () => createFakeTitleGenerator(),
+          createContextInferrer: () => createFakeContextInferrer(),
+          createInputValidator: (_model, _apiKey, _userId, _pricing) => createFakeInputValidator(),
+        });
+      }
+    });
     it('returns 404 when research not found', async () => {
       const token = await createToken(TEST_USER_ID);
 
