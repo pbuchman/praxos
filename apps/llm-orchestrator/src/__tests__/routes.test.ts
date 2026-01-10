@@ -394,6 +394,47 @@ describe('Research Routes - Authenticated', () => {
     });
   });
 
+    it('handles getApiKeys failure gracefully', async () => {
+      const token = await createToken(TEST_USER_ID);
+      fakeUserServiceClient.setFailNextGetApiKeys(true);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/research',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          prompt: 'Test prompt',
+          selectedModels: [LlmModels.Gemini25Pro],
+        },
+      });
+
+      // Should still succeed even if getApiKeys fails (degrades gracefully)
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+    });
+
+    it('uses first selectedModel as synthesisModel when synthesisModel not provided', async () => {
+      const token = await createToken(TEST_USER_ID);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/research',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          prompt: 'Test prompt',
+          selectedModels: [LlmModels.Gemini25Pro],
+          // No synthesisModel provided
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+      // Should use first selectedModel as synthesisModel
+      expect(body.data.synthesisModel).toBe(LlmModels.Gemini25Pro);
+    });
+
   describe('POST /research/draft', () => {
     it('creates draft with Google API key (title generation succeeds)', async () => {
       const token = await createToken(TEST_USER_ID);
