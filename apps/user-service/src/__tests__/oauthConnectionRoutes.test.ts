@@ -189,6 +189,19 @@ describe('OAuth Connection Routes', () => {
       expect(response.headers.location).toContain('oauth_error=access_denied');
     });
 
+    it('does not redirect when error parameter is empty string', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/oauth/connections/google/callback?error=',
+      });
+
+      // Empty error string means no error, so it should check for code/state
+      expect(response.statusCode).toBe(302);
+      expect(response.headers.location).toContain('Missing%20code%20or%20state%20parameter');
+    });
+
     it('redirects with error when code is missing', async () => {
       app = await buildServer();
 
@@ -212,6 +225,32 @@ describe('OAuth Connection Routes', () => {
 
       expect(response.statusCode).toBe(302);
       expect(response.headers.location).toContain('oauth_error=');
+    });
+
+    it('redirects with error when code is empty string', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/oauth/connections/google/callback?code=&state=some-state',
+      });
+
+      expect(response.statusCode).toBe(302);
+      expect(response.headers.location).toContain('oauth_error=');
+      expect(response.headers.location).toContain('Missing%20code%20or%20state%20parameter');
+    });
+
+    it('redirects with error when state is empty string', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/oauth/connections/google/callback?code=some-code&state=',
+      });
+
+      expect(response.statusCode).toBe(302);
+      expect(response.headers.location).toContain('oauth_error=');
+      expect(response.headers.location).toContain('Missing%20code%20or%20state%20parameter');
     });
 
     it('redirects with error when Google OAuth is not configured', async () => {
