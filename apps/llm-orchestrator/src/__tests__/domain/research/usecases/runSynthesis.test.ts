@@ -268,6 +268,34 @@ describe('runSynthesis', () => {
     });
   });
 
+  it('completes successfully with synthesis usage undefined', async () => {
+    const research = createTestResearch();
+    deps.mockRepo.findById.mockResolvedValue(ok(research));
+    
+    // Mock synthesizer to return no usage data
+    deps.mockSynthesizer.synthesize.mockResolvedValue(
+      ok({ content: 'Synthesized result' }) // No usage field
+    );
+
+    const mockLogger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    };
+
+    const result = await runSynthesis('research-1', {
+      ...deps,
+      logger: mockLogger,
+    });
+
+    expect(result).toEqual({ ok: true });
+    // Verify the aggregate usage logger was called with undefined values handled
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.stringContaining('[4.3.5] Aggregate usage:')
+    );
+  });
+
   it('sends notification on completion', async () => {
     const research = createTestResearch();
     deps.mockRepo.findById.mockResolvedValue(ok(research));
@@ -511,6 +539,200 @@ describe('runSynthesis', () => {
     });
   });
 
+  describe('attribution repair', () => {
+    it('marks attribution as complete when validation passes', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+      
+      // Return properly formatted synthesis with valid attributions
+      deps.mockSynthesizer.synthesize.mockResolvedValue(
+        ok({
+          content: `## Section 1
+Content from sources
+Attribution: Primary=S1; Secondary=S2; Constraints=; UNK=false
+
+## Section 2
+More content
+Attribution: Primary=S2; Secondary=; Constraints=; UNK=false`,
+          usage: { inputTokens: 500, outputTokens: 200, costUsd: 0.01 },
+        })
+      );
+
+      await runSynthesis('research-1', deps);
+
+      expect(deps.mockRepo.update).toHaveBeenLastCalledWith('research-1', {
+        status: 'completed',
+        synthesizedResult: expect.stringContaining('Section 1'),
+        completedAt: '2024-01-01T12:00:00.000Z',
+        totalDurationMs: 7200000,
+        totalInputTokens: 500,
+        totalOutputTokens: 200,
+        totalCostUsd: 0.01,
+        attributionStatus: 'complete',
+      });
+    });
+
+    it('marks attribution as repaired when repair succeeds and revalidation passes', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+      
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+      
+      // Return synthesis without attributions (invalid)
+      deps.mockSynthesizer.synthesize
+        .mockResolvedValueOnce(
+          ok({
+            content: `## Section 1
+Content without attribution
+
+## Section 2
+More content without attribution`,
+            usage: { inputTokens: 500, outputTokens: 200, costUsd: 0.01 },
+          })
+        )
+        // Second call is for repair - return valid attributions
+        .mockResolvedValueOnce(
+          ok({
+            content: `## Section 1
+Content with attribution
+Attribution: Primary=S1; Secondary=S2; Constraints=; UNK=false
+
+## Section 2
+More content with attribution
+Attribution: Primary=S2; Secondary=; Constraints=; UNK=false`,
+            usage: { inputTokens: 400, outputTokens: 150, costUsd: 0.008 },
+          })
+        );
+
+      await runSynthesis('research-1', {
+        ...deps,
+        logger: mockLogger,
+      });
+
+      const lastCall = deps.mockRepo.update.mock.calls[deps.mockRepo.update.mock.calls.length - 1];
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.[0]).toBe('research-1');
+      const updateData = lastCall?.[1];
+      expect(updateData).toMatchObject({
+        status: 'completed',
+        synthesizedResult: expect.stringContaining('Content with attribution'),
+        completedAt: '2024-01-01T12:00:00.000Z',
+        totalDurationMs: 7200000,
+        totalInputTokens: 500,
+        totalOutputTokens: 200,
+        attributionStatus: 'repaired',
+      });
+      expect(updateData?.totalCostUsd).toBeCloseTo(0.018, 5);
+      
+      // Verify the logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('[4.3.3c] Attribution repair succeeded')
+      );
+    });
+
+    it('marks attribution as incomplete when repair succeeds but revalidation fails', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+      
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+      
+      // Return synthesis without attributions (invalid)
+      deps.mockSynthesizer.synthesize
+        .mockResolvedValueOnce(
+          ok({
+            content: `## Section 1
+Content without attribution
+
+## Section 2
+More content without attribution`,
+            usage: { inputTokens: 500, outputTokens: 200, costUsd: 0.01 },
+          })
+        )
+        // Second call is for repair - return still invalid attributions
+        .mockResolvedValueOnce(
+          ok({
+            content: `## Section 1
+Content with partial attribution
+Attribution: Primary=S1; Secondary=; Constraints=; UNK=false
+
+## Section 2
+Missing attribution again`,
+            usage: { inputTokens: 400, outputTokens: 150, costUsd: 0.008 },
+          })
+        );
+
+      await runSynthesis('research-1', {
+        ...deps,
+        logger: mockLogger,
+      });
+
+      const lastCall = deps.mockRepo.update.mock.calls[deps.mockRepo.update.mock.calls.length - 1];
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.[0]).toBe('research-1');
+      const updateData = lastCall?.[1];
+      expect(updateData).toMatchObject({
+        status: 'completed',
+        synthesizedResult: expect.stringContaining('Content without attribution'),
+        completedAt: '2024-01-01T12:00:00.000Z',
+        totalDurationMs: 7200000,
+        totalInputTokens: 500,
+        totalOutputTokens: 200,
+        attributionStatus: 'incomplete',
+      });
+      expect(updateData?.totalCostUsd).toBeCloseTo(0.018, 5);
+      
+      // Verify the logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '[4.3.3c] Attribution repair did not fix all issues'
+      );
+    });
+
+    it('marks attribution as incomplete when repair fails', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+      
+      // Return synthesis without attributions (invalid)
+      deps.mockSynthesizer.synthesize
+        .mockResolvedValueOnce(
+          ok({
+            content: `## Section 1
+Content without attribution
+
+## Section 2
+More content without attribution`,
+            usage: { inputTokens: 500, outputTokens: 200, costUsd: 0.01 },
+          })
+        )
+        // Second call is for repair - return error
+        .mockResolvedValueOnce(
+          err({ code: 'API_ERROR', message: 'Repair failed' })
+        );
+
+      await runSynthesis('research-1', deps);
+
+      expect(deps.mockRepo.update).toHaveBeenLastCalledWith('research-1', {
+        status: 'completed',
+        synthesizedResult: expect.stringContaining('Content without attribution'),
+        completedAt: '2024-01-01T12:00:00.000Z',
+        totalDurationMs: 7200000,
+        totalInputTokens: 500,
+        totalOutputTokens: 200,
+        totalCostUsd: 0.01, // Only initial cost, no repair cost
+        attributionStatus: 'incomplete',
+      });
+    });
+  });
+
   describe('synthesis context inference', () => {
     const mockSynthesisContext: SynthesisContext = {
       language: 'en',
@@ -674,6 +896,34 @@ describe('runSynthesis', () => {
         '[4.2.2] Synthesis context inference failed but cost tracked'
       );
     });
+
+    it('tracks cost as 0 when synthesis context inference fails with usage but no costUsd', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockContextInferrer = {
+        inferResearchContext: vi.fn(),
+        inferSynthesisContext: vi.fn().mockResolvedValue(
+          err({
+            code: 'API_ERROR',
+            message: 'Response parsing error',
+            usage: { inputTokens: 1000, outputTokens: 200 }, // No costUsd field
+          })
+        ),
+      };
+
+      const result = await runSynthesis('research-1', {
+        ...deps,
+        contextInferrer: mockContextInferrer,
+        logger: mockLogger,
+      });
+
+      expect(result).toEqual({ ok: true });
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ costUsd: undefined }),
+        '[4.2.2] Synthesis context inference failed but cost tracked'
+      );
+    });
   });
 
   describe('with share storage', () => {
@@ -796,6 +1046,135 @@ describe('runSynthesis', () => {
         totalOutputTokens: 200,
         totalCostUsd: 0.02, // Synthesis (0.01) + attribution repair (0.01)
       });
+    });
+
+    it('logs appropriate messages during synthesis with context inference and image generation', async () => {
+      const mockSynthesisContext: SynthesisContext = {
+        language: 'en',
+        domain: 'general',
+        mode: 'standard',
+        synthesis_goals: ['merge'],
+        missing_sections: [],
+        detected_conflicts: [],
+        source_preference: {
+          prefer_official_over_aggregators: true,
+          prefer_recent_when_time_sensitive: true,
+        },
+        defaults_applied: [],
+        assumptions: [],
+        output_format: {
+          wants_table: false,
+          wants_actionable_summary: true,
+        },
+        safety: {
+          high_stakes: false,
+          required_disclaimers: [],
+        },
+        red_flags: [],
+      };
+
+      const research = createTestResearch({
+        synthesisModel: 'gpt-4o',
+        auxiliaryCostUsd: 0.001,
+        sourceLlmCostUsd: 0.002,
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockContextInferrer = {
+        inferResearchContext: vi.fn(),
+        inferSynthesisContext: vi.fn().mockResolvedValue(
+          ok({
+            context: mockSynthesisContext,
+            usage: { inputTokens: 200, outputTokens: 100, costUsd: 0.003 },
+          })
+        ),
+      };
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi
+          .fn()
+          .mockResolvedValue(ok({ title: 'Cover Title', prompt: 'generated prompt' })),
+        generateImage: vi.fn().mockResolvedValue(
+          ok({
+            id: 'img-123',
+            thumbnailUrl: 'https://storage.example.com/thumb.jpg',
+            fullSizeUrl: 'https://storage.example.com/full.png',
+          })
+        ),
+        deleteImage: vi.fn(),
+      };
+
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        contextInferrer: mockContextInferrer,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: { google: 'test-google-key' },
+        logger: mockLogger,
+      });
+
+      // Verify context inference success was logged
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('[4.2.2] Synthesis context inferred successfully')
+      );
+
+      // Verify aggregate usage was logged
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('[4.3.5] Aggregate usage:')
+      );
+
+      // Verify image model selection was logged
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Selected image model:')
+      );
+    });
+
+    it('includes input contexts in shareable HTML when present', async () => {
+      const research = createTestResearch({
+        inputContexts: [
+          {
+            id: 'ctx-1',
+            content: 'Input context from external source',
+            label: 'Wikipedia Article',
+            addedAt: '2024-01-01T10:00:00Z',
+          },
+          {
+            id: 'ctx-2',
+            content: 'Another input context',
+            addedAt: '2024-01-01T10:00:00Z',
+          },
+        ],
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+      });
+
+      expect(mockShareStorage.upload).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('Input context from external source')
+      );
     });
 
     it('includes cover image in shareInfo when image generation succeeds with Google key', async () => {
@@ -1042,6 +1421,307 @@ describe('runSynthesis', () => {
         shareInfo: expect.not.objectContaining({
           coverImageId: expect.anything(),
         }),
+      });
+    });
+
+    it('prefers OpenAI image model when synthesis uses gpt model', async () => {
+      const research = createTestResearch({
+        synthesisModel: 'gpt-4o',
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi
+          .fn()
+          .mockResolvedValue(ok({ title: 'Cover Title', prompt: 'generated prompt' })),
+        generateImage: vi.fn().mockResolvedValue(
+          ok({
+            id: 'img-gpt',
+            thumbnailUrl: 'https://storage.example.com/thumb.jpg',
+            fullSizeUrl: 'https://storage.example.com/full.png',
+          })
+        ),
+        deleteImage: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: { openai: 'test-openai-key', google: 'test-google-key' },
+      });
+
+      expect(mockImageServiceClient.generateImage).toHaveBeenCalledWith(
+        'generated prompt',
+        LlmModels.GPTImage1,
+        'user-1',
+        { title: 'Cover Title' }
+      );
+    });
+
+    it('falls back to Google when OpenAI synthesis used but only Google key available', async () => {
+      const research = createTestResearch({
+        synthesisModel: 'gpt-4o',
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi
+          .fn()
+          .mockResolvedValue(ok({ title: 'Cover Title', prompt: 'generated prompt' })),
+        generateImage: vi.fn().mockResolvedValue(
+          ok({
+            id: 'img-google',
+            thumbnailUrl: 'https://storage.example.com/thumb.jpg',
+            fullSizeUrl: 'https://storage.example.com/full.png',
+          })
+        ),
+        deleteImage: vi.fn(),
+      };
+
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: { google: 'test-google-key' },
+        logger: mockLogger,
+      });
+
+      expect(mockImageServiceClient.generateImage).toHaveBeenCalledWith(
+        'generated prompt',
+        LlmModels.Gemini25FlashImage,
+        'user-1',
+        { title: 'Cover Title' }
+      );
+      
+      // Verify the logger was called with the image model selection message
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Selected image model: gemini-2.5-flash-image')
+      );
+    });
+
+    it('logs both API keys when both are present for image generation', async () => {
+      const research = createTestResearch({
+        synthesisModel: LlmModels.Gemini25Pro,
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi
+          .fn()
+          .mockResolvedValue(ok({ title: 'Cover Title', prompt: 'generated prompt' })),
+        generateImage: vi.fn().mockResolvedValue(
+          ok({
+            id: 'img-google',
+            thumbnailUrl: 'https://storage.example.com/thumb.jpg',
+            fullSizeUrl: 'https://storage.example.com/full.png',
+          })
+        ),
+        deleteImage: vi.fn(),
+      };
+
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: { google: 'test-google-key', openai: 'test-openai-key' },
+        logger: mockLogger,
+      });
+
+      // Verify the logger was called with both keys present
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringMatching(/Google key: present.*OpenAI key: present/)
+      );
+    });
+
+    it('prefers Google when non-OpenAI synthesis used', async () => {
+      const research = createTestResearch({
+        synthesisModel: LlmModels.Gemini25Pro,
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi
+          .fn()
+          .mockResolvedValue(ok({ title: 'Cover Title', prompt: 'generated prompt' })),
+        generateImage: vi.fn().mockResolvedValue(
+          ok({
+            id: 'img-google',
+            thumbnailUrl: 'https://storage.example.com/thumb.jpg',
+            fullSizeUrl: 'https://storage.example.com/full.png',
+          })
+        ),
+        deleteImage: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: { google: 'test-google-key', openai: 'test-openai-key' },
+      });
+
+      expect(mockImageServiceClient.generateImage).toHaveBeenCalledWith(
+        'generated prompt',
+        LlmModels.Gemini25FlashImage,
+        'user-1',
+        { title: 'Cover Title' }
+      );
+    });
+
+    it('falls back to OpenAI when non-OpenAI synthesis used but only OpenAI key available', async () => {
+      const research = createTestResearch({
+        synthesisModel: LlmModels.Gemini25Pro,
+      });
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi
+          .fn()
+          .mockResolvedValue(ok({ title: 'Cover Title', prompt: 'generated prompt' })),
+        generateImage: vi.fn().mockResolvedValue(
+          ok({
+            id: 'img-openai',
+            thumbnailUrl: 'https://storage.example.com/thumb.jpg',
+            fullSizeUrl: 'https://storage.example.com/full.png',
+          })
+        ),
+        deleteImage: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: { openai: 'test-openai-key' },
+      });
+
+      expect(mockImageServiceClient.generateImage).toHaveBeenCalledWith(
+        'generated prompt',
+        LlmModels.GPTImage1,
+        'user-1',
+        { title: 'Cover Title' }
+      );
+    });
+
+    it('skips image generation when both Google and OpenAI keys are missing', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      const mockImageServiceClient = {
+        generatePrompt: vi.fn(),
+        generateImage: vi.fn(),
+        deleteImage: vi.fn(),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig,
+        imageServiceClient: mockImageServiceClient,
+        imageApiKeys: {},
+      });
+
+      expect(mockImageServiceClient.generatePrompt).not.toHaveBeenCalled();
+      expect(mockImageServiceClient.generateImage).not.toHaveBeenCalled();
+    });
+
+    it('does not generate share info when shareStorage is null', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: null,
+        shareConfig: null,
+      });
+
+      expect(deps.mockRepo.update).toHaveBeenLastCalledWith('research-1', {
+        status: 'completed',
+        synthesizedResult: expect.stringContaining('Synthesized result'),
+        attributionStatus: expect.stringMatching(/^(complete|incomplete|repaired)$/),
+        completedAt: '2024-01-01T12:00:00.000Z',
+        totalDurationMs: 7200000,
+        totalInputTokens: 500,
+        totalOutputTokens: 200,
+        totalCostUsd: 0.02,
+      });
+    });
+
+    it('does not generate share info when shareConfig is null', async () => {
+      const research = createTestResearch();
+      deps.mockRepo.findById.mockResolvedValue(ok(research));
+
+      const mockShareStorage: ShareStoragePort = {
+        upload: vi.fn().mockResolvedValue(ok({ gcsPath: 'research/abc123-share.html' })),
+        delete: vi.fn().mockResolvedValue(ok(undefined)),
+      };
+
+      await runSynthesis('research-1', {
+        ...deps,
+        shareStorage: mockShareStorage,
+        shareConfig: null,
+      });
+
+      expect(mockShareStorage.upload).not.toHaveBeenCalled();
+      expect(deps.mockRepo.update).toHaveBeenLastCalledWith('research-1', {
+        status: 'completed',
+        synthesizedResult: expect.stringContaining('Synthesized result'),
+        attributionStatus: expect.stringMatching(/^(complete|incomplete|repaired)$/),
+        completedAt: '2024-01-01T12:00:00.000Z',
+        totalDurationMs: 7200000,
+        totalInputTokens: 500,
+        totalOutputTokens: 200,
+        totalCostUsd: 0.02,
       });
     });
   });
