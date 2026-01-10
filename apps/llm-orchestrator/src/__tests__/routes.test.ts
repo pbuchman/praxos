@@ -28,7 +28,7 @@ import {
   FakeResearchRepository,
   FakeUserServiceClient,
 } from './fakes.js';
-import type { Research } from '../domain/research/index.js';
+import type { Research, TitleGenerator } from '../domain/research/index.js';
 import type { InputValidationProvider } from '../infra/llm/InputValidationAdapter.js';
 
 const fakePricingContext = new FakePricingContext();
@@ -1255,7 +1255,7 @@ describe('Research Routes - Authenticated', () => {
       const research = createTestResearch({
         status: 'draft',
         selectedModels: [], // No models
-        inputContexts: undefined, // No contexts
+        // inputContexts not set (will be undefined by default)
       });
       fakeRepo.addResearch(research);
 
@@ -2334,6 +2334,7 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: fakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
+        webAppUrl: 'https://app.example.com',
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFakeSynthesizer(),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2377,6 +2378,7 @@ describe('Research Routes - Authenticated', () => {
           notificationSender: fakeNotificationSender,
           shareStorage: null,
           shareConfig: null,
+          webAppUrl: 'https://app.example.com',
           createResearchProvider: () => createFakeLlmResearchProvider(),
           createSynthesizer: () => createFakeSynthesizer(),
           createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2419,6 +2421,7 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: fakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
+        webAppUrl: 'https://app.example.com',
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFakeSynthesizer(),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2462,6 +2465,7 @@ describe('Research Routes - Authenticated', () => {
           notificationSender: fakeNotificationSender,
           shareStorage: null,
           shareConfig: null,
+          webAppUrl: 'https://app.example.com',
           createResearchProvider: () => createFakeLlmResearchProvider(),
           createSynthesizer: () => createFakeSynthesizer(),
           createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2505,6 +2509,7 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: fakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
+        webAppUrl: 'https://app.example.com',
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFakeSynthesizer(),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2548,6 +2553,7 @@ describe('Research Routes - Authenticated', () => {
           notificationSender: fakeNotificationSender,
           shareStorage: null,
           shareConfig: null,
+          webAppUrl: 'https://app.example.com',
           createResearchProvider: () => createFakeLlmResearchProvider(),
           createSynthesizer: () => createFakeSynthesizer(),
           createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2590,6 +2596,7 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: fakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
+        webAppUrl: 'https://app.example.com',
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFakeSynthesizer(),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2632,6 +2639,7 @@ describe('Research Routes - Authenticated', () => {
           notificationSender: fakeNotificationSender,
           shareStorage: null,
           shareConfig: null,
+          webAppUrl: 'https://app.example.com',
           createResearchProvider: () => createFakeLlmResearchProvider(),
           createSynthesizer: () => createFakeSynthesizer(),
           createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2839,6 +2847,7 @@ describe('Research Routes - Authenticated', () => {
         notificationSender: fakeNotificationSender,
         shareStorage: null,
         shareConfig: null,
+        webAppUrl: 'https://app.example.com',
         createResearchProvider: () => createFakeLlmResearchProvider(),
         createSynthesizer: () => createFakeSynthesizer(),
         createTitleGenerator: () => createFakeTitleGenerator(),
@@ -2879,6 +2888,7 @@ describe('Research Routes - Authenticated', () => {
           notificationSender: fakeNotificationSender,
           shareStorage: null,
           shareConfig: null,
+          webAppUrl: 'https://app.example.com',
           createResearchProvider: () => createFakeLlmResearchProvider(),
           createSynthesizer: () => createFakeSynthesizer(),
           createTitleGenerator: () => createFakeTitleGenerator(),
