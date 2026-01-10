@@ -85,17 +85,30 @@ describe('GoogleCalendarClientImpl', () => {
       }
     });
 
-    it('returns error on API failure', async () => {
+    it('returns TOKEN_ERROR on 401', async () => {
       nock(GOOGLE_CALENDAR_API)
         .get('/calendar/v3/calendars/primary/events')
         .query(true)
-        .reply(401, { message: 'Invalid token' });
+        .reply(401, {
+          error: {
+            code: 401,
+            message: 'Invalid Credentials',
+            errors: [
+              {
+                message: 'Invalid Credentials',
+                domain: 'global',
+                reason: 'authError',
+              },
+            ],
+            status: 'UNAUTHENTICATED',
+          },
+        });
 
       const result = await client.listEvents(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, {});
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('TOKEN_ERROR');
       }
     });
 
@@ -157,16 +170,28 @@ describe('GoogleCalendarClientImpl', () => {
       }
     });
 
-    it('returns error on 404', async () => {
+    it('returns NOT_FOUND on 404', async () => {
       nock(GOOGLE_CALENDAR_API)
         .get('/calendar/v3/calendars/primary/events/nonexistent')
-        .reply(404, { message: 'Event not found' });
+        .reply(404, {
+          error: {
+            code: 404,
+            message: 'Not Found',
+            errors: [
+              {
+                message: 'Not Found',
+                domain: 'global',
+                reason: 'notFound',
+              },
+            ],
+          },
+        });
 
       const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'nonexistent');
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('NOT_FOUND');
       }
     });
   });
@@ -196,10 +221,22 @@ describe('GoogleCalendarClientImpl', () => {
       }
     });
 
-    it('returns error on invalid request', async () => {
+    it('returns INVALID_REQUEST on 400', async () => {
       nock(GOOGLE_CALENDAR_API)
         .post('/calendar/v3/calendars/primary/events')
-        .reply(400, { message: 'Invalid request body' });
+        .reply(400, {
+          error: {
+            code: 400,
+            message: 'Bad Request',
+            errors: [
+              {
+                message: 'Bad Request',
+                domain: 'global',
+                reason: 'badRequest',
+              },
+            ],
+          },
+        });
 
       const result = await client.createEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, {
         summary: 'Test',
@@ -209,7 +246,7 @@ describe('GoogleCalendarClientImpl', () => {
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('INVALID_REQUEST');
       }
     });
   });
@@ -235,10 +272,22 @@ describe('GoogleCalendarClientImpl', () => {
       }
     });
 
-    it('returns error when event does not exist', async () => {
+    it('returns NOT_FOUND when event does not exist', async () => {
       nock(GOOGLE_CALENDAR_API)
         .patch('/calendar/v3/calendars/primary/events/nonexistent')
-        .reply(404, { message: 'Event not found' });
+        .reply(404, {
+          error: {
+            code: 404,
+            message: 'Not Found',
+            errors: [
+              {
+                message: 'Not Found',
+                domain: 'global',
+                reason: 'notFound',
+              },
+            ],
+          },
+        });
 
       const result = await client.updateEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'nonexistent', {
         summary: 'Test',
@@ -246,7 +295,7 @@ describe('GoogleCalendarClientImpl', () => {
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('NOT_FOUND');
       }
     });
   });
@@ -262,16 +311,28 @@ describe('GoogleCalendarClientImpl', () => {
       expect(result.ok).toBe(true);
     });
 
-    it('returns error when event does not exist', async () => {
+    it('returns NOT_FOUND when event does not exist', async () => {
       nock(GOOGLE_CALENDAR_API)
         .delete('/calendar/v3/calendars/primary/events/nonexistent')
-        .reply(404, { message: 'Event not found' });
+        .reply(404, {
+          error: {
+            code: 404,
+            message: 'Not Found',
+            errors: [
+              {
+                message: 'Not Found',
+                domain: 'global',
+                reason: 'notFound',
+              },
+            ],
+          },
+        });
 
       const result = await client.deleteEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'nonexistent');
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('NOT_FOUND');
       }
     });
   });
@@ -478,12 +539,33 @@ describe('GoogleCalendarClientImpl', () => {
       }
     });
 
-    it('handles API errors gracefully', async () => {
+    it('returns QUOTA_EXCEEDED on 403 with quotaExceeded reason', async () => {
       nock(GOOGLE_CALENDAR_API)
         .get('/calendar/v3/calendars/primary/events/event-123')
         .reply(403, {
-          message: 'Quota exceeded',
-          errors: [{ reason: 'quotaExceeded' }],
+          error: {
+            code: 403,
+            message: 'Quota exceeded',
+            errors: [{ reason: 'quotaExceeded', message: 'Quota exceeded' }],
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('QUOTA_EXCEEDED');
+      }
+    });
+
+    it('handles server errors', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(500, {
+          error: {
+            code: 500,
+            message: 'Internal Server Error',
+          },
         });
 
       const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
@@ -494,16 +576,288 @@ describe('GoogleCalendarClientImpl', () => {
       }
     });
 
-    it('handles server errors', async () => {
+    it('returns QUOTA_EXCEEDED on 403 with rateLimitExceeded reason', async () => {
       nock(GOOGLE_CALENDAR_API)
         .get('/calendar/v3/calendars/primary/events/event-123')
-        .reply(500, { message: 'Internal Server Error' });
+        .reply(403, {
+          error: {
+            code: 403,
+            message: 'Rate limit exceeded',
+            errors: [{ reason: 'rateLimitExceeded', message: 'Rate limit exceeded' }],
+          },
+        });
 
       const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('QUOTA_EXCEEDED');
+      }
+    });
+
+    it('returns PERMISSION_DENIED on 403 with other reason', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(403, {
+          error: {
+            code: 403,
+            message: 'Access denied',
+            errors: [{ reason: 'forbidden', message: 'Access denied' }],
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('PERMISSION_DENIED');
+      }
+    });
+
+    it('returns PERMISSION_DENIED on 403 without errors array', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(403, {
+          error: {
+            code: 403,
+            message: 'Forbidden',
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('PERMISSION_DENIED');
+      }
+    });
+
+    it('handles event with all start/end fields', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Complex Event',
+          start: {
+            dateTime: '2025-01-08T10:00:00Z',
+            date: '2025-01-08',
+            timeZone: 'America/New_York',
+          },
+          end: {
+            dateTime: '2025-01-08T11:00:00Z',
+            date: '2025-01-08',
+            timeZone: 'America/New_York',
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.start.dateTime).toBe('2025-01-08T10:00:00Z');
+        expect(result.value.start.date).toBe('2025-01-08');
+        expect(result.value.start.timeZone).toBe('America/New_York');
+        expect(result.value.end.dateTime).toBe('2025-01-08T11:00:00Z');
+        expect(result.value.end.date).toBe('2025-01-08');
+        expect(result.value.end.timeZone).toBe('America/New_York');
+      }
+    });
+
+    it('handles event with only date in start/end', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'All-day Event',
+          start: {
+            date: '2025-01-08',
+          },
+          end: {
+            date: '2025-01-09',
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.start.date).toBe('2025-01-08');
+        expect(result.value.start.dateTime).toBeUndefined();
+        expect(result.value.start.timeZone).toBeUndefined();
+        expect(result.value.end.date).toBe('2025-01-09');
+      }
+    });
+
+    it('handles event with only timeZone in start/end', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Event with TZ',
+          start: {
+            timeZone: 'Europe/London',
+          },
+          end: {
+            timeZone: 'Europe/London',
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.start.timeZone).toBe('Europe/London');
+        expect(result.value.start.dateTime).toBeUndefined();
+        expect(result.value.start.date).toBeUndefined();
+      }
+    });
+
+    it('handles event with organizer having only email', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+          organizer: {
+            email: 'organizer@example.com',
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.organizer?.email).toBe('organizer@example.com');
+        expect(result.value.organizer?.displayName).toBeUndefined();
+        expect(result.value.organizer?.self).toBeUndefined();
+      }
+    });
+
+    it('handles event with organizer having only displayName', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+          organizer: {
+            displayName: 'John Doe',
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.organizer?.displayName).toBe('John Doe');
+        expect(result.value.organizer?.email).toBeUndefined();
+        expect(result.value.organizer?.self).toBeUndefined();
+      }
+    });
+
+    it('handles event with organizer having only self=true', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+          organizer: {
+            self: true,
+          },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.organizer?.self).toBe(true);
+        expect(result.value.organizer?.email).toBeUndefined();
+        expect(result.value.organizer?.displayName).toBeUndefined();
+      }
+    });
+
+    it('handles event with organizer as undefined', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+          organizer: undefined,
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.organizer).toBeUndefined();
+      }
+    });
+
+    it('handles attendee with optional=true', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+          attendees: [
+            {
+              email: 'attendee@example.com',
+              optional: true,
+            },
+          ],
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.attendees?.[0]?.optional).toBe(true);
+      }
+    });
+
+    it('handles event with invalid status value', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+          status: 'unknown',
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.status).toBeUndefined();
+      }
+    });
+
+    it('handles event without attendees field', async () => {
+      nock(GOOGLE_CALENDAR_API)
+        .get('/calendar/v3/calendars/primary/events/event-123')
+        .reply(200, {
+          id: 'event-123',
+          summary: 'Meeting',
+          start: { dateTime: '2025-01-08T10:00:00Z' },
+          end: { dateTime: '2025-01-08T11:00:00Z' },
+        });
+
+      const result = await client.getEvent(TEST_ACCESS_TOKEN, TEST_CALENDAR_ID, 'event-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.attendees).toBeUndefined();
       }
     });
   });
