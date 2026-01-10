@@ -1074,7 +1074,7 @@ More content without attribution`,
       };
 
       const research = createTestResearch({
-        synthesisModel: 'gpt-4o',
+        synthesisModel: LlmModels.GPT52,
         auxiliaryCostUsd: 0.001,
         sourceLlmCostUsd: 0.002,
       });
@@ -1426,7 +1426,7 @@ More content without attribution`,
 
     it('prefers OpenAI image model when synthesis uses gpt model', async () => {
       const research = createTestResearch({
-        synthesisModel: 'gpt-4o',
+        synthesisModel: LlmModels.GPT52,
       });
       deps.mockRepo.findById.mockResolvedValue(ok(research));
 
@@ -1467,7 +1467,7 @@ More content without attribution`,
 
     it('falls back to Google when OpenAI synthesis used but only Google key available', async () => {
       const research = createTestResearch({
-        synthesisModel: 'gpt-4o',
+        synthesisModel: LlmModels.GPT52,
       });
       deps.mockRepo.findById.mockResolvedValue(ok(research));
 
