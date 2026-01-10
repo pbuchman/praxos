@@ -215,6 +215,32 @@ describe('OAuth Connection Routes', () => {
       expect(response.headers.location).toContain('status=error');
     });
 
+    it('redirects with error when code is empty', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/oauth/connections/google/callback?code=&state=some-state',
+      });
+
+      expect(response.statusCode).toBe(302);
+      expect(response.headers.location).toContain('status=error');
+      expect(response.headers.location).toContain('Missing%20code%20or%20state%20parameter');
+    });
+
+    it('redirects with error when state is empty', async () => {
+      app = await buildServer();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/oauth/connections/google/callback?code=some-code&state=',
+      });
+
+      expect(response.statusCode).toBe(302);
+      expect(response.headers.location).toContain('status=error');
+      expect(response.headers.location).toContain('Missing%20code%20or%20state%20parameter');
+    });
+
     it('redirects with error when Google OAuth is not configured', async () => {
       setServices({
         authTokenRepository: fakeAuthTokenRepo,
