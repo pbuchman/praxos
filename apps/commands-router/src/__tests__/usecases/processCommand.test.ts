@@ -219,7 +219,7 @@ describe('processCommand usecase', () => {
         confidence: 0.95,
         title: 'AI Research',
         reasoning: 'Research task',
-        selectedModels: undefined,
+        // selectedModels omitted - testing undefined case
       });
 
       const usecase = createProcessCommandUseCase({
