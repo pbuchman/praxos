@@ -14,6 +14,73 @@ describe('createCommandsRouterClient', () => {
     nock.cleanAll();
   });
 
+  describe('getAction', () => {
+    it('returns action when found (200)', async () => {
+      const mockAction = {
+        id: 'action-123',
+        userId: 'user-456',
+        commandId: 'command-789',
+        type: 'todo' as const,
+        confidence: 0.95,
+        title: 'Test Action',
+        status: 'pending' as const,
+        payload: {},
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      };
+
+      nock(baseUrl)
+        .get('/internal/actions/action-123')
+        .matchHeader('X-Internal-Auth', internalAuthToken)
+        .matchHeader('Content-Type', 'application/json')
+        .reply(200, mockAction);
+
+      const client = createCommandsRouterClient({ baseUrl, internalAuthToken });
+      const result = await client.getAction('action-123');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toEqual(mockAction);
+      }
+    });
+
+    it('returns null when not found (404)', async () => {
+      nock(baseUrl).get('/internal/actions/action-404').reply(404);
+
+      const client = createCommandsRouterClient({ baseUrl, internalAuthToken });
+      const result = await client.getAction('action-404');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBe(null);
+      }
+    });
+
+    it('returns error on HTTP failure (500)', async () => {
+      nock(baseUrl).get('/internal/actions/action-500').reply(500, 'Internal Server Error');
+
+      const client = createCommandsRouterClient({ baseUrl, internalAuthToken });
+      const result = await client.getAction('action-500');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('500');
+      }
+    });
+
+    it('returns error on network failure', async () => {
+      nock(baseUrl).get('/internal/actions/action-network').replyWithError('ECONNREFUSED');
+
+      const client = createCommandsRouterClient({ baseUrl, internalAuthToken });
+      const result = await client.getAction('action-network');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('Network error');
+      }
+    });
+  });
+
   describe('updateActionStatus', () => {
     it('returns ok on successful status update', async () => {
       nock(baseUrl)
