@@ -350,6 +350,28 @@ describe('Research Routes - Authenticated', () => {
       expect(body.data.inputContexts).toHaveLength(1);
     });
 
+    it('creates research with skipSynthesis flag', async () => {
+      const token = await createToken(TEST_USER_ID);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/research',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          prompt: 'Test prompt',
+          selectedModels: [LlmModels.Gemini25Pro],
+          synthesisModel: LlmModels.Gemini25Pro,
+          skipSynthesis: true,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: Research };
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBe('generated-id-123');
+      // The skipSynthesis flag is passed to submitResearch which will be tested separately
+    });
+
     it('returns 500 on save failure', async () => {
       const token = await createToken(TEST_USER_ID);
       fakeRepo.setFailNextSave(true);
@@ -373,9 +395,111 @@ describe('Research Routes - Authenticated', () => {
   });
 
   describe('POST /research/draft', () => {
-    it.skip('creates draft with Google API key (title generation)', async () => {
-      // Skipped: Would require mocking Gemini API calls
-      // Title generation is tested indirectly through integration tests
+    it('creates draft with Google API key (title generation succeeds)', async () => {
+      const token = await createToken(TEST_USER_ID);
+      fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'test-google-key' });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/research/draft',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          prompt: 'This is a test prompt for title generation',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body) as { success: boolean; data: { id: string } };
+      expect(body.success).toBe(true);
+
+      const saved = fakeRepo.getAll()[0];
+      expect(saved).toBeDefined();
+      if (saved !== undefined) {
+        expect(saved.status).toBe('draft');
+        // Fake title generator returns 'Generated Title'
+        expect(saved.title).toBe('Generated Title');
+      }
+    });
+
+    it('creates draft with Google API key but title generation fails (fallback)', async () => {
+      const token = await createToken(TEST_USER_ID);
+      fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'test-google-key' });
+
+      // Create a title generator that fails
+      const failingTitleGenerator: TitleGenerator = {
+        async generateTitle(_prompt: string) {
+          return err({ code: 'API_ERROR', message: 'Title generation failed' });
+        },
+        async generateContextLabel(_content: string) {
+          return ok({ label: 'Label', usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 } });
+        },
+      };
+
+      const newServices: ServiceContainer = {
+        researchRepo: fakeRepo,
+        pricingRepo: new FakePricingRepository(),
+        pricingContext: fakePricingContext,
+        generateId: (): string => 'generated-id-123',
+        researchEventPublisher: fakeResearchEventPublisher,
+        llmCallPublisher: new FakeLlmCallPublisher(),
+        userServiceClient: fakeUserServiceClient,
+        imageServiceClient: null,
+        notificationSender: fakeNotificationSender,
+        shareStorage: null,
+        shareConfig: null,
+        webAppUrl: 'https://app.example.com',
+        createResearchProvider: () => createFakeLlmResearchProvider(),
+        createSynthesizer: () => createFakeSynthesizer(),
+        createTitleGenerator: () => failingTitleGenerator,
+        createContextInferrer: () => createFakeContextInferrer(),
+        createInputValidator: (_model, _apiKey, _userId, _pricing) => createFakeInputValidator(),
+      };
+      setServices(newServices);
+
+      const newApp = await buildServer();
+      try {
+        const response = await newApp.inject({
+          method: 'POST',
+          url: '/research/draft',
+          headers: { authorization: `Bearer ${token}` },
+          payload: {
+            prompt: 'This is a test prompt that will be used as fallback title',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const body = JSON.parse(response.body) as { success: boolean; data: { id: string } };
+        expect(body.success).toBe(true);
+
+        const saved = fakeRepo.getAll()[0];
+        expect(saved).toBeDefined();
+        if (saved !== undefined) {
+          expect(saved.status).toBe('draft');
+          // Should fallback to first 60 chars of prompt when title generation fails
+          expect(saved.title).toBe('This is a test prompt that will be used as fallback title');
+        }
+      } finally {
+        await newApp.close();
+        setServices({
+          researchRepo: fakeRepo,
+          pricingRepo: new FakePricingRepository(),
+          pricingContext: fakePricingContext,
+          generateId: (): string => 'generated-id-123',
+          researchEventPublisher: fakeResearchEventPublisher,
+          llmCallPublisher: new FakeLlmCallPublisher(),
+          userServiceClient: fakeUserServiceClient,
+          imageServiceClient: null,
+          notificationSender: fakeNotificationSender,
+          shareStorage: null,
+          shareConfig: null,
+          webAppUrl: 'https://app.example.com',
+          createResearchProvider: () => createFakeLlmResearchProvider(),
+          createSynthesizer: () => createFakeSynthesizer(),
+          createTitleGenerator: () => createFakeTitleGenerator(),
+          createContextInferrer: () => createFakeContextInferrer(),
+          createInputValidator: (_model, _apiKey, _userId, _pricing) => createFakeInputValidator(),
+        });
+      }
     });
 
     it('creates draft without Google API key (fallback title)', async () => {
@@ -973,6 +1097,28 @@ describe('Research Routes - Authenticated', () => {
       const body = JSON.parse(response.body) as { success: boolean; error: { code: string } };
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('CONFLICT');
+    });
+
+    it('returns 400 when draft has no models and no contexts', async () => {
+      const token = await createToken(TEST_USER_ID);
+      const research = createTestResearch({
+        status: 'draft',
+        selectedModels: [], // No models
+        inputContexts: undefined, // No contexts
+      });
+      fakeRepo.addResearch(research);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${research.id}/approve`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body) as { success: boolean; error: { code: string; message: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INVALID_REQUEST');
+      expect(body.error.message).toContain('at least one model or provide input context');
     });
 
     it('returns 500 on repo find failure', async () => {
@@ -2335,6 +2481,94 @@ describe('Research Routes - Authenticated', () => {
           notificationSender: fakeNotificationSender,
           shareStorage: null,
           shareConfig: null,
+          createResearchProvider: () => createFakeLlmResearchProvider(),
+          createSynthesizer: () => createFakeSynthesizer(),
+          createTitleGenerator: () => createFakeTitleGenerator(),
+          createContextInferrer: () => createFakeContextInferrer(),
+          createInputValidator: (_model, _apiKey, _userId, _pricing) => createFakeInputValidator(),
+        });
+      }
+    });
+
+    it('does not improve when quality is GOOD (quality=2) even if includeImprovement is true', async () => {
+      const token = await createToken(TEST_USER_ID);
+      fakeUserServiceClient.setApiKeys(TEST_USER_ID, { google: 'test-google-key' });
+
+      // Create a validator that returns quality=2 (GOOD)
+      const goodValidator: InputValidationProvider = {
+        async validateInput(_prompt: string) {
+          return ok({
+            quality: 2,
+            reason: 'Good quality',
+            usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+          });
+        },
+        async improveInput(prompt: string) {
+          // This should NOT be called when quality=2
+          return ok({
+            improvedPrompt: `Much better: ${prompt}`,
+            usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+          });
+        },
+      };
+
+      const newServices: ServiceContainer = {
+        researchRepo: fakeRepo,
+        pricingRepo: new FakePricingRepository(),
+        pricingContext: fakePricingContext,
+        generateId: (): string => 'generated-id-123',
+        researchEventPublisher: fakeResearchEventPublisher,
+        llmCallPublisher: new FakeLlmCallPublisher(),
+        userServiceClient: fakeUserServiceClient,
+        imageServiceClient: null,
+        notificationSender: fakeNotificationSender,
+        shareStorage: null,
+        shareConfig: null,
+        webAppUrl: 'https://app.example.com',
+        createResearchProvider: () => createFakeLlmResearchProvider(),
+        createSynthesizer: () => createFakeSynthesizer(),
+        createTitleGenerator: () => createFakeTitleGenerator(),
+        createContextInferrer: () => createFakeContextInferrer(),
+        createInputValidator: (_model, _apiKey, _userId, _pricing) => goodValidator,
+      };
+      setServices(newServices);
+
+      const newApp = await buildServer();
+      try {
+        const response = await newApp.inject({
+          method: 'POST',
+          url: '/research/validate-input',
+          headers: { authorization: `Bearer ${token}` },
+          payload: {
+            prompt: 'Good prompt',
+            includeImprovement: true, // Even though requested, should not improve quality=2
+          },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.body) as {
+          success: boolean;
+          data: { quality: number; reason: string; improvedPrompt: string | null };
+        };
+        expect(body.success).toBe(true);
+        expect(body.data.quality).toBe(2);
+        expect(body.data.reason).toBe('Good quality');
+        expect(body.data.improvedPrompt).toBe(null); // Should be null when quality is not 1
+      } finally {
+        await newApp.close();
+        setServices({
+          researchRepo: fakeRepo,
+          pricingRepo: new FakePricingRepository(),
+          pricingContext: fakePricingContext,
+          generateId: (): string => 'generated-id-123',
+          researchEventPublisher: fakeResearchEventPublisher,
+          llmCallPublisher: new FakeLlmCallPublisher(),
+          userServiceClient: fakeUserServiceClient,
+          imageServiceClient: null,
+          notificationSender: fakeNotificationSender,
+          shareStorage: null,
+          shareConfig: null,
+          webAppUrl: 'https://app.example.com',
           createResearchProvider: () => createFakeLlmResearchProvider(),
           createSynthesizer: () => createFakeSynthesizer(),
           createTitleGenerator: () => createFakeTitleGenerator(),
