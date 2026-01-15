@@ -3,9 +3,10 @@
  * Generates chart configuration for a specific data insight using user's LLM client.
  */
 
-import type { Result } from '@intexuraos/common-core';
+import type { Result, Logger } from '@intexuraos/common-core';
 import { err, getErrorMessage, ok } from '@intexuraos/common-core';
 import {
+  createDetailedParseErrorMessage,
   chartDefinitionPrompt,
   parseChartDefinition,
   type ParsedChartDefinition,
@@ -19,6 +20,23 @@ export interface ChartDefinitionError {
   code: 'NO_API_KEY' | 'GENERATION_ERROR' | 'USER_SERVICE_ERROR' | 'PARSE_ERROR';
   message: string;
 }
+
+/**
+ * Expected schema for chart definition response.
+ */
+const CHART_DEFINITION_SCHEMA = `CHART_CONFIG_START
+{...json vega-lite config...}
+CHART_CONFIG_END
+
+TRANSFORM_INSTRUCTIONS_START
+...instructions...
+TRANSFORM_INSTRUCTIONS_END
+
+Requirements:
+- Chart config must be valid JSON
+- Chart config must include $schema and mark properties
+- Chart config must NOT include data property
+- Transform instructions must not be empty`;
 
 /**
  * Chart definition service interface.
@@ -42,7 +60,8 @@ export interface ChartDefinitionService {
  * Create a chart definition service.
  */
 export function createChartDefinitionService(
-  userServiceClient: UserServiceClient
+  userServiceClient: UserServiceClient,
+  logger?: Logger
 ): ChartDefinitionService {
   return {
     async generateChartDefinition(
@@ -97,9 +116,26 @@ export function createChartDefinitionService(
         const parsed = parseChartDefinition(responseContent);
         return ok(parsed);
       } catch (error) {
+        const errorMessage = getErrorMessage(error, String(error));
+        const detailedError = createDetailedParseErrorMessage({
+          errorMessage,
+          llmResponse: responseContent,
+          expectedSchema: CHART_DEFINITION_SCHEMA,
+          operation: 'generateChartDefinition',
+        });
+        logger?.warn(
+          {
+            operation: 'generateChartDefinition',
+            errorMessage,
+            llmResponse: responseContent.slice(0, 1000),
+            expectedSchema: CHART_DEFINITION_SCHEMA,
+            responseLength: responseContent.length,
+          },
+          'LLM parse error in generateChartDefinition'
+        );
         return err({
           code: 'PARSE_ERROR',
-          message: `Failed to parse LLM response: ${getErrorMessage(error, String(error))}`,
+          message: detailedError,
         });
       }
     },

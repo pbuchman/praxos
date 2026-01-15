@@ -7,3 +7,11 @@
 {"ts":"2026-01-14T22:46:46.767Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"research-agent","runNumber":7,"passed":true,"durationMs":77653,"failureCount":0,"failures":[]}
 {"ts":"2026-01-14T22:51:07.940Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"research-agent","runNumber":8,"passed":true,"durationMs":51979,"failureCount":0,"failures":[]}
 {"ts":"2026-01-14T23:02:23.171Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"research-agent","runNumber":9,"passed":true,"durationMs":94380,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:14:57.121Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--","runNumber":10,"passed":false,"durationMs":1723,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:54:41.970Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--","runNumber":11,"passed":false,"durationMs":1089,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:54:50.311Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--","runNumber":12,"passed":false,"durationMs":2056,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:55:02.042Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"llm-common","runNumber":13,"passed":false,"durationMs":3558,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:58:49.350Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--","runNumber":14,"passed":false,"durationMs":346,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:58:52.906Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--","runNumber":15,"passed":false,"durationMs":332,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:58:58.062Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--","runNumber":16,"passed":false,"durationMs":332,"failureCount":0,"failures":[]}
+{"ts":"2026-01-14T23:59:17.685Z","project":"intexuraos","branch":"fix/PBU-40","workspace":"--help","runNumber":17,"passed":false,"durationMs":234,"failureCount":0,"failures":[]}

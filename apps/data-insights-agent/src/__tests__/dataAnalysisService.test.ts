@@ -177,7 +177,9 @@ INSIGHT_2: Title=Maximum Value; Description=The highest value reached was 30 on 
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error.code).toBe('PARSE_ERROR');
-        expect(result.error.message).toContain('Failed to parse LLM response');
+        expect(result.error.message).toContain('Expected INSIGHT_N or NO_INSIGHTS');
+        expect(result.error.message).toContain('Expected:');
+        expect(result.error.message).toContain('Received (first 500 chars):');
       }
     });
 

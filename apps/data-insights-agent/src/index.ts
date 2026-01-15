@@ -75,9 +75,9 @@ async function main(): Promise<void> {
       logger,
     }),
     snapshotRepository: new FirestoreSnapshotRepository(),
-    dataAnalysisService: createDataAnalysisService(userServiceClient),
-    chartDefinitionService: createChartDefinitionService(userServiceClient),
-    dataTransformService: createDataTransformService(userServiceClient),
+    dataAnalysisService: createDataAnalysisService(userServiceClient, logger),
+    chartDefinitionService: createChartDefinitionService(userServiceClient, logger),
+    dataTransformService: createDataTransformService(userServiceClient, logger),
   });
 
   const app = await buildServer();

@@ -3,9 +3,13 @@
  * Transforms snapshot data according to chart definition instructions.
  */
 
-import type { Result } from '@intexuraos/common-core';
+import type { Result, Logger } from '@intexuraos/common-core';
 import { err, getErrorMessage, ok } from '@intexuraos/common-core';
-import { dataTransformPrompt, parseTransformedData } from '@intexuraos/llm-common';
+import {
+  createDetailedParseErrorMessage,
+  dataTransformPrompt,
+  parseTransformedData,
+} from '@intexuraos/llm-common';
 import type { UserServiceClient } from '../user/userServiceClient.js';
 
 /**
@@ -15,6 +19,18 @@ export interface DataTransformError {
   code: 'NO_API_KEY' | 'GENERATION_ERROR' | 'USER_SERVICE_ERROR' | 'PARSE_ERROR';
   message: string;
 }
+
+/**
+ * Expected schema for data transformation response.
+ */
+const DATA_TRANSFORM_SCHEMA = `DATA_START
+[...array of objects...]
+DATA_END
+
+Requirements:
+- Data must be valid JSON array
+- Array cannot be empty
+- Each item must be an object (not array, not null)`;
 
 /**
  * Data transformation service interface.
@@ -37,7 +53,8 @@ export interface DataTransformService {
  * Create a data transformation service.
  */
 export function createDataTransformService(
-  userServiceClient: UserServiceClient
+  userServiceClient: UserServiceClient,
+  logger?: Logger
 ): DataTransformService {
   return {
     async transformData(
@@ -92,9 +109,26 @@ export function createDataTransformService(
         const parsed = parseTransformedData(responseContent);
         return ok(parsed);
       } catch (error) {
+        const errorMessage = getErrorMessage(error, String(error));
+        const detailedError = createDetailedParseErrorMessage({
+          errorMessage,
+          llmResponse: responseContent,
+          expectedSchema: DATA_TRANSFORM_SCHEMA,
+          operation: 'transformData',
+        });
+        logger?.warn(
+          {
+            operation: 'transformData',
+            errorMessage,
+            llmResponse: responseContent.slice(0, 1000),
+            expectedSchema: DATA_TRANSFORM_SCHEMA,
+            responseLength: responseContent.length,
+          },
+          'LLM parse error in transformData'
+        );
         return err({
           code: 'PARSE_ERROR',
-          message: `Failed to parse LLM response: ${getErrorMessage(error, String(error))}`,
+          message: detailedError,
         });
       }
     },

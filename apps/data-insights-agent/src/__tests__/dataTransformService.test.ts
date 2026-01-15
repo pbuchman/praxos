@@ -170,7 +170,9 @@ DATA_END`;
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error.code).toBe('PARSE_ERROR');
-        expect(result.error.message).toContain('Failed to parse LLM response');
+        expect(result.error.message).toContain('Missing DATA_START');
+        expect(result.error.message).toContain('Expected:');
+        expect(result.error.message).toContain('Received (first 500 chars):');
       }
     });
 

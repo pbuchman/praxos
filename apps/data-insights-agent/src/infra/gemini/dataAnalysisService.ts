@@ -3,9 +3,10 @@
  * Analyzes composite feed data and generates up to 5 measurable insights.
  */
 
-import type { Result } from '@intexuraos/common-core';
+import type { Result, Logger } from '@intexuraos/common-core';
 import { err, getErrorMessage, ok } from '@intexuraos/common-core';
 import {
+  createDetailedParseErrorMessage,
   dataAnalysisPrompt,
   parseInsightResponse,
   type ChartTypeInfo,
@@ -30,6 +31,22 @@ export interface DataAnalysisResult {
 }
 
 /**
+ * Expected schema for data analysis response.
+ */
+const DATA_ANALYSIS_SCHEMA = `Either:
+1. NO_INSIGHTS: Reason=... (single line)
+2. Multiple INSIGHT_N lines (1-5 insights):
+   INSIGHT_1: Title=...; Description=...; Trackable=...; ChartType=...
+   INSIGHT_2: Title=...; Description=...; Trackable=...; ChartType=...
+   etc.
+
+Requirements:
+- Title: non-empty string
+- Description: 1-3 sentences max
+- Trackable: non-empty string
+- ChartType: one of C1, C2, C3, C4, C5, C6`;
+
+/**
  * Data analysis service interface.
  */
 export interface DataAnalysisService {
@@ -45,7 +62,8 @@ export interface DataAnalysisService {
  * Create a data analysis service.
  */
 export function createDataAnalysisService(
-  userServiceClient: UserServiceClient
+  userServiceClient: UserServiceClient,
+  logger?: Logger
 ): DataAnalysisService {
   return {
     async analyzeData(
@@ -93,9 +111,26 @@ export function createDataAnalysisService(
         const parsed = parseInsightResponse(responseContent);
         return ok(parsed);
       } catch (error) {
+        const errorMessage = getErrorMessage(error, String(error));
+        const detailedError = createDetailedParseErrorMessage({
+          errorMessage,
+          llmResponse: responseContent,
+          expectedSchema: DATA_ANALYSIS_SCHEMA,
+          operation: 'analyzeData',
+        });
+        logger?.warn(
+          {
+            operation: 'analyzeData',
+            errorMessage,
+            llmResponse: responseContent.slice(0, 1000),
+            expectedSchema: DATA_ANALYSIS_SCHEMA,
+            responseLength: responseContent.length,
+          },
+          'LLM parse error in analyzeData'
+        );
         return err({
           code: 'PARSE_ERROR',
-          message: `Failed to parse LLM response: ${getErrorMessage(error, String(error))}`,
+          message: detailedError,
         });
       }
     },
