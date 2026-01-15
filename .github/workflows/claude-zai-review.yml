@@ -1,0 +1,111 @@
+name: Claude ZAI Code Review
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
+jobs:
+  zai-review:
+    # Auto-run on PR events OR when @zai-claude is mentioned
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@zai-claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@zai-claude'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code with ZAI
+        id: claude-zai
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            Review the pull request changes. Focus on:
+            1. Code quality and maintainability
+            2. Potential bugs or edge cases
+            3. Performance considerations
+            4. Security issues
+            5. Alignment with CLAUDE.md guidelines
+
+            Write your review as markdown. Include:
+            - Summary of changes
+            - Specific file-by-file feedback
+            - Actionable recommendations (with file paths and line numbers where applicable)
+
+            If the PR is already well-implemented, acknowledge it positively.
+          allowed_tools: "Bash(git:*),View,GlobTool,GrepTool,Read,Edit"
+          max_turns: "10"
+          claude_env: |
+            ANTHROPIC_API_KEY: ${{ secrets.ZAI_API_KEY }}
+            ANTHROPIC_BASE_URL: ${{ secrets.ZAI_API_URL }}
+
+      - name: Extract and Post Review
+        if: steps.claude-zai.outputs.conclusion == 'success'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const executionFile = '${{ steps.claude-zai.outputs.execution_file }}';
+
+            try {
+              const executionLog = JSON.parse(fs.readFileSync(executionFile, 'utf8'));
+              let review = '';
+
+              // Find the last assistant message containing the review
+              for (let i = executionLog.length - 1; i >= 0; i--) {
+                if (executionLog[i].role === 'assistant') {
+                  const content = executionLog[i].content;
+                  if (content && typeof content === 'string' && content.length > 100) {
+                    review = content;
+                    break;
+                  }
+                  // Handle structured content format
+                  if (content && Array.isArray(content)) {
+                    review = content
+                      .filter(item => item.type === 'text')
+                      .map(item => item.text)
+                      .join('\n');
+                    if (review.length > 100) break;
+                  }
+                }
+              }
+
+              if (review) {
+                const issueNumber = context.issue.number;
+                const commentBody = `## 🤖 ZAI Claude Code Review\n\n${review}\n\n---\n*Powered by Z.AI Claude API*`;
+
+                if (context.eventName === 'pull_request' || context.payload.issue) {
+                  await github.rest.issues.createComment({
+                    issue_number: issueNumber,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: commentBody
+                  });
+                  console.log('Review posted successfully');
+                } else {
+                  console.log('Skipping comment post - not in PR context');
+                }
+              } else {
+                console.log('No review content found to post');
+              }
+            } catch (error) {
+              console.error('Error processing review:', error.message);
+              // Fail gracefully
+              core.setFailed(`Review processing failed: ${error.message}`);
+            }
