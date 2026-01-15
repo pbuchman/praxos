@@ -234,19 +234,19 @@ export function PhoneInput({
           onClick={(): void => {
             setIsOpen(!isOpen);
           }}
-          className="flex h-full items-center gap-1 rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm transition-colors hover:bg-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-full items-center gap-1 border-2 border-r-0 border-black bg-neutral-100 px-3 py-2 text-sm font-bold transition-colors hover:bg-neutral-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="text-lg">{selectedCountry.flag}</span>
-          <span className="font-medium text-slate-700">{selectedCountry.dialCode}</span>
-          <ChevronDown className="h-4 w-4 text-slate-400" />
+          <span className="font-mono font-bold text-black">{selectedCountry.dialCode}</span>
+          <ChevronDown className="h-4 w-4 text-black" />
         </button>
 
         {isOpen ? (
-          <div className="absolute left-0 top-full z-10 mt-1 w-64 rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="absolute left-0 top-full z-10 mt-1 w-64 border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             {/* Search input */}
-            <div className="border-b border-slate-200 p-2">
+            <div className="border-b-2 border-black p-2">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -254,8 +254,8 @@ export function PhoneInput({
                   onChange={(e): void => {
                     setSearchQuery(e.target.value);
                   }}
-                  placeholder="Search country..."
-                  className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+                  placeholder="SEARCH..."
+                  className="w-full border-2 border-black py-1.5 pl-8 pr-3 text-sm font-bold uppercase placeholder:text-neutral-400 focus:bg-yellow-50 focus:outline-none"
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ export function PhoneInput({
             {/* Country list */}
             <div className="max-h-60 overflow-y-auto py-1">
               {filteredCountries.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-slate-500">No countries found</div>
+                <div className="px-3 py-2 text-sm font-bold text-neutral-500">NO COUNTRIES FOUND</div>
               ) : (
                 filteredCountries.map((country) => (
                   <button
@@ -272,15 +272,15 @@ export function PhoneInput({
                     onClick={(): void => {
                       handleCountrySelect(country);
                     }}
-                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-100 ${
+                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-bold uppercase transition-colors hover:bg-black hover:text-white ${
                       country.code === selectedCountry.code
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-700'
+                        ? 'bg-cyan-100 text-black'
+                        : 'text-black'
                     }`}
                   >
                     <span className="text-lg">{country.flag}</span>
                     <span className="flex-1 truncate">{country.name}</span>
-                    <span className="text-slate-500">{country.dialCode}</span>
+                    <span className="font-mono text-xs">{country.dialCode}</span>
                   </button>
                 ))
               )}
@@ -295,11 +295,11 @@ export function PhoneInput({
         value={displayValue}
         onChange={handleLocalChange}
         disabled={disabled}
-        placeholder="Enter phone number"
-        className={`block flex-1 rounded-r-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-50 ${
+        placeholder="PHONE NUMBER"
+        className={`block flex-1 border-2 border-black px-3 py-2 font-mono text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-neutral-400 focus:translate-y-[-2px] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:opacity-50 ${
           localValue.length > 0 && !isValid
-            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-            : ''
+            ? 'border-red-500 bg-red-50 focus:border-red-500'
+            : 'bg-white'
         }`}
       />
     </div>

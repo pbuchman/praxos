@@ -19,28 +19,28 @@ const CHART_TYPE_NAMES: Record<string, string> = {
 
 export function DataInsightCard({ insight, onConfigureChart, isConfiguring }: DataInsightCardProps): React.JSX.Element {
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="transition-all hover:-translate-y-1 hover:shadow-hard-hover">
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-            <BarChart3 className="h-4 w-4 text-blue-600" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center border-2 border-black bg-cyan-100 shadow-hard-sm">
+            <BarChart3 className="h-5 w-5 text-black" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900">{insight.title}</h3>
-            <span className="text-xs text-slate-500">{CHART_TYPE_NAMES[insight.suggestedChartType]}</span>
+            <h3 className="font-mono text-lg font-bold uppercase tracking-tight text-black">{insight.title}</h3>
+            <span className="inline-block bg-yellow-100 px-1 font-mono text-xs font-bold uppercase text-black border border-black">{CHART_TYPE_NAMES[insight.suggestedChartType]}</span>
           </div>
         </div>
-        <span className="text-xs text-slate-400">
+        <span className="font-mono text-xs font-bold text-neutral-500">
           {new Date(insight.generatedAt).toLocaleDateString()}
         </span>
       </div>
-      <p className="mt-3 text-sm text-slate-600">{insight.description}</p>
-      <div className="mt-4 rounded-lg bg-slate-50 p-3">
-        <div className="flex items-center gap-1.5">
-          <TrendingUp className="h-3.5 w-3.5 text-slate-500" />
-          <span className="text-xs font-medium text-slate-600">Trackable metric:</span>
+      <p className="mt-4 font-medium leading-relaxed text-black">{insight.description}</p>
+      <div className="mt-4 border-2 border-black bg-neutral-100 p-3 shadow-hard-sm">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-black" />
+          <span className="font-mono text-xs font-bold uppercase text-black">Trackable metric:</span>
         </div>
-        <p className="mt-1 text-xs text-slate-600">{insight.trackableMetric}</p>
+        <p className="mt-1 font-mono text-xs font-medium text-black">{insight.trackableMetric}</p>
       </div>
       <div className="mt-4 flex justify-end">
         <Button

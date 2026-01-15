@@ -246,17 +246,19 @@ export function ActionDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+      <div className="w-full max-w-lg border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-200 p-4">
+        <div className="flex items-start justify-between border-b-4 border-black bg-yellow-400 p-4">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-100 p-2">{getTypeIcon(selectedType)}</div>
+            <div className="mt-0.5 border-2 border-black bg-white p-2 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              {getTypeIcon(selectedType)}
+            </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">{action.title}</h2>
-              <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+              <h2 className="font-mono text-lg font-black uppercase tracking-tight text-black">{action.title}</h2>
+              <div className="mt-1 flex items-center gap-2 text-sm font-bold">
                 {canChangeType ? (
                   <div className="relative inline-flex items-center">
                     <select
@@ -265,7 +267,7 @@ export function ActionDetailModal({
                         void handleTypeChange(e.target.value as CommandType);
                       }}
                       disabled={isChangingType}
-                      className="appearance-none rounded-full border border-slate-200 bg-slate-100 py-0.5 pl-2 pr-6 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="appearance-none border-2 border-black bg-white py-0.5 pl-2 pr-6 text-sm font-bold uppercase text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {ACTION_TYPES.map((t) => (
                         <option key={t} value={t}>
@@ -274,24 +276,24 @@ export function ActionDetailModal({
                       ))}
                     </select>
                     {isChangingType && (
-                      <Loader2 className="absolute right-1.5 h-3 w-3 animate-spin text-slate-400" />
+                      <Loader2 className="absolute right-1.5 h-3 w-3 animate-spin text-black" />
                     )}
                   </div>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
+                  <span className="inline-flex items-center gap-1 border-2 border-black bg-white px-2 py-0.5 font-bold uppercase text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     {getTypeLabel(selectedType)}
                   </span>
                 )}
-                <span>{String(Math.round(action.confidence * 100))}% confidence</span>
+                <span className="font-mono text-black">{String(Math.round(action.confidence * 100))}% CONFIDENCE</span>
               </div>
               {typeChangeError !== null && (
-                <p className="mt-1 text-xs text-red-600">{typeChangeError}</p>
+                <p className="mt-1 font-mono text-xs font-bold text-red-600 bg-white px-1 border border-black inline-block">{typeChangeError}</p>
               )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="border-2 border-black bg-white p-2 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -299,14 +301,14 @@ export function ActionDetailModal({
         </div>
 
         {/* Content */}
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-6 bg-white">
           {/* Original command text */}
           {command !== undefined && (
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <h3 className="mb-2 font-mono text-xs font-bold uppercase text-black">
                 Original Command
               </h3>
-              <div className="break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+              <div className="break-words border-2 border-black bg-neutral-100 p-3 font-mono text-sm font-medium text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 {command.text}
               </div>
             </div>
@@ -315,44 +317,44 @@ export function ActionDetailModal({
           {/* Classification reasoning */}
           {command?.classification?.reasoning !== undefined && (
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <h3 className="mb-2 font-mono text-xs font-bold uppercase text-black">
                 Classification Reasoning
               </h3>
-              <div className="break-words rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
+              <div className="break-words border-2 border-black bg-white p-3 text-sm font-medium text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 {command.classification.reasoning}
               </div>
             </div>
           )}
 
           {/* Timestamps */}
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-4 font-mono text-xs font-bold text-neutral-500">
             <div className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              <span>Created {formatDate(action.createdAt)}</span>
+              <span>CREATED {formatDate(action.createdAt).toUpperCase()}</span>
             </div>
             {action.updatedAt !== action.createdAt && (
               <div className="flex items-center gap-1">
-                <span>Updated {formatDate(action.updatedAt)}</span>
+                <span>UPDATED {formatDate(action.updatedAt).toUpperCase()}</span>
               </div>
             )}
           </div>
 
           {/* Status badge */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <span className="text-sm font-medium text-slate-600">
+          <div className="border-2 border-black bg-white p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="text-sm font-bold uppercase text-black">
               Status:{' '}
               <span
                 className={
                   action.status === 'completed'
-                    ? 'text-green-600'
+                    ? 'bg-green-100 px-1 text-black'
                     : action.status === 'processing'
-                      ? 'text-blue-600'
+                      ? 'bg-blue-100 px-1 text-black'
                       : action.status === 'failed' || action.status === 'rejected'
-                        ? 'text-red-600'
-                        : 'text-slate-600'
+                        ? 'bg-red-100 px-1 text-black'
+                        : 'bg-neutral-100 px-1 text-black'
                 }
               >
-                {action.status.charAt(0).toUpperCase() + action.status.slice(1)}
+                {action.status.toUpperCase()}
               </span>
             </span>
           </div>
@@ -360,18 +362,18 @@ export function ActionDetailModal({
 
         {/* Actions or Success View */}
         {executionResult !== null ? (
-          <div className="border-t border-slate-200 p-4">
-            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className="border-t-4 border-black bg-neutral-100 p-6">
+            <div className="border-2 border-black bg-green-100 p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-black" />
                 <div className="flex-1">
-                  <h4 className="font-medium text-green-800">
+                  <h4 className="font-bold uppercase text-black">
                     {executionResult.message ?? 'Action completed successfully'}
                   </h4>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <RouterLink
                       to={executionResult.resource_url ?? '#'}
-                      className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                      className="inline-flex items-center gap-2 border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] transition-transform hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                     >
                       <ExternalLink className="h-4 w-4" />
                       {executionResult.linkLabel ?? `Open ${action.type}`}
@@ -385,9 +387,9 @@ export function ActionDetailModal({
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-end gap-2 border-t border-slate-200 p-4 flex-nowrap">
+          <div className="flex items-center justify-end gap-3 border-t-4 border-black bg-neutral-100 p-6 flex-wrap">
             {isLoading ? (
-              <div className="text-sm text-slate-500">Loading actions...</div>
+              <div className="font-mono text-sm font-bold text-neutral-500">LOADING ACTIONS...</div>
             ) : (
               buttons.map((button) => (
                 <ConfigurableActionButton

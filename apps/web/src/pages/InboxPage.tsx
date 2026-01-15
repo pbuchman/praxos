@@ -171,7 +171,7 @@ function CommandItem({
 
   return (
     <div
-      className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 transition-all hover:border-slate-300 hover:shadow-sm"
+      className="cursor-pointer border-2 border-black bg-white p-4 transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -289,7 +289,7 @@ function ActionItem({
 
   return (
     <div
-      className={`cursor-pointer rounded-lg border border-slate-200 bg-white p-4 transition-[opacity,transform] duration-500 ease-out hover:border-slate-300 hover:shadow-sm ${
+      className={`cursor-pointer border-2 border-black bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
         isFadingOut ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
       }`}
       onClick={onClick}
@@ -889,15 +889,15 @@ export function InboxPage(): React.JSX.Element {
       />
 
       {/* Tabs */}
-      <div className="mb-4 flex border-b border-slate-200">
+      <div className="mb-6 flex border-b-4 border-neutral-200">
         <button
           onClick={(): void => {
             setActiveTab('actions');
           }}
-          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 border-b-4 -mb-1 px-6 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
             activeTab === 'actions'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+              ? 'border-black text-black bg-white'
+              : 'border-transparent text-neutral-500 hover:text-black'
           }`}
         >
           <ListTodo className="h-4 w-4" />
@@ -907,10 +907,10 @@ export function InboxPage(): React.JSX.Element {
           onClick={(): void => {
             setActiveTab('commands');
           }}
-          className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 border-b-4 -mb-1 px-6 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
             activeTab === 'commands'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+              ? 'border-black text-black bg-white'
+              : 'border-transparent text-neutral-500 hover:text-black'
           }`}
         >
           <MessageSquare className="h-4 w-4" />
@@ -928,9 +928,9 @@ export function InboxPage(): React.JSX.Element {
             className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800"
           >
             <Filter className="h-4 w-4" />
-            Filter by status
+            FILTER BY STATUS
             {statusFilter.length > 0 && (
-              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+              <span className="border border-black bg-cyan-100 px-2 py-0.5 text-xs font-bold text-black">
                 {String(statusFilter.length)}
               </span>
             )}
@@ -946,10 +946,10 @@ export function InboxPage(): React.JSX.Element {
               {ALL_ACTION_STATUSES.map((status) => (
                 <label
                   key={status}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  className={`inline-flex cursor-pointer items-center gap-2 border-2 px-3 py-1.5 text-sm font-bold uppercase transition-all ${
                     statusFilter.includes(status)
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]'
+                      : 'border-black bg-white text-black hover:bg-neutral-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                   }`}
                 >
                   <input
@@ -960,6 +960,7 @@ export function InboxPage(): React.JSX.Element {
                     }}
                     className="sr-only"
                   />
+                  {/* Reuse getStatusIcon but maybe force color? keeping for now */}
                   {getStatusIcon(status)}
                   {STATUS_LABELS[status]}
                 </label>
@@ -969,9 +970,9 @@ export function InboxPage(): React.JSX.Element {
                   onClick={(): void => {
                     setStatusFilter([]);
                   }}
-                  className="text-sm text-slate-500 hover:text-slate-700"
+                  className="font-bold text-sm text-neutral-500 hover:text-black uppercase"
                 >
-                  Clear all
+                  CLEAR ALL
                 </button>
               )}
             </div>

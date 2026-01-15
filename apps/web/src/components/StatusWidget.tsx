@@ -36,37 +36,19 @@ export function StatusWidget({
   return (
     <Card variant={config.variant}>
       <div className="flex items-start gap-4">
-        <div className={`shrink-0 ${status === 'loading' ? 'animate-spin' : ''}`}>
+        <div className={`shrink-0 border-2 border-black bg-white p-2 shadow-hard-sm ${status === 'loading' ? 'animate-spin' : ''}`}>
           <Icon
-            className={`h-8 w-8 ${
-              status === 'connected'
-                ? 'text-green-600'
-                : status === 'disconnected'
-                  ? 'text-amber-600'
-                  : status === 'error'
-                    ? 'text-red-600'
-                    : 'text-slate-400'
-            }`}
+            className="h-6 w-6 text-black"
           />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-slate-900">{title}</h3>
-          <p
-            className={`text-sm font-medium ${
-              status === 'connected'
-                ? 'text-green-700'
-                : status === 'disconnected'
-                  ? 'text-amber-700'
-                  : status === 'error'
-                    ? 'text-red-700'
-                    : 'text-slate-500'
-            }`}
-          >
+          <h3 className="font-mono text-lg font-bold uppercase tracking-tight text-black">{title}</h3>
+          <p className="font-bold uppercase text-black">
             {config.label}
           </p>
-          {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
+          {description ? <p className="mt-2 text-sm font-medium text-black">{description}</p> : null}
           {details !== undefined && details !== '' ? (
-            <p className="mt-1 text-xs text-slate-500">{details}</p>
+            <p className="mt-2 border-t-2 border-black pt-2 font-mono text-xs font-bold text-black">{details}</p>
           ) : null}
         </div>
       </div>

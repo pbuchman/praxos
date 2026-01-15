@@ -80,38 +80,38 @@ export function CommandDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+      <div className="w-full max-w-lg border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-200 p-4">
+        <div className="flex items-start justify-between border-b-4 border-black bg-blue-400 p-4">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-100 p-2">
+            <div className="mt-0.5 border-2 border-black bg-white p-2 text-black shadow-hard-sm">
               {isVoice ? (
-                <Mic className="h-5 w-5 text-purple-500" />
+                <Mic className="h-5 w-5 text-black" />
               ) : (
-                <MessageSquare className="h-5 w-5 text-blue-500" />
+                <MessageSquare className="h-5 w-5 text-black" />
               )}
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
+              <h2 className="font-mono text-lg font-black uppercase tracking-tight text-black">
                 {isVoice ? 'Voice Command' : 'Text Command'}
               </h2>
-              <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+              <div className="mt-1 flex items-center gap-2 text-sm font-bold">
                 {command.classification !== undefined && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
+                  <span className="inline-flex items-center gap-1 border-2 border-black bg-white px-2 py-0.5 font-bold uppercase text-black shadow-hard-sm">
                     {getTypeIcon(command.classification.type)}
                     {getTypeLabel(command.classification.type)}
                   </span>
                 )}
-                <span>{command.status}</span>
+                <span className="font-mono uppercase text-black">{command.status}</span>
               </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="border-2 border-black bg-white p-2 text-black shadow-hard-sm transition-transform hover:-translate-y-0.5 hover:shadow-hard"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -119,13 +119,13 @@ export function CommandDetailModal({
         </div>
 
         {/* Content */}
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-6 bg-white">
           {/* Command text */}
           <div>
-            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+            <h3 className="mb-2 font-mono text-xs font-bold uppercase text-black">
               Command Text
             </h3>
-            <div className="break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="break-words border-2 border-black bg-neutral-100 p-3 font-mono text-sm font-medium text-black shadow-hard-sm">
               {command.text}
             </div>
           </div>
@@ -133,11 +133,11 @@ export function CommandDetailModal({
           {/* Classification confidence */}
           {command.classification?.confidence !== undefined && (
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <h3 className="mb-2 font-mono text-xs font-bold uppercase text-black">
                 Classification Confidence
               </h3>
-              <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
-                {String(Math.round(command.classification.confidence * 100))}% confident
+              <div className="border-2 border-black bg-white p-3 font-mono text-sm font-bold text-black shadow-hard-sm">
+                {String(Math.round(command.classification.confidence * 100))}% CONFIDENT
               </div>
             </div>
           )}
@@ -145,54 +145,54 @@ export function CommandDetailModal({
           {/* Classification reasoning */}
           {command.classification?.reasoning !== undefined && (
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <h3 className="mb-2 font-mono text-xs font-bold uppercase text-black">
                 Classification Reasoning
               </h3>
-              <div className="break-words rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
+              <div className="break-words border-2 border-black bg-white p-3 text-sm font-medium text-black shadow-hard-sm">
                 {command.classification.reasoning}
               </div>
             </div>
           )}
 
           {/* Timestamps */}
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-4 font-mono text-xs font-bold text-neutral-500">
             <div className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              <span>Created {formatDate(command.createdAt)}</span>
+              <span>CREATED {formatDate(command.createdAt).toUpperCase()}</span>
             </div>
             {command.updatedAt !== command.createdAt && (
               <div className="flex items-center gap-1">
-                <span>Updated {formatDate(command.updatedAt)}</span>
+                <span>UPDATED {formatDate(command.updatedAt).toUpperCase()}</span>
               </div>
             )}
           </div>
 
           {/* Status badge */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <span className="text-sm font-medium text-slate-600">
+          <div className="border-2 border-black bg-white p-3 shadow-hard-sm">
+            <span className="text-sm font-bold uppercase text-black">
               Status:{' '}
               <span
                 className={
                   command.status === 'classified'
-                    ? 'text-green-600'
+                    ? 'bg-green-100 px-1 text-black'
                     : command.status === 'pending_classification' || command.status === 'received'
-                      ? 'text-amber-600'
+                      ? 'bg-yellow-100 px-1 text-black'
                       : command.status === 'failed'
-                        ? 'text-red-600'
-                        : 'text-slate-600'
+                        ? 'bg-red-100 px-1 text-black'
+                        : 'bg-neutral-100 px-1 text-black'
                 }
               >
-                {command.status.charAt(0).toUpperCase() + command.status.slice(1).replace('_', ' ')}
+                {command.status.toUpperCase().replace('_', ' ')}
               </span>
             </span>
           </div>
         </div>
 
         {/* Footer - Close button */}
-        <div className="flex items-center justify-end border-t border-slate-200 p-4">
+        <div className="flex items-center justify-end border-t-4 border-black bg-neutral-100 p-6">
           <button
             onClick={onClose}
-            className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
+            className="border-2 border-black bg-white px-4 py-2 text-sm font-bold uppercase text-black shadow-hard-sm transition-transform hover:-translate-y-0.5 hover:shadow-hard"
           >
             Close
           </button>
