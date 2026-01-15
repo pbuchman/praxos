@@ -3,10 +3,13 @@
 
 /* Custom theme variables */
 :root {
-  --color-primary: theme('colors.blue.600');
-  --color-primary-hover: theme('colors.blue.700');
-  --color-accent: theme('colors.amber.400');
-  --color-accent-hover: theme('colors.amber.500');
+  --color-primary: theme('colors.neutral.950');
+  --color-primary-hover: theme('colors.black');
+  --color-accent: theme('colors.cyan.400');
+  --color-accent-hover: theme('colors.cyan.500');
+  --shadow-hard: 4px 4px 0px 0px rgba(0,0,0,1);
+  --shadow-hard-hover: 6px 6px 0px 0px rgba(0,0,0,1);
+  --shadow-hard-sm: 2px 2px 0px 0px rgba(0,0,0,1);
 }
 
 /* Prevent horizontal scrolling on mobile */
@@ -18,12 +21,31 @@ body {
 
 /* Base styles */
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-neutral-100 text-neutral-900 antialiased font-sans selection:bg-cyan-300 selection:text-black;
 }
 
 /* Focus styles */
 :focus-visible {
-  @apply outline-2 outline-offset-2 outline-blue-600;
+  @apply outline-none ring-2 ring-black ring-offset-2;
+}
+
+/* Utility classes for Neo-Brutalist Theme */
+@layer components {
+  .shadow-hard {
+    box-shadow: var(--shadow-hard);
+  }
+  
+  .shadow-hard-hover {
+    box-shadow: var(--shadow-hard-hover);
+  }
+
+  .shadow-hard-sm {
+    box-shadow: var(--shadow-hard-sm);
+  }
+
+  .border-thick {
+    @apply border-2 border-black;
+  }
 }
 
 /* Safe area utilities for PWA on iOS */

@@ -8,7 +8,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-neutral-100 pattern-dots pattern-black pattern-bg-transparent pattern-size-4 pattern-opacity-5">
       <Header />
       <Sidebar />
       {/* Main content - no left margin on mobile, margin on desktop */}

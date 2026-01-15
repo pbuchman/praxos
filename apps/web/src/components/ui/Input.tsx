@@ -16,17 +16,17 @@ export function Input({
 
   return (
     <div className="space-y-1">
-      <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={inputId} className="block text-sm font-bold uppercase tracking-wide text-black">
         {label}
       </label>
       <input
         id={inputId}
-        className={`block w-full rounded-lg border px-3 py-2 text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-          error !== undefined && error !== '' ? 'border-red-500' : 'border-slate-300'
+        className={`block w-full border-2 px-3 py-2 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-neutral-500 focus:translate-y-[-2px] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:outline-none ${
+          error !== undefined && error !== '' ? 'border-red-500 bg-red-50' : 'border-black bg-white focus:border-black'
         } ${className}`}
         {...props}
       />
-      {error !== undefined && error !== '' ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error !== undefined && error !== '' ? <p className="font-mono text-sm font-bold text-red-600">{error}</p> : null}
     </div>
   );
 }

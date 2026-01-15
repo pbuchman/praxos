@@ -229,7 +229,7 @@ export function Sidebar(): React.JSX.Element {
 
       {/* Sidebar */}
       <aside
-        className={`fixed bottom-0 left-0 top-16 z-40 flex flex-col border-r border-slate-200 bg-white transition-all duration-300
+        className={`fixed bottom-0 left-0 top-16 z-40 flex flex-col border-r-4 border-black bg-white transition-all duration-300
           ${isCollapsed ? 'w-16' : 'w-64'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
@@ -252,10 +252,10 @@ export function Sidebar(): React.JSX.Element {
             to="/inbox"
             end
             className={({ isActive }): string =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`
             }
           >
@@ -269,10 +269,10 @@ export function Sidebar(): React.JSX.Element {
               onClick={(): void => {
                 setIsResearchAgentOpen(!isResearchAgentOpen);
               }}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex w-full items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 location.pathname.startsWith('/research')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
               <Sparkles className="h-5 w-5 shrink-0" />
@@ -297,10 +297,10 @@ export function Sidebar(): React.JSX.Element {
                     to={item.to}
                     end={item.to === '/research'}
                     className={({ isActive }): string =>
-                      `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      `flex items-center gap-3 border-2 px-3 py-2 text-sm font-bold uppercase transition-all ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                          : 'border-transparent text-neutral-500 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       }`
                     }
                   >
@@ -318,10 +318,10 @@ export function Sidebar(): React.JSX.Element {
               onClick={(): void => {
                 setIsDataInsightsOpen(!isDataInsightsOpen);
               }}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex w-full items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 location.pathname.startsWith('/data-insights')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
               <Database className="h-5 w-5 shrink-0" />
@@ -346,10 +346,10 @@ export function Sidebar(): React.JSX.Element {
                     to={item.to}
                     end={item.to === '/data-insights'}
                     className={({ isActive }): string =>
-                      `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      `flex items-center gap-3 border-2 px-3 py-2 text-sm font-bold uppercase transition-all ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                          : 'border-transparent text-neutral-500 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       }`
                     }
                   >
@@ -366,10 +366,10 @@ export function Sidebar(): React.JSX.Element {
             to="/my-notes"
             end
             className={({ isActive }): string =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`
             }
           >
@@ -382,10 +382,10 @@ export function Sidebar(): React.JSX.Element {
             to="/my-todos"
             end
             className={({ isActive }): string =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`
             }
           >
@@ -398,10 +398,10 @@ export function Sidebar(): React.JSX.Element {
             to="/my-bookmarks"
             end
             className={({ isActive }): string =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`
             }
           >
@@ -414,10 +414,10 @@ export function Sidebar(): React.JSX.Element {
             to="/calendar"
             end
             className={({ isActive }): string =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`
             }
           >
@@ -430,10 +430,10 @@ export function Sidebar(): React.JSX.Element {
             to="/notes"
             end
             className={({ isActive }): string =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`
             }
           >
@@ -447,7 +447,7 @@ export function Sidebar(): React.JSX.Element {
               onClick={(): void => {
                 setIsNotificationsOpen(!isNotificationsOpen);
               }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              className="flex w-full items-center gap-3 border-2 border-transparent px-3 py-2.5 text-sm font-bold uppercase text-neutral-600 transition-all hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
             >
               <BellRing className="h-5 w-5 shrink-0" />
               {!isCollapsed ? (
@@ -490,10 +490,10 @@ export function Sidebar(): React.JSX.Element {
                       onClick={(): void => {
                         void navigate(buildFilterUrl(filter));
                       }}
-                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`flex w-full items-center gap-3 border-2 px-3 py-2 text-sm font-bold uppercase transition-all ${
                         isFilterActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                          : 'border-transparent text-neutral-500 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       }`}
                     >
                       <Filter className="h-4 w-4 shrink-0 text-blue-600" />
@@ -530,10 +530,10 @@ export function Sidebar(): React.JSX.Element {
               onClick={(): void => {
                 setIsSettingsOpen(!isSettingsOpen);
               }}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex w-full items-center gap-3 border-2 px-3 py-2.5 text-sm font-bold uppercase transition-all ${
                 location.pathname.startsWith('/settings')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                  : 'border-transparent text-neutral-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
               <Settings className="h-5 w-5 shrink-0" />
@@ -558,10 +558,10 @@ export function Sidebar(): React.JSX.Element {
                     to={item.to}
                     end
                     className={({ isActive }): string =>
-                      `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      `flex items-center gap-3 border-2 px-3 py-2 text-sm font-bold uppercase transition-all ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'border-black bg-cyan-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black translate-x-1'
+                          : 'border-transparent text-neutral-500 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       }`
                     }
                   >
