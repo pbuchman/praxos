@@ -440,7 +440,7 @@ export const researchRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       // Validate
       const validationResult = await validator.validateInput(body.prompt);
       if (!validationResult.ok) {
-        request.log.warn(
+        request.log.debug(
           {
             requestId,
             errorCode: validationResult.error.code,
