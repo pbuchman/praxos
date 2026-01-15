@@ -206,7 +206,7 @@ function parseJson<T>(
       expectedSchema,
       operation,
     });
-    logger?.warn(
+    logger?.debug(
       {
         operation,
         errorMessage,
@@ -227,7 +227,7 @@ function parseJson<T>(
       expectedSchema,
       operation,
     });
-    logger?.warn(
+    logger?.debug(
       {
         operation,
         errorMessage,
