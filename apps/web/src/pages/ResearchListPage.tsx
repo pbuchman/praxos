@@ -34,14 +34,14 @@ interface StatusStyle {
 }
 
 const STATUS_STYLES: Record<ResearchStatus, StatusStyle> = {
-  draft: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Draft' },
-  pending: { bg: 'bg-slate-100', text: 'text-slate-800', label: 'Pending' },
-  processing: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Processing' },
-  awaiting_confirmation: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Action Required' },
-  retrying: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Retrying' },
-  synthesizing: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Synthesizing' },
-  completed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Completed' },
-  failed: { bg: 'bg-red-100', text: 'text-red-800', label: 'Failed' },
+  draft: { bg: 'bg-yellow-100', text: 'text-black', label: 'DRAFT' },
+  pending: { bg: 'bg-neutral-100', text: 'text-black', label: 'PENDING' },
+  processing: { bg: 'bg-blue-100', text: 'text-black', label: 'PROCESSING' },
+  awaiting_confirmation: { bg: 'bg-orange-100', text: 'text-black', label: 'ACTION REQUIRED' },
+  retrying: { bg: 'bg-blue-100', text: 'text-black', label: 'RETRYING' },
+  synthesizing: { bg: 'bg-purple-100', text: 'text-black', label: 'SYNTHESIZING' },
+  completed: { bg: 'bg-green-100', text: 'text-black', label: 'COMPLETED' },
+  failed: { bg: 'bg-red-100', text: 'text-black', label: 'FAILED' },
 };
 
 export function ResearchListPage(): React.JSX.Element {
@@ -183,7 +183,7 @@ function ResearchCard({ research, onDelete, onToggleFavourite, updatingFavourite
   return (
     <div
       onClick={handleCardClick}
-      className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md"
+      className="cursor-pointer border-2 border-black bg-white p-4 transition-all hover:-translate-y-1 hover:shadow-hard"
     >
       <div className="flex items-start gap-3">
         <button
@@ -192,27 +192,27 @@ function ResearchCard({ research, onDelete, onToggleFavourite, updatingFavourite
             onToggleFavourite(research.id, !(research.favourite ?? false));
           }}
           disabled={updatingFavourite === research.id}
-          className="p-1 rounded hover:bg-slate-100 transition-colors disabled:opacity-50 flex-shrink-0"
+          className="p-1 border-2 border-transparent hover:border-black transition-all disabled:opacity-50 flex-shrink-0"
           aria-label={research.favourite === true ? 'Unfavourite' : 'Favourite'}
         >
           <Star
-            className={`h-5 w-5 ${research.favourite === true ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`}
+            className={`h-5 w-5 ${research.favourite === true ? 'text-black fill-black' : 'text-neutral-300'}`}
           />
         </button>
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-slate-900 hover:text-blue-600">
-            {research.title !== '' ? stripMarkdown(research.title) : 'Untitled Research'}
+          <h3 className="text-lg font-black uppercase tracking-tight text-black">
+            {research.title !== '' ? stripMarkdown(research.title) : 'UNTITLED RESEARCH'}
           </h3>
-          <p className="mt-1 line-clamp-2 text-sm text-slate-600">{research.prompt}</p>
+          <p className="mt-1 line-clamp-2 font-mono text-sm text-neutral-600">{research.prompt}</p>
         </div>
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.bg} ${status.text} flex-shrink-0`}
+          className={`inline-flex items-center border-2 border-black px-2.5 py-0.5 text-xs font-bold uppercase shadow-hard-sm ${status.bg} ${status.text} flex-shrink-0`}
         >
           {status.label}
         </span>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+      <div className="mt-4 flex items-center justify-between font-mono text-xs font-bold text-neutral-500 uppercase">
         <div className="flex gap-4">
           <span>{getDateLabel()}</span>
           {isCompleted && research.completedAt !== undefined ? (
@@ -221,7 +221,7 @@ function ResearchCard({ research, onDelete, onToggleFavourite, updatingFavourite
         </div>
         <div className="flex gap-2">
           {[...new Set(research.selectedModels.map(getProviderForModel))].map((provider) => (
-            <span key={provider} className="rounded bg-slate-100 px-2 py-0.5 text-xs">
+            <span key={provider} className="border border-black bg-white px-2 py-0.5 text-black">
               {provider}
             </span>
           ))}
@@ -236,7 +236,7 @@ function ResearchCard({ research, onDelete, onToggleFavourite, updatingFavourite
               e.stopPropagation();
             }}
           >
-            <Button variant="danger" onClick={onDelete}>
+            <Button variant="danger" onClick={onDelete} size="sm">
               Confirm {deleteLabel}
             </Button>
             <Button
@@ -244,6 +244,7 @@ function ResearchCard({ research, onDelete, onToggleFavourite, updatingFavourite
               onClick={(): void => {
                 setShowDeleteConfirm(false);
               }}
+              size="sm"
             >
               Cancel
             </Button>
@@ -254,7 +255,7 @@ function ResearchCard({ research, onDelete, onToggleFavourite, updatingFavourite
               e.stopPropagation();
               setShowDeleteConfirm(true);
             }}
-            className="text-sm text-slate-400 hover:text-red-600"
+            className="font-bold uppercase text-neutral-400 hover:text-red-600 text-xs"
           >
             {deleteLabel}
           </button>
