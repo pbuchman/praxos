@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Plus,
   Settings,
+  Share2,
   Sparkles,
   StickyNote,
   TrendingUp,
@@ -48,6 +49,7 @@ const settingsItems: NavItem[] = [
   { to: '/settings/api-keys', label: 'API Keys', icon: Key },
   { to: '/settings/llm-pricing', label: 'LLM Pricing', icon: DollarSign },
   { to: '/settings/usage-costs', label: 'Usage Costs', icon: TrendingUp },
+  { to: '/settings/share-history', label: 'Share History', icon: Share2 },
 ];
 
 const researchAgentItems: NavItem[] = [
