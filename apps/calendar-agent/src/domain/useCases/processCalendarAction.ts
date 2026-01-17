@@ -7,8 +7,8 @@
  * 3. Saving failed extractions for manual review
  */
 
-import { err, ok, type Result } from '@intexuraos/common-core';
-import type { Logger } from '@intexuraos/common-core';
+import { err, ok, type Result, ServiceErrorCodes } from '@intexuraos/common-core';
+import type { Logger, ServiceFeedback } from '@intexuraos/common-core';
 import type { CalendarError } from '../errors.js';
 import type { CreateEventInput } from '../models.js';
 import type {
@@ -17,6 +17,7 @@ import type {
   CalendarActionExtractionService,
   ExtractionError,
   UserServiceClient,
+  ProcessedActionRepository,
 } from '../ports.js';
 
 export interface ProcessCalendarActionDeps {
@@ -24,6 +25,7 @@ export interface ProcessCalendarActionDeps {
   googleCalendarClient: GoogleCalendarClient;
   failedEventRepository: FailedEventRepository;
   calendarActionExtractionService: CalendarActionExtractionService;
+  processedActionRepository: ProcessedActionRepository;
   logger: Logger;
 }
 
@@ -33,11 +35,7 @@ export interface ProcessCalendarActionRequest {
   text: string;
 }
 
-export interface ProcessCalendarActionResponse {
-  status: 'completed' | 'failed';
-  resourceUrl?: string;
-  error?: string;
-}
+export type ProcessCalendarActionResponse = ServiceFeedback;
 
 function toCalendarError(error: ExtractionError): CalendarError {
   return {
@@ -58,12 +56,8 @@ function isValidIsoDateTime(value: string | null): boolean {
 }
 
 function toEventDateTime(
-  isoString: string | null
+  isoString: string
 ): { dateTime?: string; date?: string; timeZone?: string } {
-  if (isoString === null) {
-    return {};
-  }
-
   const hasTime = isoString.includes('T');
   if (hasTime) {
     return { dateTime: isoString };
@@ -73,7 +67,7 @@ function toEventDateTime(
 
 function buildCreateEventInput(extracted: {
   summary: string;
-  start: string | null;
+  start: string;
   end: string | null;
   location: string | null;
   description: string | null;
@@ -99,12 +93,31 @@ export async function processCalendarAction(
   deps: ProcessCalendarActionDeps
 ): Promise<Result<ProcessCalendarActionResponse, CalendarError>> {
   const { actionId, userId, text } = request;
-  const { userServiceClient, googleCalendarClient, failedEventRepository, calendarActionExtractionService, logger } =
+  const { userServiceClient, googleCalendarClient, failedEventRepository, calendarActionExtractionService, processedActionRepository, logger } =
     deps;
 
   logger.info({ userId, actionId, textLength: text.length }, 'processCalendarAction: entry');
 
-  const currentDate = new Date().toISOString().split('T')[0] ?? '';
+  const existingResult = await processedActionRepository.getByActionId(actionId);
+  if (!existingResult.ok) {
+    logger.error({ actionId, error: existingResult.error }, 'processCalendarAction: failed to check processed action');
+    return err(existingResult.error);
+  }
+
+  if (existingResult.value !== null) {
+    const existing = existingResult.value;
+    logger.info(
+      { actionId, eventId: existing.eventId },
+      'processCalendarAction: action already processed, returning existing result'
+    );
+    return ok({
+      status: 'completed',
+      message: 'Calendar event created successfully',
+      resourceUrl: existing.resourceUrl,
+    });
+  }
+
+  const currentDate = new Date().toISOString().substring(0, 10);
 
   const extractResult = await calendarActionExtractionService.extractEvent(userId, text, currentDate);
 
@@ -154,7 +167,8 @@ export async function processCalendarAction(
 
     return ok({
       status: 'failed',
-      error: errorMessage,
+      message: errorMessage,
+      errorCode: ServiceErrorCodes.EXTRACTION_FAILED,
     });
   }
 
@@ -183,11 +197,15 @@ export async function processCalendarAction(
 
     return ok({
       status: 'failed',
-      error: 'Invalid date format',
+      message: 'Invalid date format',
+      errorCode: ServiceErrorCodes.VALIDATION_ERROR,
     });
   }
 
-  const createInput = buildCreateEventInput(extracted);
+  const createInput = buildCreateEventInput({
+    ...extracted,
+    start: extracted.start as string,
+  });
 
   logger.info(
     { userId, actionId, summary: createInput.summary },
@@ -230,21 +248,42 @@ export async function processCalendarAction(
       return err(failedResult.error);
     }
 
+    if (createResult.error.code === 'TOKEN_ERROR') {
+      return err(createResult.error);
+    }
+
     return ok({
       status: 'failed',
-      error: createResult.error.message,
+      message: createResult.error.message,
+      errorCode: ServiceErrorCodes.EXTERNAL_API_ERROR,
     });
   }
 
   const createdEvent = createResult.value;
+  const resourceUrl = createResourceUrl(createdEvent.id);
 
   logger.info(
     { userId, actionId, eventId: createdEvent.id },
     'processCalendarAction: event created successfully'
   );
 
+  const saveResult = await processedActionRepository.create({
+    actionId,
+    userId,
+    eventId: createdEvent.id,
+    resourceUrl,
+  });
+
+  if (!saveResult.ok) {
+    logger.warn(
+      { actionId, error: saveResult.error },
+      'processCalendarAction: failed to save processed action (event was created successfully)'
+    );
+  }
+
   return ok({
     status: 'completed',
-    resourceUrl: createResourceUrl(createdEvent.id),
+    message: `Event "${createdEvent.summary}" created successfully`,
+    resourceUrl,
   });
 }
