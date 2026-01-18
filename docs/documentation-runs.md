@@ -6,6 +6,74 @@ Log of all `/document-service` runs.
 
 <!-- Entries are prepended below this line -->
 
+## 2026-01-19 — AI-First Documentation Overhaul
+
+**Action:** Created / Updated
+**Agent:** service-scribe (autonomous)
+
+**Files Created:**
+
+### New Service Documentation
+
+**linear-agent** (5 files)
+
+- `docs/services/linear-agent/features.md` — AI-powered Linear issue creation
+- `docs/services/linear-agent/technical.md` — API endpoints, domain models, architecture
+- `docs/services/linear-agent/tutorial.md` — Getting started guide
+- `docs/services/linear-agent/technical-debt.md` — Debt tracking
+- `docs/services/linear-agent/agent.md` — Machine-readable interface
+
+### New Architecture Documentation
+
+- `docs/architecture/ai-architecture.md` — Comprehensive AI/LLM architecture guide
+
+**Files Updated:**
+
+- `docs/services/index.md` — Added linear-agent, reorganized with AI capabilities table
+- `docs/site-index.json` — Added linear-agent, updated stats to 18 services
+- `docs/overview.md` — Complete rewrite with AI emphasis, added linear-agent
+- `README.md` — Professional overhaul with AI Council concept, architecture diagrams
+
+**Inferred Insights:**
+
+- Why linear-agent: Voice-to-issue pipeline reduces context-switching for project management
+- Killer feature: AI extraction of title, priority, functional requirements, technical details from natural language
+- Future plans: Webhook integration, issue updates, project selection, label inference
+
+**Documentation Coverage:** 100% (18/18 services)
+
+**Technical Debt Found:**
+
+- linear-agent: No significant debt, well-structured codebase
+
+**Key Improvements:**
+
+1. Added AI capabilities table to services index showing which LLMs each service uses
+2. Created dedicated AI Architecture document with:
+   - Model selection strategy
+   - Provider packages documentation
+   - Cost optimization strategies
+   - Security considerations
+3. Updated README.md with:
+   - Council of AI concept front and center
+   - Mermaid architecture diagrams
+   - Multi-model intelligence explanation
+   - Technology stack overview
+4. Added linear-agent (previously undocumented service)
+
+**AI Model Summary:**
+
+| Provider   | Models                                                 | Count |
+| ---------- | ------------------------------------------------------ | ----- |
+| Google     | Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash, Imagen | 4 |
+| OpenAI     | GPT-5.2, GPT-4o Mini, O4 Mini Deep Research, DALL-E 3  | 4     |
+| Anthropic  | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 3.5   | 3     |
+| Perplexity | Sonar, Sonar Pro, Sonar Deep Research                  | 3     |
+| Zai        | GLM-4.7                                                | 1     |
+| **Total**  |                                                        | **15**|
+
+---
+
 ## 2026-01-14 — Comprehensive Service Documentation Update
 
 **Action:** Updated

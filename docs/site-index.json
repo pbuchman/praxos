@@ -227,6 +227,20 @@
       "features": ["CRUD operations", "Notion database sync", "Created/updated tracking"],
       "endpoints": 5,
       "docs": "services/promptvault-service"
+    },
+    {
+      "id": "linear-agent",
+      "name": "Linear Agent",
+      "category": "integrations",
+      "summary": "AI-powered Linear issue creation from natural language",
+      "features": [
+        "Natural language to structured issue",
+        "AI-extracted title, priority, description",
+        "Gemini 2.5 Flash and GLM-4.7 models",
+        "Functional requirements extraction"
+      ],
+      "endpoints": 3,
+      "docs": "services/linear-agent"
     }
   ],
   "categories": {
@@ -243,7 +257,7 @@
     "integrations": {
       "name": "External Integrations",
       "description": "Services that connect to external platforms",
-      "services": ["user-service", "whatsapp-service", "calendar-agent", "notion-service"]
+      "services": ["user-service", "whatsapp-service", "calendar-agent", "notion-service", "linear-agent"]
     },
     "infrastructure": {
       "name": "Infrastructure",
@@ -259,9 +273,9 @@
     }
   },
   "stats": {
-    "total": 17,
-    "documented": 17,
+    "total": 18,
+    "documented": 18,
     "completion": 100,
-    "lastUpdated": "2026-01-14"
+    "lastUpdated": "2026-01-19"
   }
 }
