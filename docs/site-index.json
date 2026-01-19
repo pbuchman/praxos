@@ -1,57 +1,67 @@
 {
   "services": [
     {
-      "id": "actions-agent",
-      "name": "Actions Agent",
-      "category": "infrastructure",
-      "summary": "Central action lifecycle management for todos, research, notes, links, calendar, and reminders",
-      "features": [
-        "Unified action queue",
-        "Status workflow management",
-        "Pub/Sub event distribution",
-        "Agent orchestration"
-      ],
-      "endpoints": 8,
-      "docs": "services/actions-agent"
-    },
-    {
       "id": "research-agent",
       "name": "Research Agent",
-      "category": "ai-research",
-      "summary": "Multi-LLM research orchestration with parallel queries and public sharing",
+      "category": "ai-agents",
+      "summary": "Multi-LLM research orchestration with parallel queries across 5 AI providers",
+      "aiCapabilities": [
+        "Gemini 2.5 Pro/Flash",
+        "GPT-5.2",
+        "Claude Opus 4.5",
+        "Sonar Pro",
+        "GLM-4.7"
+      ],
       "features": [
-        "5 LLM providers (Claude, OpenAI, Google, Perplexity, Zai)",
-        "Parallel query execution",
-        "Public sharing via GCS",
-        "Cover image generation"
+        "Parallel multi-model queries",
+        "Synthesis with attribution",
+        "Confidence scoring",
+        "Public sharing with cover images"
       ],
       "endpoints": 10,
       "docs": "services/research-agent"
     },
     {
-      "id": "user-service",
-      "name": "User Service",
-      "category": "integrations",
-      "summary": "Authentication, settings, OAuth tokens, and API key management",
+      "id": "commands-agent",
+      "name": "Commands Agent",
+      "category": "ai-agents",
+      "summary": "AI intent classification using Gemini LLM for natural language routing",
+      "aiCapabilities": ["Gemini 2.5 Flash", "GLM-4.7"],
       "features": [
-        "Auth0 device code flow",
-        "AES-256-GCM encryption for API keys",
-        "Google OAuth token refresh",
-        "Settings management"
+        "Natural language classification",
+        "6 action types (todo, research, note, link, calendar, linear)",
+        "Model preference detection",
+        "Confidence scoring"
       ],
-      "endpoints": 11,
-      "docs": "services/user-service"
+      "endpoints": 7,
+      "docs": "services/commands-agent"
+    },
+    {
+      "id": "data-insights-agent",
+      "name": "Data Insights Agent",
+      "category": "ai-agents",
+      "summary": "AI-powered data analysis with automated chart generation",
+      "aiCapabilities": ["Gemini 2.5 Flash"],
+      "features": [
+        "Schema inference",
+        "AI-generated insights",
+        "Chart definition generation",
+        "Composite data feeds"
+      ],
+      "endpoints": 14,
+      "docs": "services/data-insights-agent"
     },
     {
       "id": "image-service",
       "name": "Image Service",
-      "category": "infrastructure",
+      "category": "ai-agents",
       "summary": "AI image generation with DALL-E 3 and Imagen 3",
+      "aiCapabilities": ["DALL-E 3", "Imagen 3"],
       "features": [
-        "DALL-E 3 and Imagen 3 support",
-        "Internal-only endpoints",
+        "Cover image generation",
+        "Prompt enhancement",
         "GCS storage with thumbnails",
-        "Prompt enhancement with LLM"
+        "Multiple model support"
       ],
       "endpoints": 2,
       "docs": "services/image-service"
@@ -59,11 +69,12 @@
     {
       "id": "bookmarks-agent",
       "name": "Bookmarks Agent",
-      "category": "content",
-      "summary": "Link management with OpenGraph metadata and AI summaries",
+      "category": "ai-agents",
+      "summary": "Link management with AI-powered summarization",
+      "aiCapabilities": ["AI summarization via web-agent"],
       "features": [
-        "OpenGraph metadata via web-agent",
-        "AI summaries for content",
+        "OpenGraph metadata extraction",
+        "AI content summaries",
         "Tag-based filtering",
         "Archive management"
       ],
@@ -71,75 +82,66 @@
       "docs": "services/bookmarks-agent"
     },
     {
-      "id": "notes-agent",
-      "name": "Notes Agent",
-      "category": "content",
-      "summary": "Lightweight note-taking service",
-      "features": ["CRUD operations", "Tag support", "Draft/active status", "Source tracking"],
-      "endpoints": 5,
-      "docs": "services/notes-agent"
+      "id": "web-agent",
+      "name": "Web Agent",
+      "category": "ai-agents",
+      "summary": "Web scraping with AI-powered content extraction and summarization",
+      "aiCapabilities": ["Gemini 2.5 Flash"],
+      "features": [
+        "Content extraction",
+        "AI summarization",
+        "Batch processing",
+        "2MB size limit"
+      ],
+      "endpoints": 2,
+      "docs": "services/web-agent"
+    },
+    {
+      "id": "actions-agent",
+      "name": "Actions Agent",
+      "category": "orchestration",
+      "summary": "Central action lifecycle management and agent orchestration",
+      "aiCapabilities": [],
+      "features": [
+        "Unified action queue",
+        "Status workflow management",
+        "Pub/Sub event distribution",
+        "Multi-agent coordination"
+      ],
+      "endpoints": 8,
+      "docs": "services/actions-agent"
     },
     {
       "id": "todos-agent",
       "name": "Todos Agent",
       "category": "content",
-      "summary": "Task management with sub-items and priorities",
+      "summary": "Task management with natural language extraction",
+      "aiCapabilities": ["NLP task extraction"],
       "features": [
         "AI-powered item extraction",
-        "Sub-items with custom ordering",
-        "Priorities: low, medium, high, urgent",
+        "Sub-items with ordering",
+        "Priority levels",
         "Status workflow"
       ],
       "endpoints": 10,
       "docs": "services/todos-agent"
     },
     {
-      "id": "whatsapp-service",
-      "name": "WhatsApp Service",
-      "category": "integrations",
-      "summary": "WhatsApp Business API integration for receiving messages and media",
-      "features": [
-        "Webhook signature validation",
-        "Text, image, and audio support",
-        "Media download to GCS",
-        "Async transcription"
-      ],
-      "endpoints": 14,
-      "docs": "services/whatsapp-service"
-    },
-    {
-      "id": "commands-agent",
-      "name": "Commands Agent",
-      "category": "ai-research",
-      "summary": "AI command classification using Gemini LLM",
-      "features": [
-        "6 action types (todo, research, note, link, calendar, reminder)",
-        "Model preference detection",
-        "Idempotency by source",
-        "Pending classification retry"
-      ],
-      "endpoints": 7,
-      "docs": "services/commands-agent"
-    },
-    {
-      "id": "web-agent",
-      "name": "Web Agent",
-      "category": "infrastructure",
-      "summary": "OpenGraph metadata extraction from URLs",
-      "features": [
-        "Title, description, image extraction",
-        "Favicon detection",
-        "Batch processing",
-        "2MB size limit"
-      ],
-      "endpoints": 1,
-      "docs": "services/web-agent"
+      "id": "notes-agent",
+      "name": "Notes Agent",
+      "category": "content",
+      "summary": "Lightweight note-taking with content structuring",
+      "aiCapabilities": [],
+      "features": ["CRUD operations", "Tag support", "Draft/active status", "Source tracking"],
+      "endpoints": 5,
+      "docs": "services/notes-agent"
     },
     {
       "id": "calendar-agent",
       "name": "Calendar Agent",
       "category": "integrations",
-      "summary": "Google Calendar integration for event management",
+      "summary": "Google Calendar integration with intelligent date parsing",
+      "aiCapabilities": ["Date/time parsing"],
       "features": [
         "Full CRUD operations",
         "Free/busy queries",
@@ -150,69 +152,73 @@
       "docs": "services/calendar-agent"
     },
     {
-      "id": "data-insights-agent",
-      "name": "Data Insights Agent",
-      "category": "ai-research",
-      "summary": "AI-powered data analysis with Gemini",
+      "id": "linear-agent",
+      "name": "Linear Agent",
+      "category": "integrations",
+      "summary": "Linear issue management integration",
+      "aiCapabilities": [],
       "features": [
-        "Custom data sources",
-        "Title generation",
-        "Chart definition generation",
-        "Composite feeds"
+        "Issue CRUD operations",
+        "Project mapping",
+        "Status synchronization"
+      ],
+      "endpoints": 5,
+      "docs": "services/linear-agent"
+    },
+    {
+      "id": "whatsapp-service",
+      "name": "WhatsApp Service",
+      "category": "integrations",
+      "summary": "WhatsApp Business API with voice transcription",
+      "aiCapabilities": ["Speechmatics transcription"],
+      "features": [
+        "Voice-to-text transcription",
+        "Media download to GCS",
+        "Webhook signature validation",
+        "Link preview extraction"
       ],
       "endpoints": 14,
-      "docs": "services/data-insights-agent"
+      "docs": "services/whatsapp-service"
+    },
+    {
+      "id": "user-service",
+      "name": "User Service",
+      "category": "infrastructure",
+      "summary": "Authentication and API key management with LLM validation",
+      "aiCapabilities": ["LLM API key validation"],
+      "features": [
+        "Auth0 device code flow",
+        "AES-256-GCM encryption",
+        "Google OAuth token refresh",
+        "Multi-provider key storage"
+      ],
+      "endpoints": 11,
+      "docs": "services/user-service"
     },
     {
       "id": "mobile-notifications-service",
       "name": "Mobile Notifications Service",
       "category": "infrastructure",
-      "summary": "Push notification gateway with signature-based authentication",
+      "summary": "Push notification gateway with signature authentication",
+      "aiCapabilities": [],
       "features": [
-        "Signature connections",
-        "Notification filters",
-        "Webhook support",
-        "Multi-device support"
+        "Signature-based connections",
+        "Notification filtering",
+        "Multi-device support",
+        "Webhook support"
       ],
       "endpoints": 10,
       "docs": "services/mobile-notifications-service"
-    },
-    {
-      "id": "api-docs-hub",
-      "name": "API Docs Hub",
-      "category": "infrastructure",
-      "summary": "OpenAPI documentation aggregator",
-      "features": [
-        "Single Swagger UI",
-        "Multi-spec support",
-        "Service selector dropdown",
-        "Health check"
-      ],
-      "endpoints": 2,
-      "docs": "services/api-docs-hub"
-    },
-    {
-      "id": "app-settings-service",
-      "name": "App Settings Service",
-      "category": "infrastructure",
-      "summary": "LLM pricing and usage analytics",
-      "features": [
-        "5 provider pricing (Google, OpenAI, Anthropic, Perplexity, Zai)",
-        "Usage cost tracking",
-        "Monthly breakdown",
-        "Per-model statistics"
-      ],
-      "endpoints": 3,
-      "docs": "services/app-settings-service"
     },
     {
       "id": "notion-service",
       "name": "Notion Service",
       "category": "integrations",
       "summary": "Notion integration management",
+      "aiCapabilities": [],
       "features": [
         "Token validation",
-        "Connection status",
+        "Connection status monitoring",
         "Workspace detection",
         "Clean disconnect"
       ],
@@ -224,44 +230,114 @@
       "name": "PromptVault Service",
       "category": "content",
       "summary": "Prompt template management with Notion sync",
-      "features": ["CRUD operations", "Notion database sync", "Created/updated tracking"],
+      "aiCapabilities": [],
+      "features": ["CRUD operations", "Notion database sync", "Version tracking"],
       "endpoints": 5,
       "docs": "services/promptvault-service"
+    },
+    {
+      "id": "app-settings-service",
+      "name": "App Settings Service",
+      "category": "infrastructure",
+      "summary": "LLM pricing and usage analytics for all 5 providers",
+      "aiCapabilities": [],
+      "features": [
+        "5 provider pricing (Google, OpenAI, Anthropic, Perplexity, Zai)",
+        "15 model pricing",
+        "Usage cost tracking",
+        "Monthly analytics"
+      ],
+      "endpoints": 3,
+      "docs": "services/app-settings-service"
+    },
+    {
+      "id": "api-docs-hub",
+      "name": "API Docs Hub",
+      "category": "infrastructure",
+      "summary": "OpenAPI documentation aggregator",
+      "aiCapabilities": [],
+      "features": [
+        "Unified Swagger UI",
+        "Multi-spec aggregation",
+        "Service selector",
+        "Health check"
+      ],
+      "endpoints": 2,
+      "docs": "services/api-docs-hub"
     }
   ],
   "categories": {
-    "ai-research": {
-      "name": "AI & Research",
-      "description": "Services that use LLMs for analysis and classification",
-      "services": ["research-agent", "commands-agent", "data-insights-agent"]
+    "ai-agents": {
+      "name": "AI Agents",
+      "description": "Services that directly invoke AI models for their core functionality",
+      "services": [
+        "research-agent",
+        "commands-agent",
+        "data-insights-agent",
+        "image-service",
+        "bookmarks-agent",
+        "web-agent"
+      ]
+    },
+    "orchestration": {
+      "name": "Orchestration",
+      "description": "Central coordination and routing services",
+      "services": ["actions-agent"]
     },
     "content": {
       "name": "Content Management",
       "description": "Services for managing user content",
-      "services": ["bookmarks-agent", "notes-agent", "todos-agent", "promptvault-service"]
+      "services": ["todos-agent", "notes-agent", "promptvault-service"]
     },
     "integrations": {
       "name": "External Integrations",
       "description": "Services that connect to external platforms",
-      "services": ["user-service", "whatsapp-service", "calendar-agent", "notion-service"]
+      "services": [
+        "whatsapp-service",
+        "calendar-agent",
+        "linear-agent",
+        "notion-service"
+      ]
     },
     "infrastructure": {
       "name": "Infrastructure",
       "description": "Core platform services",
       "services": [
-        "actions-agent",
-        "web-agent",
-        "image-service",
+        "user-service",
         "mobile-notifications-service",
-        "api-docs-hub",
-        "app-settings-service"
+        "app-settings-service",
+        "api-docs-hub"
       ]
     }
   },
+  "aiProviders": {
+    "google": {
+      "name": "Google AI",
+      "models": ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-image"]
+    },
+    "openai": {
+      "name": "OpenAI",
+      "models": ["gpt-5.2", "o4-mini-deep-research", "gpt-4o-mini", "gpt-image-1"]
+    },
+    "anthropic": {
+      "name": "Anthropic",
+      "models": ["claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-3-5-haiku-20241022"]
+    },
+    "perplexity": {
+      "name": "Perplexity",
+      "models": ["sonar", "sonar-pro", "sonar-deep-research"]
+    },
+    "zai": {
+      "name": "Zai",
+      "models": ["glm-4.7"]
+    }
+  },
   "stats": {
-    "total": 17,
-    "documented": 17,
+    "total": 18,
+    "documented": 18,
     "completion": 100,
-    "lastUpdated": "2026-01-14"
+    "aiProviders": 5,
+    "aiModels": 15,
+    "lastUpdated": "2026-01-19"
   }
 }

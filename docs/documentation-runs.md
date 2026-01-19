@@ -6,6 +6,149 @@ Log of all `/document-service` runs.
 
 <!-- Entries are prepended below this line -->
 
+## 2026-01-19 — Agent Interface Documentation
+
+**Action:** Created
+**Agent:** service-scribe (autonomous)
+
+**Mission:** Create machine-readable `agent.md` interface definitions for all 18 services, enabling AI-to-AI communication and automated tool discovery.
+
+**Files Created (18 files):**
+
+| Service | File | Tools Defined |
+| ------- | ---- | ------------- |
+| research-agent | `docs/services/research-agent/agent.md` | 4 (research, list, get, generateTitle) |
+| actions-agent | `docs/services/actions-agent/agent.md` | 3 (routeAction, listActions, getActionStatus) |
+| commands-agent | `docs/services/commands-agent/agent.md` | 1 (classifyCommand) |
+| todos-agent | `docs/services/todos-agent/agent.md` | 6 (CRUD + complete/uncomplete) |
+| bookmarks-agent | `docs/services/bookmarks-agent/agent.md` | 5 (CRUD + archive) |
+| notes-agent | `docs/services/notes-agent/agent.md` | 5 (CRUD + archive) |
+| calendar-agent | `docs/services/calendar-agent/agent.md` | 6 (CRUD + sync + freeBusy) |
+| linear-agent | `docs/services/linear-agent/agent.md` | 4 (list, get, create, update) |
+| image-service | `docs/services/image-service/agent.md` | 2 (generate, getStatus) |
+| web-agent | `docs/services/web-agent/agent.md` | 2 (extractMetadata, summarize) |
+| whatsapp-service | `docs/services/whatsapp-service/agent.md` | 6 (messages, media, transcription) |
+| user-service | `docs/services/user-service/agent.md` | 8 (auth, OAuth, LLM keys, settings) |
+| mobile-notifications-service | `docs/services/mobile-notifications-service/agent.md` | 6 (notifications + filters) |
+| notion-service | `docs/services/notion-service/agent.md` | 3 (connect, status, disconnect) |
+| promptvault-service | `docs/services/promptvault-service/agent.md` | 5 (CRUD + main page) |
+| app-settings-service | `docs/services/app-settings-service/agent.md` | 2 (pricing, usageCosts) |
+| api-docs-hub | `docs/services/api-docs-hub/agent.md` | 2 (docs, health) |
+| data-insights-agent | `docs/services/data-insights-agent/agent.md` | 12 (sources, feeds, analysis, charts) |
+
+**Files Updated:**
+
+- `docs/services/index.md` — Added agent.md links to all 18 services, updated coverage metrics
+
+**agent.md Structure:**
+
+Each file follows a consistent machine-readable format:
+
+```markdown
+## Identity
+| Field | Value |
+| Name | service-name |
+| Role | Service description |
+| Goal | Primary purpose |
+
+## Capabilities
+### Tools (Endpoints)
+TypeScript interface definitions for all public methods
+
+### Types
+TypeScript interfaces for request/response schemas
+
+## Constraints
+Rules and limitations for tool usage
+
+## Usage Patterns
+One-shot examples of correct tool invocations
+
+## Internal Endpoints (if applicable)
+Service-to-service communication endpoints
+```
+
+**Key Decisions:**
+
+1. **TypeScript Interfaces** — Used strict TypeScript for tool definitions to enable type-safe LLM tool generation
+2. **Constraints Section** — Documented rules like "Ownership: Users can only access their own data" for safety
+3. **Usage Patterns** — Provided code examples showing correct invocation patterns
+4. **Internal Endpoints** — Separated internal (service-to-service) from public APIs
+
+**Documentation Coverage:** 100% (18/18 services with agent.md)
+
+---
+
+## 2026-01-19 — AI-First Documentation Overhaul
+
+**Action:** Major Update
+**Agent:** service-scribe (autonomous)
+
+**Mission:** Comprehensive documentation refresh emphasizing AI capabilities across all services.
+
+**Files Updated:**
+
+### High-Level Documentation
+- `README.md` — Complete rewrite with AI-first framing, architecture diagrams, "Council of AI" concept
+- `docs/overview.md` — New platform overview with AI stack, agent architecture, data flow diagrams
+- `docs/services/index.md` — Reorganized by AI capability, added model listings, dependency diagram
+- `docs/architecture/ai-architecture.md` — **New file** — Comprehensive AI architecture documentation
+
+**Key Changes:**
+
+1. **README.md Highlights**
+   - Added "Council of AI" parallel research visualization
+   - Listed all 17 microservices with AI capabilities
+   - Added provider integration table (5 providers, 15 models)
+   - Engineering philosophy section
+
+2. **Platform Overview**
+   - Multi-Model Intelligence Layer documentation
+   - Research Synthesis Protocol with sequence diagram
+   - Capture-to-Action Pipeline visualization
+   - Cost Intelligence section
+
+3. **Services Index**
+   - Services now categorized by AI capability
+   - Added AI Models Used section with all 15 models
+   - Service dependency mermaid diagram
+   - Quick links by use case and integration
+
+4. **AI Architecture (New)**
+   - Council of AI philosophy documented
+   - Provider integration architecture
+   - Research synthesis protocol
+   - Intent classification flow
+   - Cost management and security
+
+**AI Capabilities Documented:**
+
+| Service | AI Capability |
+| ------- | ------------- |
+| research-agent | Multi-model orchestration (10 models) |
+| commands-agent | Gemini intent classification |
+| data-insights-agent | LLM data analysis |
+| image-service | DALL-E 3, Imagen 3 |
+| bookmarks-agent | AI summarization (via web-agent) |
+| web-agent | Content extraction, summarization |
+| todos-agent | NLP task extraction |
+| whatsapp-service | Speechmatics transcription |
+| user-service | LLM key validation |
+
+**Models Documented:**
+- Research: 10 models (Gemini, GPT-5.2, Claude Opus/Sonnet, Sonar variants, GLM-4.7)
+- Classification: 2 models (Gemini Flash, GLM-4.7)
+- Image: 2 models (DALL-E 3, Imagen 3)
+- Validation: 5 models (Haiku, Flash, Mini, Sonar, GLM)
+
+**Documentation Quality:**
+- All diagrams use mermaid for GitHub rendering
+- Tables properly aligned
+- Active voice throughout
+- Technical accuracy verified against source code
+
+---
+
 ## 2026-01-14 — Comprehensive Service Documentation Update
 
 **Action:** Updated
