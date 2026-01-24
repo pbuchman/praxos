@@ -103,49 +103,60 @@ steps:
       - 'PROJECT_ID=$PROJECT_ID'
 
   # --- Batch 1 Builds (3 parallel) ---
-  - name: 'gcr.io/cloud-builders/docker'
+  # Kaniko with GCS cache for faster builds
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-promptvault-service'
     waitFor: ['pnpm-install']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'promptvault-service',
-        'apps/promptvault-service/Dockerfile',
+        '--dockerfile=apps/promptvault-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/promptvault-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/promptvault-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/promptvault-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-image-service'
     waitFor: ['pnpm-install']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'image-service',
-        'apps/image-service/Dockerfile',
+        '--dockerfile=apps/image-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/image-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/image-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/image-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-api-docs-hub'
     waitFor: ['pnpm-install']
     timeout: 900s
-    entrypoint: 'bash'
     args:
-      ['cloudbuild/scripts/build-push-monitored.sh', 'api-docs-hub', 'apps/api-docs-hub/Dockerfile']
+      [
+        '--dockerfile=apps/api-docs-hub/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/api-docs-hub:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/api-docs-hub:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/api-docs-hub',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+      ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
   # --- Batch 1 Deploys (wait for builds + firestore) ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -186,49 +197,59 @@ steps:
   # ===========================================================================
 
   # --- Batch 2 Builds (wait for Batch 1 deploys) ---
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-notion-service'
     waitFor: ['deploy-promptvault-service', 'deploy-image-service', 'deploy-api-docs-hub']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'notion-service',
-        'apps/notion-service/Dockerfile',
+        '--dockerfile=apps/notion-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/notion-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/notion-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/notion-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-user-service'
     waitFor: ['deploy-promptvault-service', 'deploy-image-service', 'deploy-api-docs-hub']
     timeout: 900s
-    entrypoint: 'bash'
-    args:
-      ['cloudbuild/scripts/build-push-monitored.sh', 'user-service', 'apps/user-service/Dockerfile']
-    env:
-      - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-push-whatsapp-service'
-    waitFor: ['deploy-promptvault-service', 'deploy-image-service', 'deploy-api-docs-hub']
-    timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'whatsapp-service',
-        'apps/whatsapp-service/Dockerfile',
+        '--dockerfile=apps/user-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/user-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/user-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/user-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
+
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    id: 'build-push-whatsapp-service'
+    waitFor: ['deploy-promptvault-service', 'deploy-image-service', 'deploy-api-docs-hub']
+    timeout: 900s
+    args:
+      [
+        '--dockerfile=apps/whatsapp-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/whatsapp-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/whatsapp-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/whatsapp-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+      ]
+    env:
+      - 'DOCKER_BUILDKIT=1'
 
   # --- Batch 2 Deploys ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -269,53 +290,59 @@ steps:
   # ===========================================================================
 
   # --- Batch 3 Builds (wait for Batch 2 deploys) ---
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-app-settings-service'
     waitFor: ['deploy-notion-service', 'deploy-user-service', 'deploy-whatsapp-service']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'app-settings-service',
-        'apps/app-settings-service/Dockerfile',
+        '--dockerfile=apps/app-settings-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/app-settings-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/app-settings-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/app-settings-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-mobile-notifications-service'
     waitFor: ['deploy-notion-service', 'deploy-user-service', 'deploy-whatsapp-service']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'mobile-notifications-service',
-        'apps/mobile-notifications-service/Dockerfile',
+        '--dockerfile=apps/mobile-notifications-service/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/mobile-notifications-service:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/mobile-notifications-service:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/mobile-notifications-service',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-research-agent'
     waitFor: ['deploy-notion-service', 'deploy-user-service', 'deploy-whatsapp-service']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'research-agent',
-        'apps/research-agent/Dockerfile',
+        '--dockerfile=apps/research-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/research-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/research-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/research-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
   # --- Batch 3 Deploys ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -356,7 +383,7 @@ steps:
   # ===========================================================================
 
   # --- Batch 4 Builds (wait for Batch 3 deploys) ---
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-commands-agent'
     waitFor:
       [
@@ -365,19 +392,21 @@ steps:
         'deploy-research-agent',
       ]
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'commands-agent',
-        'apps/commands-agent/Dockerfile',
+        '--dockerfile=apps/commands-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/commands-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/commands-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/commands-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-actions-agent'
     waitFor:
       [
@@ -386,19 +415,21 @@ steps:
         'deploy-research-agent',
       ]
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'actions-agent',
-        'apps/actions-agent/Dockerfile',
+        '--dockerfile=apps/actions-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/actions-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/actions-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/actions-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-data-insights-agent'
     waitFor:
       [
@@ -407,17 +438,19 @@ steps:
         'deploy-research-agent',
       ]
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'data-insights-agent',
-        'apps/data-insights-agent/Dockerfile',
+        '--dockerfile=apps/data-insights-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/data-insights-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/data-insights-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/data-insights-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
   # --- Batch 4 Deploys ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -458,45 +491,59 @@ steps:
   # ===========================================================================
 
   # --- Batch 5 Builds (wait for Batch 4 deploys) ---
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-notes-agent'
     waitFor: ['deploy-commands-agent', 'deploy-actions-agent', 'deploy-data-insights-agent']
     timeout: 900s
-    entrypoint: 'bash'
-    args:
-      ['cloudbuild/scripts/build-push-monitored.sh', 'notes-agent', 'apps/notes-agent/Dockerfile']
-    env:
-      - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-push-todos-agent'
-    waitFor: ['deploy-commands-agent', 'deploy-actions-agent', 'deploy-data-insights-agent']
-    timeout: 900s
-    entrypoint: 'bash'
-    args:
-      ['cloudbuild/scripts/build-push-monitored.sh', 'todos-agent', 'apps/todos-agent/Dockerfile']
-    env:
-      - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-push-bookmarks-agent'
-    waitFor: ['deploy-commands-agent', 'deploy-actions-agent', 'deploy-data-insights-agent']
-    timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'bookmarks-agent',
-        'apps/bookmarks-agent/Dockerfile',
+        '--dockerfile=apps/notes-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/notes-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/notes-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/notes-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
+
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    id: 'build-push-todos-agent'
+    waitFor: ['deploy-commands-agent', 'deploy-actions-agent', 'deploy-data-insights-agent']
+    timeout: 900s
+    args:
+      [
+        '--dockerfile=apps/todos-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/todos-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/todos-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/todos-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+      ]
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    id: 'build-push-bookmarks-agent'
+    waitFor: ['deploy-commands-agent', 'deploy-actions-agent', 'deploy-data-insights-agent']
+    timeout: 900s
+    args:
+      [
+        '--dockerfile=apps/bookmarks-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/bookmarks-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/bookmarks-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/bookmarks-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+      ]
+    env:
+      - 'DOCKER_BUILDKIT=1'
 
   # --- Batch 5 Deploys ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -537,44 +584,59 @@ steps:
   # ===========================================================================
 
   # --- Batch 6 Builds (wait for Batch 5 deploys) ---
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-calendar-agent'
     waitFor: ['deploy-notes-agent', 'deploy-todos-agent', 'deploy-bookmarks-agent']
     timeout: 900s
-    entrypoint: 'bash'
     args:
       [
-        'cloudbuild/scripts/build-push-monitored.sh',
-        'calendar-agent',
-        'apps/calendar-agent/Dockerfile',
+        '--dockerfile=apps/calendar-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/calendar-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/calendar-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/calendar-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-linear-agent'
     waitFor: ['deploy-notes-agent', 'deploy-todos-agent', 'deploy-bookmarks-agent']
     timeout: 900s
-    entrypoint: 'bash'
     args:
-      ['cloudbuild/scripts/build-push-monitored.sh', 'linear-agent', 'apps/linear-agent/Dockerfile']
+      [
+        '--dockerfile=apps/linear-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/linear-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/linear-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/linear-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+      ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-push-web-agent'
     waitFor: ['deploy-notes-agent', 'deploy-todos-agent', 'deploy-bookmarks-agent']
     timeout: 900s
-    entrypoint: 'bash'
-    args: ['cloudbuild/scripts/build-push-monitored.sh', 'web-agent', 'apps/web-agent/Dockerfile']
+    args:
+      [
+        '--dockerfile=apps/web-agent/Dockerfile',
+        '--context=.',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/web-agent:$COMMIT_SHA',
+        '--destination=${_ARTIFACT_REGISTRY_URL}/web-agent:latest',
+        '--cache=true',
+        '--cache-ttl=24h',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/web-agent',
+        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+      ]
     env:
       - 'DOCKER_BUILDKIT=1'
-      - 'ARTIFACT_REGISTRY_URL=${_ARTIFACT_REGISTRY_URL}'
-      - 'COMMIT_SHA=$COMMIT_SHA'
 
   # --- Batch 6 Deploys ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
