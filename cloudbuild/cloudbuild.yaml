@@ -117,7 +117,6 @@ steps:
         '--cache=true',
         '--cache-ttl=24h',
         '--cache-repo=gs://intexuraos-dev-kaniko-cache/promptvault-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -134,8 +133,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/image-service:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/image-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/image-service'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -152,8 +150,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/api-docs-hub:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/api-docs-hub',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/api-docs-hub'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -209,8 +206,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/notion-service:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/notion-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/notion-service'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -227,8 +223,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/user-service:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/user-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/user-service'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -245,8 +240,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/whatsapp-service:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/whatsapp-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/whatsapp-service'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -302,8 +296,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/app-settings-service:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/app-settings-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/app-settings-service'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -320,8 +313,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/mobile-notifications-service:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/mobile-notifications-service',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/mobile-notifications-service'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -338,8 +330,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/research-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/research-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/research-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -400,8 +391,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/commands-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/commands-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/commands-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -423,8 +413,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/actions-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/actions-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/actions-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -446,8 +435,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/data-insights-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/data-insights-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/data-insights-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -503,8 +491,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/notes-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/notes-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/notes-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -521,8 +508,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/todos-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/todos-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/todos-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -539,8 +525,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/bookmarks-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/bookmarks-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/bookmarks-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -596,8 +581,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/calendar-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/calendar-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/calendar-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -614,8 +598,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/linear-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/linear-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/linear-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
@@ -632,8 +615,7 @@ steps:
         '--destination=${_ARTIFACT_REGISTRY_URL}/web-agent:latest',
         '--cache=true',
         '--cache-ttl=24h',
-        '--cache-repo=gs://intexuraos-dev-kaniko-cache/web-agent',
-        '--build-arg=COMMIT_SHA=$COMMIT_SHA',
+        '--cache-repo=gs://intexuraos-dev-kaniko-cache/web-agent'
       ]
     env:
       - 'DOCKER_BUILDKIT=1'
