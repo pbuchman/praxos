@@ -5,16 +5,19 @@ import {
   Archive,
   ArchiveRestore,
   Bookmark,
+  Calendar,
   Edit2,
   ExternalLink,
   Globe,
+  Link2,
   Plus,
+  RotateCcw,
   Sparkles,
   Tag,
   Trash2,
   X,
 } from 'lucide-react';
-import { Button, Card, Input, Layout, RefreshIndicator } from '@/components';
+import { Button, Card, Input, Layout, MarkdownContent, RefreshIndicator } from '@/components';
 import { useAuth } from '@/context';
 import { useBookmarkChanges, useBookmarks } from '@/hooks';
 import { ApiError } from '@/services/apiClient';
@@ -24,12 +27,10 @@ import { getProxiedImageUrl } from '@/utils/imageProxy';
 
 function formatDate(isoString: string): string {
   const date = new Date(isoString);
-  return date.toLocaleString(undefined, {
+  return date.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
@@ -377,7 +378,7 @@ function BookmarkModal({
                     <Sparkles className="h-4 w-4" />
                     AI Summary
                   </div>
-                  <p className="text-sm text-purple-900">{bookmark.aiSummary}</p>
+                  <MarkdownContent content={bookmark.aiSummary} />
                 </div>
               ) : null}
 
@@ -411,12 +412,19 @@ function BookmarkModal({
                 </div>
               ) : null}
 
-              <div className="text-xs text-slate-400">
-                <span>Created: {formatDate(bookmark.createdAt)}</span>
-                <span className="mx-2">·</span>
-                <span>Updated: {formatDate(bookmark.updatedAt)}</span>
-                <span className="mx-2">·</span>
-                <span>Source: {bookmark.source}</span>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                <span className="flex items-center gap-1" title="Created">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(bookmark.createdAt)}
+                </span>
+                <span className="flex items-center gap-1" title="Updated">
+                  <RotateCcw className="h-3 w-3" />
+                  {formatDate(bookmark.updatedAt)}
+                </span>
+                <span className="flex items-center gap-1" title="Source">
+                  <Link2 className="h-3 w-3" />
+                  {bookmark.source}
+                </span>
               </div>
             </div>
           )}
@@ -1020,8 +1028,8 @@ export function BookmarksListPage(): React.JSX.Element {
             setShowCreateModal(true);
           }}
         >
-          <Plus className="mr-2 h-4 w-4" />
-          New Bookmark
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">New Bookmark</span>
         </Button>
       </div>
 
@@ -1048,8 +1056,8 @@ export function BookmarksListPage(): React.JSX.Element {
                 setShowCreateModal(true);
               }}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              New Bookmark
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">New Bookmark</span>
             </Button>
           </div>
         </Card>
