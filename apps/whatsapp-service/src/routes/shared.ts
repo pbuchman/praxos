@@ -537,7 +537,7 @@ export function extractButtonResponse(payload: unknown): ButtonResponseInfo | nu
 
   // Extract button response info
   const buttonReply = interactive.button_reply;
-  if (buttonReply === undefined || buttonReply.id === undefined || buttonReply.title === undefined) {
+  if (buttonReply.id === undefined || buttonReply.title === undefined) {
     return null;
   }
   if (typeof buttonReply.id !== 'string' || typeof buttonReply.title !== 'string') {

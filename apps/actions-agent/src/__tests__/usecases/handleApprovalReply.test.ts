@@ -2024,4 +2024,225 @@ describe('HandleApprovalReplyUseCase', () => {
       expect(action?.status).toBe('rejected');
     });
   });
+
+  describe('button response handling', () => {
+    beforeEach((): Promise<void> => {
+      // Add executeCodeAction fake for button tests
+      (useCase as { executeCodeAction: unknown }).executeCodeAction = {
+        execute: async (
+          _action: Action,
+          _result: { ok: true; value: Record<string, unknown> }
+        ): Promise<Result<{ success: boolean }, unknown>> => {
+          return { ok: true, value: { success: true } };
+        },
+      };
+      return Promise.resolve();
+    });
+
+    describe('approve button with nonce', () => {
+      it('approves action when nonce matches', async () => {
+        const actionWithNonce: Action = {
+          ...testAction,
+          id: 'approve-action-1',
+          approvalNonce: 'a3f2',
+          approvalNonceExpiresAt: new Date(Date.now() + 60000).toISOString(),
+        };
+
+        await actionRepository.save(actionWithNonce);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'approve-action-1',
+          buttonId: 'approve:approve-action-1:a3f2',
+        });
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.value.outcome).toBe('approved');
+        }
+
+        const action = await actionRepository.getById('approve-action-1');
+        expect(action?.status).toBe('pending');
+      });
+
+      it('returns error when nonce is missing from button', async () => {
+        const actionWithNonce: Action = {
+          ...testAction,
+          id: 'approve-action-2',
+          approvalNonce: 'b4e1',
+          approvalNonceExpiresAt: new Date(Date.now() + 60000).toISOString(),
+        };
+
+        await actionRepository.save(actionWithNonce);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'approve-action-2',
+          buttonId: 'approve:approve-action-2', // Missing nonce
+        });
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.error.message).toContain('missing nonce');
+        }
+      });
+
+      it('returns error when action has no nonce configured', async () => {
+        const actionWithoutNonce: Action = {
+          ...testAction,
+          id: 'approve-action-3',
+        };
+
+        await actionRepository.save(actionWithoutNonce);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'approve-action-3',
+          buttonId: 'approve:approve-action-3:a3f2',
+        });
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.error.message).toContain('no nonce configured');
+        }
+      });
+
+      it('returns error when nonce does not match', async () => {
+        const actionWithNonce: Action = {
+          ...testAction,
+          id: 'approve-action-4',
+          approvalNonce: 'b4e1',
+          approvalNonceExpiresAt: new Date(Date.now() + 60000).toISOString(),
+        };
+
+        await actionRepository.save(actionWithNonce);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'approve-action-4',
+          buttonId: 'approve:approve-action-4:wrong', // Wrong nonce
+        });
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.error.message).toContain('Nonce mismatch');
+        }
+      });
+
+      it('returns error when nonce has expired', async () => {
+        const actionWithExpiredNonce: Action = {
+          ...testAction,
+          id: 'approve-action-5',
+          approvalNonce: 'c5f2',
+          approvalNonceExpiresAt: new Date(Date.now() - 1000).toISOString(),
+        };
+
+        await actionRepository.save(actionWithExpiredNonce);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'approve-action-5',
+          buttonId: 'approve:approve-action-5:c5f2',
+        });
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.error.message).toContain('expired');
+        }
+      });
+
+      it('returns error for invalid button ID format', async () => {
+        await actionRepository.save(testAction);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'action-1',
+          buttonId: 'invalid-format',
+        });
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.error.message).toContain('Invalid button ID format');
+        }
+      });
+
+      it('returns error when button action ID does not match action ID', async () => {
+        await actionRepository.save(testAction);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'action-1',
+          buttonId: 'approve:different-action:a3f2',
+        });
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.error.message).toContain('Button action ID mismatch');
+        }
+      });
+    });
+
+    describe('cancel button', () => {
+      it('rejects action when cancel button is clicked', async () => {
+        await actionRepository.save(testAction);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'action-1',
+          buttonId: 'cancel:action-1',
+        });
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.value.outcome).toBe('rejected');
+        }
+
+        const action = await actionRepository.getById('action-1');
+        expect(action?.status).toBe('rejected');
+      });
+    });
+
+    describe('convert button', () => {
+      it('rejects action with conversion message when convert button is clicked', async () => {
+        await actionRepository.save(testAction);
+
+        const result = await useCase({
+          replyToWamid: 'wamid-123',
+          replyText: '',
+          userId: 'user-1',
+          actionId: 'action-1',
+          buttonId: 'convert:action-1',
+        });
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.value.outcome).toBe('rejected');
+        }
+
+        const action = await actionRepository.getById('action-1');
+        expect(action?.status).toBe('rejected');
+
+        // Verify the conversion message was sent
+        const messages = whatsappPublisher.getSentMessages();
+        const convertMessage = messages.find((m) => m.message.includes('Converting'));
+        expect(convertMessage?.message).toContain('Converting todo to Linear issue');
+      });
+    });
+  });
 });
