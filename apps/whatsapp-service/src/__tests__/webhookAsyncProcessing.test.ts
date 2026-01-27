@@ -1946,7 +1946,7 @@ describe('Webhook async processing', () => {
       await ctx.userMappingRepository.saveMapping(testUserId, [senderPhone]);
 
       // Configure event publisher to fail
-      ctx.eventPublisher.setFailApprovalReply(true);
+      ctx.eventPublisher.setApprovalReplyFailure('Simulated approval reply failure');
 
       const payload = createButtonWebhookPayload({
         replyToWamid: 'wamid.fail.message',
