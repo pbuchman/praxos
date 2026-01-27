@@ -7,7 +7,7 @@ import {
   generateNonceExpiration,
   isNonceExpired,
   validateNonce,
-} from '../approvalNonce.js';
+} from '../domain/utils/approvalNonce.js';
 
 describe('approvalNonce utility', () => {
   describe('generateApprovalNonce', () => {
