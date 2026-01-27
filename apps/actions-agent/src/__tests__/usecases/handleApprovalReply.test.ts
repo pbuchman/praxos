@@ -2028,7 +2028,7 @@ describe('HandleApprovalReplyUseCase', () => {
   describe('button response handling', () => {
     beforeEach((): Promise<void> => {
       // Add executeCodeAction fake for button tests
-      (useCase as { executeCodeAction: unknown }).executeCodeAction = {
+      (useCase as unknown as { executeCodeAction: unknown }).executeCodeAction = {
         execute: async (
           _action: Action,
           _result: { ok: true; value: Record<string, unknown> }
