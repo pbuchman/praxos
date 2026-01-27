@@ -407,4 +407,142 @@ describe('processCodeAction', () => {
       expect(result.value.workerLocation).toBe('vm');
     }
   });
+
+  it('succeeds even if nonce update fails (graceful degradation)', async () => {
+    vi.mocked(codeTaskRepo.create).mockResolvedValueOnce(
+      ok({
+        id: 'new-task-123',
+        userId: 'user-789',
+        prompt: 'Fix the bug',
+        sanitizedPrompt: 'Fix the bug',
+        systemPromptHash: 'hash-123',
+        workerType: 'auto',
+        workerLocation: 'mac',
+        repository: 'pbuchman/intexuraos',
+        baseBranch: 'development',
+        traceId: 'trace-123',
+        actionId: 'action-123',
+        approvalEventId: 'approval-456',
+        status: 'dispatched',
+        callbackReceived: false,
+        dedupKey: 'dedup-key-123',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      })
+    );
+
+    vi.mocked(taskDispatcher.dispatch).mockResolvedValueOnce(
+      ok({
+        dispatched: true,
+        workerLocation: 'mac',
+      })
+    );
+
+    vi.mocked(codeTaskRepo.update).mockResolvedValueOnce(
+      err({ code: 'FIRESTORE_ERROR', message: 'Update failed' })
+    );
+
+    const result = await processCodeAction(
+      { logger, codeTaskRepo, taskDispatcher, whatsappNotifier },
+      {
+        actionId: 'action-123',
+        approvalEventId: 'approval-456',
+        userId: 'user-789',
+        prompt: 'Fix the bug',
+        workerType: 'auto',
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.codeTaskId).toBe('new-task-123');
+    }
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: 'new-task-123' }),
+      'Failed to update task with cancel nonce'
+    );
+
+    expect(whatsappNotifier.notifyTaskStarted).not.toHaveBeenCalled();
+  });
+
+  it('succeeds even if notification fails (graceful degradation)', async () => {
+    vi.mocked(codeTaskRepo.create).mockResolvedValueOnce(
+      ok({
+        id: 'new-task-123',
+        userId: 'user-789',
+        prompt: 'Fix the bug',
+        sanitizedPrompt: 'Fix the bug',
+        systemPromptHash: 'hash-123',
+        workerType: 'auto',
+        workerLocation: 'mac',
+        repository: 'pbuchman/intexuraos',
+        baseBranch: 'development',
+        traceId: 'trace-123',
+        actionId: 'action-123',
+        approvalEventId: 'approval-456',
+        status: 'dispatched',
+        callbackReceived: false,
+        dedupKey: 'dedup-key-123',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      })
+    );
+
+    vi.mocked(taskDispatcher.dispatch).mockResolvedValueOnce(
+      ok({
+        dispatched: true,
+        workerLocation: 'mac',
+      })
+    );
+
+    vi.mocked(codeTaskRepo.update).mockResolvedValueOnce(
+      ok({
+        id: 'new-task-123',
+        userId: 'user-789',
+        prompt: 'Fix the bug',
+        sanitizedPrompt: 'Fix the bug',
+        systemPromptHash: 'hash-123',
+        workerType: 'auto',
+        workerLocation: 'mac',
+        repository: 'pbuchman/intexuraos',
+        baseBranch: 'development',
+        traceId: 'trace-123',
+        actionId: 'action-123',
+        approvalEventId: 'approval-456',
+        status: 'dispatched',
+        callbackReceived: false,
+        dedupKey: 'dedup-key-123',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        cancelNonce: 'abcd',
+        cancelNonceExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      })
+    );
+
+    vi.mocked(whatsappNotifier.notifyTaskStarted).mockResolvedValueOnce(
+      err({ code: 'notification_failed', message: 'WhatsApp unreachable' })
+    );
+
+    const result = await processCodeAction(
+      { logger, codeTaskRepo, taskDispatcher, whatsappNotifier },
+      {
+        actionId: 'action-123',
+        approvalEventId: 'approval-456',
+        userId: 'user-789',
+        prompt: 'Fix the bug',
+        workerType: 'auto',
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.codeTaskId).toBe('new-task-123');
+    }
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: 'new-task-123' }),
+      'Failed to send task started notification'
+    );
+  });
 });
