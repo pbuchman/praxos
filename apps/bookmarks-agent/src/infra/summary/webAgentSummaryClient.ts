@@ -38,6 +38,14 @@ interface WebAgentSummaryResponse {
   error?: string;
 }
 
+function isTransientHttpStatus(status: number): boolean {
+  return status === 429 || status === 503 || status === 504;
+}
+
+function isTransientErrorCode(code: string): boolean {
+  return code === 'TIMEOUT' || code === 'FETCH_FAILED';
+}
+
 function mapErrorCode(code: string): SummaryError['code'] {
   switch (code) {
     case 'NO_CONTENT':
@@ -86,6 +94,7 @@ export function createWebAgentSummaryClient(
         return err({
           code: 'GENERATION_ERROR',
           message: `Failed to call web-agent: ${getErrorMessage(error)}`,
+          transient: true,
         });
       }
 
@@ -97,6 +106,7 @@ export function createWebAgentSummaryClient(
         return err({
           code: 'GENERATION_ERROR',
           message: `HTTP ${String(response.status)}: ${response.statusText}`,
+          transient: isTransientHttpStatus(response.status),
         });
       }
 
@@ -106,6 +116,7 @@ export function createWebAgentSummaryClient(
         return err({
           code: 'GENERATION_ERROR',
           message: body.error ?? 'Invalid response from web-agent',
+          transient: false,
         });
       }
 
@@ -113,14 +124,20 @@ export function createWebAgentSummaryClient(
 
       if (result.status === 'failed') {
         const errorCode = mapErrorCode(result.error?.code ?? 'GENERATION_ERROR');
+        const isTransient = isTransientErrorCode(result.error?.code ?? '');
         return err({
           code: errorCode,
           message: result.error?.message ?? 'Unknown error',
+          transient: isTransient,
         });
       }
 
       if (result.summary === undefined) {
-        return err({ code: 'GENERATION_ERROR', message: 'No summary in successful result' });
+        return err({
+          code: 'GENERATION_ERROR',
+          message: 'No summary in successful result',
+          transient: false,
+        });
       }
 
       logger.info(
