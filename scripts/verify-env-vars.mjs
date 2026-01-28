@@ -287,6 +287,8 @@ function checkService(serviceName, serviceDir) {
 
 /**
  * Check if an env var is provided by common service env/URLs.
+ * These vars are set globally (via .envrc, terraform, etc.) and don't need
+ * to be in per-service SERVICE_ENV_MAPPINGS.
  */
 function isCommonServiceVar(varName) {
   // From dev.mjs COMMON_SERVICE_ENV
@@ -298,6 +300,15 @@ function isCommonServiceVar(varName) {
     'INTEXURAOS_AUTH0_CLIENT_ID',
     'INTEXURAOS_INTERNAL_AUTH_TOKEN',
     'FIREBASE_AUTH_EMULATOR_HOST',
+    // Global infrastructure vars (set once, used by all services)
+    'INTEXURAOS_GCP_PROJECT_ID',
+    'INTEXURAOS_AUTH0_ISSUER',
+    'INTEXURAOS_AUTH0_AUDIENCE',
+    'INTEXURAOS_AUTH0_JWKS_URI',
+    // Framework-controlled vars (have defaults)
+    'PORT',
+    'HOST',
+    'NODE_ENV',
   ]);
 
   // From dev.mjs COMMON_SERVICE_URLS (all INTEXURAOS_*_URL vars)
