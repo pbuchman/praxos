@@ -42,6 +42,8 @@ import { createStatusMirrorService } from '../../infra/services/statusMirrorServ
 import type { StatusMirrorService } from '../../infra/services/statusMirrorServiceImpl.js';
 import { createProcessHeartbeatUseCase } from '../../domain/usecases/processHeartbeat.js';
 import { createDetectZombieTasksUseCase } from '../../domain/usecases/detectZombieTasks.js';
+import { createNoOpMetricsClient, type MetricsClient } from '../../infra/metrics.js';
+
 // Mock fetchWithAuth
 vi.mock('@intexuraos/internal-clients', async () => ({
   fetchWithAuth: vi.fn(),
@@ -149,6 +151,7 @@ describe('POST /internal/webhooks/task-complete', () => {
       actionsAgentClient,
       rateLimitService,
       linearIssueService,
+      metricsClient: createNoOpMetricsClient(),
       statusMirrorService: createStatusMirrorService({
         actionsAgentClient,
         logger,
@@ -173,7 +176,7 @@ describe('POST /internal/webhooks/task-complete', () => {
       rateLimitService: RateLimitService;
       linearIssueService: LinearIssueService;
       statusMirrorService: StatusMirrorService;
-      processHeartbeat: import('../../domain/usecases/processHeartbeat.js').ProcessHeartbeatUseCase;
+      metricsClient: MetricsClient;      processHeartbeat: import('../../domain/usecases/processHeartbeat.js').ProcessHeartbeatUseCase;
       detectZombieTasks: import('../../domain/usecases/detectZombieTasks.js').DetectZombieTasksUseCase;
     });
 
@@ -1328,7 +1331,7 @@ describe('POST /internal/logs', () => {
       rateLimitService: RateLimitService;
       linearIssueService: LinearIssueService;
       statusMirrorService: StatusMirrorService;
-      processHeartbeat: import('../../domain/usecases/processHeartbeat.js').ProcessHeartbeatUseCase;
+      metricsClient: MetricsClient;      processHeartbeat: import('../../domain/usecases/processHeartbeat.js').ProcessHeartbeatUseCase;
       detectZombieTasks: import('../../domain/usecases/detectZombieTasks.js').DetectZombieTasksUseCase;
     });
 
@@ -1721,6 +1724,7 @@ describe('POST /internal/webhooks/task-complete - WhatsApp notifications', () =>
       actionsAgentClient,
       rateLimitService,
       linearIssueService,
+      metricsClient: createNoOpMetricsClient(),
       statusMirrorService: createStatusMirrorService({
         actionsAgentClient,
         logger,
@@ -1745,7 +1749,7 @@ describe('POST /internal/webhooks/task-complete - WhatsApp notifications', () =>
       rateLimitService: RateLimitService;
       linearIssueService: LinearIssueService;
       statusMirrorService: StatusMirrorService;
-      processHeartbeat: import('../../domain/usecases/processHeartbeat.js').ProcessHeartbeatUseCase;
+      metricsClient: MetricsClient;      processHeartbeat: import('../../domain/usecases/processHeartbeat.js').ProcessHeartbeatUseCase;
       detectZombieTasks: import('../../domain/usecases/detectZombieTasks.js').DetectZombieTasksUseCase;
     });
 
