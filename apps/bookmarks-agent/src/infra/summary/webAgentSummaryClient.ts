@@ -38,6 +38,11 @@ interface WebAgentSummaryResponse {
   error?: string;
 }
 
+// Transient HTTP errors that should trigger retry:
+// 429: Rate limiting - retry after backoff
+// 503: Service unavailable - retry after backoff
+// 504: Gateway timeout - retry after backoff
+// Note: 500 is NOT transient (app bug, won't self-heal)
 function isTransientHttpStatus(status: number): boolean {
   return status === 429 || status === 503 || status === 504;
 }
@@ -90,7 +95,7 @@ export function createWebAgentSummaryClient(
           }),
         });
       } catch (error) {
-        logger.error({ error: getErrorMessage(error) }, 'Failed to call web-agent summary');
+        logger.error({ url: content.url, error: getErrorMessage(error) }, 'Failed to call web-agent summary');
         return err({
           code: 'GENERATION_ERROR',
           message: `Failed to call web-agent: ${getErrorMessage(error)}`,
