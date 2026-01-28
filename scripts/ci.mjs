@@ -20,6 +20,7 @@ const phases = [
       { name: 'date-formatting', script: 'verify-date-formatting.mjs' },
       { name: 'boundaries', script: 'verify-boundaries.mjs' },
       { name: 'common', script: 'verify-common.mjs' },
+      { name: 'env-vars', script: 'verify-env-vars.mjs' },
       { name: 'firestore', script: 'verify-firestore-ownership.mjs' },
       { name: 'test-isolation', script: 'verify-test-isolation.mjs' },
       { name: 'vitest-config', script: 'verify-vitest-config.mjs' },
