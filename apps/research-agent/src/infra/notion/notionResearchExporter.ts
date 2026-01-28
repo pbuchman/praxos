@@ -81,13 +81,12 @@ function stripHiddenContent(content: string): string {
 // Cover image URL generation
 // ============================================================================
 
-// Default domain for serving images publicly (production fallback)
-const DEFAULT_IMAGE_DOMAIN = 'https://intexuraos.com';
-
 // Image path pattern must match image-service's GCS structure: /images/{id}/full.png
 function getCoverImageUrl(coverImageId: string): string {
-  const publicBaseUrl =
-    process.env['INTEXURAOS_IMAGE_PUBLIC_BASE_URL'] ?? DEFAULT_IMAGE_DOMAIN;
+  const publicBaseUrl = process.env['INTEXURAOS_IMAGE_PUBLIC_BASE_URL'];
+  if (publicBaseUrl === undefined) {
+    throw new Error('INTEXURAOS_IMAGE_PUBLIC_BASE_URL environment variable is required');
+  }
   return `${publicBaseUrl}/images/${coverImageId}/full.png`;
 }
 

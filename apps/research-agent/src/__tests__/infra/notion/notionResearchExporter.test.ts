@@ -736,15 +736,9 @@ describe('exportResearchToNotion', () => {
       );
     });
 
-    it('uses default domain when INTEXURAOS_IMAGE_PUBLIC_BASE_URL is not set', async () => {
-      const mockPagesCreate = vi.mocked(mockClient.pages.create);
-
-      // Clear the env var to test default behavior
+    it('throws error when INTEXURAOS_IMAGE_PUBLIC_BASE_URL is not set', async () => {
+      // Clear the env var to test error behavior
       delete process.env['INTEXURAOS_IMAGE_PUBLIC_BASE_URL'];
-
-      mockPagesCreate.mockResolvedValueOnce({
-        id: 'main-page-123',
-      } as never);
 
       const research = createMockResearch({
         synthesizedResult: 'Test synthesis.',
@@ -758,26 +752,13 @@ describe('exportResearchToNotion', () => {
         },
       });
 
-      await exportResearchToNotion(research, mockNotionToken, mockTargetPageId, mockLogger);
+      const result = await exportResearchToNotion(research, mockNotionToken, mockTargetPageId, mockLogger);
 
-      const mainPageCall = mockPagesCreate.mock.calls[0];
-      if (mainPageCall === undefined) {
-        throw new Error('mainPageCall is undefined');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.message).toContain('INTEXURAOS_IMAGE_PUBLIC_BASE_URL');
       }
-      const children = mainPageCall[0].children;
-      if (children === undefined) {
-        throw new Error('children is undefined');
-      }
-
-      // Should use default domain
-      expect(children[0]).toEqual({
-        object: 'block',
-        type: 'image',
-        image: {
-          type: 'external',
-          external: { url: 'https://intexuraos.com/images/cover-def-456/full.png' },
-        },
-      });
     });
   });
 
