@@ -668,6 +668,44 @@ describe('exportResearchToNotion', () => {
       });
     });
 
+    it('does not add image block when coverImageId is whitespace only', async () => {
+      const mockPagesCreate = vi.mocked(mockClient.pages.create);
+
+      mockPagesCreate.mockResolvedValueOnce({
+        id: 'main-page-123',
+      } as never);
+
+      const research = createMockResearch({
+        synthesizedResult: 'Test synthesis.',
+        shareInfo: {
+          shareToken: 'token-123',
+          slug: 'test-slug',
+          shareUrl: 'https://example.com/share/test-slug',
+          sharedAt: '2024-01-01T00:00:00Z',
+          gcsPath: 'shares/test-slug.html',
+          coverImageId: '   ',
+        },
+      });
+
+      await exportResearchToNotion(research, mockNotionToken, mockTargetPageId, mockLogger);
+
+      const mainPageCall = mockPagesCreate.mock.calls[0];
+      if (mainPageCall === undefined) {
+        throw new Error('mainPageCall is undefined');
+      }
+      const children = mainPageCall[0].children;
+      if (children === undefined) {
+        throw new Error('children is undefined');
+      }
+
+      // First child should be synthesis heading, not image
+      expect(children[0]).toEqual({
+        object: 'block',
+        type: 'heading_2',
+        heading_2: { rich_text: [{ type: 'text', text: { content: 'Synthesis' } }] },
+      });
+    });
+
     it('logs info when including cover image', async () => {
       const mockPagesCreate = vi.mocked(mockClient.pages.create);
 
@@ -691,7 +729,10 @@ describe('exportResearchToNotion', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Including cover image in Notion export',
-        { coverImageId: 'cover-xyz-789' }
+        {
+          coverImageId: 'cover-xyz-789',
+          coverImageUrl: 'https://example.intexuraos.com/images/cover-xyz-789/full.png',
+        }
       );
     });
 

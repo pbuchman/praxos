@@ -81,20 +81,10 @@ function stripHiddenContent(content: string): string {
 // Cover image URL generation
 // ============================================================================
 
-/**
- * Default domain for serving images publicly.
- * Falls back to production domain when env var is not set.
- */
+// Default domain for serving images publicly (production fallback)
 const DEFAULT_IMAGE_DOMAIN = 'https://intexuraos.com';
 
-/**
- * Generates the public URL for a cover image.
- * Uses INTEXURAOS_IMAGE_PUBLIC_BASE_URL env var if available,
- * otherwise falls back to DEFAULT_IMAGE_DOMAIN.
- *
- * @param coverImageId - The unique identifier for the cover image
- * @returns Full public URL to the cover image
- */
+// Image path pattern must match image-service's GCS structure: /images/{id}/full.png
 function getCoverImageUrl(coverImageId: string): string {
   const publicBaseUrl =
     process.env['INTEXURAOS_IMAGE_PUBLIC_BASE_URL'] ?? DEFAULT_IMAGE_DOMAIN;
@@ -174,7 +164,8 @@ export async function exportResearchToNotion(
 
     // Build cover image block if cover image exists
     const coverImageId = research.shareInfo?.coverImageId;
-    const hasCoverImage = coverImageId !== undefined && coverImageId !== '';
+    const trimmedCoverImageId = coverImageId?.trim();
+    const hasCoverImage = trimmedCoverImageId !== undefined && trimmedCoverImageId !== '';
 
     const coverImageBlock = hasCoverImage
       ? [
@@ -183,16 +174,17 @@ export async function exportResearchToNotion(
             type: 'image' as const,
             image: {
               type: 'external' as const,
-              external: { url: getCoverImageUrl(coverImageId) },
+              external: { url: getCoverImageUrl(trimmedCoverImageId) },
             },
           },
         ]
       : [];
 
     if (hasCoverImage) {
+      const coverImageUrl = getCoverImageUrl(trimmedCoverImageId);
       logger.info(
         'Including cover image in Notion export',
-        { coverImageId }
+        { coverImageId: trimmedCoverImageId, coverImageUrl }
       );
     }
 
