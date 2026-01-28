@@ -979,5 +979,140 @@ describe('Research Export Routes - Authenticated', () => {
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('RATE_LIMITED');
     });
+
+    it('returns INTERNAL_ERROR when Notion API returns unknown error', async () => {
+      const researchId = 'research-123';
+
+      fakeResearchRepo.addResearch({
+        id: researchId,
+        userId: TEST_USER_ID,
+        title: 'Test Research',
+        prompt: 'Test prompt',
+        selectedModels: [LlmModels.Gemini25Pro as ResearchModel],
+        synthesisModel: LlmModels.Gemini25Pro as ResearchModel,
+        status: 'completed',
+        llmResults: [],
+        startedAt: '2024-01-01T00:00:00Z',
+        completedAt: '2024-01-01T01:00:00Z',
+        synthesizedResult: 'Test synthesis',
+      });
+
+      fakeNotionServiceClient.setToken('notion-token');
+      fakeResearchExportSettings.setResearchPageId(TEST_USER_ID, 'notion-page-123');
+
+      // Set the exporter to return NOT_FOUND error (should map to INTERNAL_ERROR in default case)
+      const internalErrorExporter = createFailingNotionExporter('NOT_FOUND', 'Page not found');
+
+      const services: ServiceContainer = {
+        researchRepo: fakeResearchRepo,
+        researchExportSettings: fakeResearchExportSettings,
+        pricingContext: new FakePricingContext(),
+        generateId: (): string => 'generated-id-123',
+        researchEventPublisher: new FakeResearchEventPublisher(),
+        llmCallPublisher: new FakeLlmCallPublisher(),
+        userServiceClient: new FakeUserServiceClient(),
+        imageServiceClient: null,
+        notionServiceClient: fakeNotionServiceClient,
+        notificationSender: new FakeNotificationSender(),
+        shareStorage: null,
+        shareConfig: null,
+        webAppUrl: 'https://app.example.com',
+        createResearchProvider: vi.fn(),
+        createSynthesizer: vi.fn(),
+        createTitleGenerator: vi.fn(),
+        createContextInferrer: vi.fn(),
+        createInputValidator: vi.fn(),
+        notionExporter: internalErrorExporter,
+      };
+      setServices(services);
+
+      clearJwksCache();
+      app = await buildServer();
+
+      const token = await generateJwt(TEST_USER_ID);
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${researchId}/export-notion`,
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(500);
+      const body = JSON.parse(response.body) as {
+        success: boolean;
+        error: { code: string; message: string };
+      };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INTERNAL_ERROR');
+    });
+
+    it('returns success when export succeeds but saving metadata fails', async () => {
+      const researchId = 'research-123';
+
+      fakeResearchRepo.addResearch({
+        id: researchId,
+        userId: TEST_USER_ID,
+        title: 'Test Research',
+        prompt: 'Test prompt',
+        selectedModels: [LlmModels.Gemini25Pro as ResearchModel],
+        synthesisModel: LlmModels.Gemini25Pro as ResearchModel,
+        status: 'completed',
+        llmResults: [],
+        startedAt: '2024-01-01T00:00:00Z',
+        completedAt: '2024-01-01T01:00:00Z',
+        synthesizedResult: 'Test synthesis',
+      });
+
+      fakeNotionServiceClient.setToken('notion-token');
+      fakeResearchExportSettings.setResearchPageId(TEST_USER_ID, 'notion-page-123');
+
+      // Make the repo update fail after successful export
+      fakeResearchRepo.setFailNextUpdate(true);
+
+      const services: ServiceContainer = {
+        researchRepo: fakeResearchRepo,
+        researchExportSettings: fakeResearchExportSettings,
+        pricingContext: new FakePricingContext(),
+        generateId: (): string => 'generated-id-123',
+        researchEventPublisher: new FakeResearchEventPublisher(),
+        llmCallPublisher: new FakeLlmCallPublisher(),
+        userServiceClient: new FakeUserServiceClient(),
+        imageServiceClient: null,
+        notionServiceClient: fakeNotionServiceClient,
+        notificationSender: new FakeNotificationSender(),
+        shareStorage: null,
+        shareConfig: null,
+        webAppUrl: 'https://app.example.com',
+        createResearchProvider: vi.fn(),
+        createSynthesizer: vi.fn(),
+        createTitleGenerator: vi.fn(),
+        createContextInferrer: vi.fn(),
+        createInputValidator: vi.fn(),
+        notionExporter: createFakeNotionExporter(),
+      };
+      setServices(services);
+
+      clearJwksCache();
+      app = await buildServer();
+
+      const token = await generateJwt(TEST_USER_ID);
+      const response = await app.inject({
+        method: 'POST',
+        url: `/research/${researchId}/export-notion`,
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Should still return success even though metadata save failed
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as {
+        success: boolean;
+        data: { success: boolean; notionPageUrl: string };
+      };
+      expect(body.success).toBe(true);
+      expect(body.data.notionPageUrl).toBeDefined();
+    });
   });
 });
