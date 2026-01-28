@@ -190,7 +190,7 @@ function parseDevMjsMappings() {
 
     // Extract env var names for this service
     const envVars = [];
-    const envVarPattern = /INTEXURAOS_[A-Z_]+:/g;
+    const envVarPattern = /INTEXURAOS_[A-Z0-9_]+:/g;
     let envVarMatch;
 
     while ((envVarMatch = envVarPattern.exec(serviceContent)) !== null) {
@@ -302,6 +302,7 @@ function isCommonServiceVar(varName) {
     'FIREBASE_AUTH_EMULATOR_HOST',
     // Global infrastructure vars (set once, used by all services)
     'INTEXURAOS_GCP_PROJECT_ID',
+    'INTEXURAOS_WEB_APP_URL',
     'INTEXURAOS_AUTH0_ISSUER',
     'INTEXURAOS_AUTH0_AUDIENCE',
     'INTEXURAOS_AUTH0_JWKS_URI',

@@ -411,6 +411,8 @@ const COMMON_SERVICE_ENV = {
   INTEXURAOS_AUTH0_DOMAIN: process.env.INTEXURAOS_AUTH0_DOMAIN ?? '',
   INTEXURAOS_AUTH0_CLIENT_ID: process.env.INTEXURAOS_AUTH0_CLIENT_ID ?? '',
   INTEXURAOS_INTERNAL_AUTH_TOKEN: process.env.INTEXURAOS_INTERNAL_AUTH_TOKEN ?? 'local-dev-token',
+  INTEXURAOS_GCP_PROJECT_ID: process.env.INTEXURAOS_GCP_PROJECT_ID ?? 'intexuraos-dev',
+  INTEXURAOS_WEB_APP_URL: process.env.INTEXURAOS_WEB_APP_URL ?? 'http://localhost:3000',
   FIREBASE_AUTH_EMULATOR_HOST: 'localhost:8104',
 };
 
@@ -498,6 +500,44 @@ const SERVICE_ENV_MAPPINGS = {
     INTEXURAOS_AUTH0_JWKS_URI: 'https://intexuraos.eu.auth0.com/.well-known/jwks.json',
     INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC:
       process.env.INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC ?? 'whatsapp-send-message',
+  },
+  'bookmarks-agent': {
+    INTEXURAOS_PUBSUB_BOOKMARK_ENRICH:
+      process.env.INTEXURAOS_PUBSUB_BOOKMARK_ENRICH ?? 'bookmark-enrich',
+    INTEXURAOS_PUBSUB_BOOKMARK_SUMMARIZE:
+      process.env.INTEXURAOS_PUBSUB_BOOKMARK_SUMMARIZE ?? 'bookmark-summarize',
+    INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC ?? 'whatsapp-send-message',
+  },
+  'image-service': {
+    INTEXURAOS_IMAGE_BUCKET: process.env.INTEXURAOS_IMAGE_BUCKET ?? 'intexuraos-images',
+    INTEXURAOS_IMAGE_PUBLIC_BASE_URL:
+      process.env.INTEXURAOS_IMAGE_PUBLIC_BASE_URL ?? 'http://localhost:3000',
+  },
+  // Services with only common env vars (no service-specific configuration)
+  'api-docs-hub': {},
+  'app-settings-service': {},
+  'calendar-agent': {},
+  'commands-agent': {
+    INTEXURAOS_PUBSUB_ACTIONS_QUEUE: process.env.INTEXURAOS_PUBSUB_ACTIONS_QUEUE ?? 'actions-queue',
+  },
+  'data-insights-agent': {},
+  'linear-agent': {},
+  'mobile-notifications-service': {},
+  'notes-agent': {},
+  'notion-service': {},
+  'todos-agent': {
+    INTEXURAOS_TODOS_PROCESSING_TOPIC:
+      process.env.INTEXURAOS_TODOS_PROCESSING_TOPIC ?? 'todos-processing',
+  },
+  'user-service': {
+    INTEXURAOS_TOKEN_ENCRYPTION_KEY: process.env.INTEXURAOS_TOKEN_ENCRYPTION_KEY ?? '',
+    INTEXURAOS_ENCRYPTION_KEY: process.env.INTEXURAOS_ENCRYPTION_KEY ?? '',
+    INTEXURAOS_GOOGLE_OAUTH_CLIENT_ID: process.env.INTEXURAOS_GOOGLE_OAUTH_CLIENT_ID ?? '',
+    INTEXURAOS_GOOGLE_OAUTH_CLIENT_SECRET: process.env.INTEXURAOS_GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+  },
+  'web-agent': {
+    INTEXURAOS_CRAWL4AI_API_KEY: process.env.INTEXURAOS_CRAWL4AI_API_KEY ?? '',
   },
 };
 
