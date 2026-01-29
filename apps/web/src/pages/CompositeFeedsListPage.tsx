@@ -3,18 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Layers, Plus, Trash2, Database, FileText } from 'lucide-react';
 import { Button, Card, Layout, RefreshIndicator } from '@/components';
 import { useCompositeFeeds, useDataSources } from '@/hooks';
+import { formatDate } from '@/utils/dateFormat';
 import type { CompositeFeed } from '@/types';
-
-function formatDate(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function truncatePurpose(purpose: string, maxLength = 150): string {
   if (purpose.length <= maxLength) {

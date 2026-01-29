@@ -7,7 +7,7 @@
 #   cp .envrc.local.example .envrc.local
 #   ./scripts/sync-secrets.sh
 #   direnv allow
-#   npm run dev
+#   pnpm run dev
 
 # =============================================================================
 # AUTH (backend services require non-prefixed names)
@@ -23,7 +23,7 @@ export AUTH_AUDIENCE=$INTEXURAOS_AUTH_AUDIENCE
 # EMULATORS
 # =============================================================================
 # Uncomment to use local emulators instead of GCP services.
-# These are automatically set when using 'npm run dev', but you can
+# These are automatically set when using 'pnpm run dev', but you can
 # also set them here if running services manually.
 
 export FIRESTORE_EMULATOR_HOST=localhost:8101
@@ -34,10 +34,9 @@ export STORAGE_EMULATOR_HOST=http://localhost:8103
 # SERVICE URLS (override run.app -> localhost)
 # =============================================================================
 # Override cloud-deployed services with locally running instances.
-# Uncomment services you're running locally via 'npm run dev'.
+# Uncomment services you're running locally via 'pnpm run dev'.
 
 export INTEXURAOS_USER_SERVICE_URL=http://localhost:8110
-export INTEXURAOS_PROMPTVAULT_SERVICE_URL=http://localhost:8111
 export INTEXURAOS_NOTION_SERVICE_URL=http://localhost:8112
 export INTEXURAOS_WHATSAPP_SERVICE_URL=http://localhost:8113
 export INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_URL=http://localhost:8114
@@ -114,12 +113,11 @@ export INTEXURAOS_GCP_PROJECT_ID=demo-intexuraos
 # OPTIONAL: Custom ports
 # =============================================================================
 # Override default ports if needed (e.g., port conflict).
-# Default ports: user=8110, promptvault=8111, notion=8112, whatsapp=8113,
+# Default ports: user=8110, notion=8112, whatsapp=8113,
 # mobile-notifications=8114, api-docs-hub=8115, research-agent=8116,
 # web=3000
 
 # export USER_SERVICE_PORT=9110
-# export PROMPTVAULT_SERVICE_PORT=9111
 
 # =============================================================================
 # PERSONAL IDENTIFIERS

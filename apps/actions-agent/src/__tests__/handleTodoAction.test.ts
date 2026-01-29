@@ -3,16 +3,13 @@ import { isOk, isErr, ok, err } from '@intexuraos/common-core';
 import { createHandleTodoActionUseCase } from '../domain/usecases/handleTodoAction.js';
 import { registerActionHandler } from '../domain/usecases/createIdempotentActionHandler.js';
 import type { ActionCreatedEvent } from '../domain/models/actionEvent.js';
-import { FakeActionRepository, FakeWhatsAppSendPublisher } from './fakes.js';
-import pino from 'pino';
+import { FakeActionRepository, FakeWhatsAppSendPublisher, createMockLogger } from './fakes.js';
 
 vi.mock('../domain/usecases/shouldAutoExecute.js', () => ({
   shouldAutoExecute: vi.fn(() => false),
 }));
 
 import { shouldAutoExecute } from '../domain/usecases/shouldAutoExecute.js';
-
-const silentLogger = pino({ level: 'silent' });
 
 describe('handleTodoAction usecase', () => {
   let fakeActionRepository: FakeActionRepository;
@@ -69,7 +66,7 @@ describe('handleTodoAction usecase', () => {
       actionRepository: fakeActionRepository,
       whatsappPublisher: fakeWhatsappPublisher,
       webAppUrl: 'https://app.intexuraos.com',
-      logger: silentLogger,
+      logger: createMockLogger(),
     });
 
     const event = createEvent();
@@ -97,7 +94,7 @@ describe('handleTodoAction usecase', () => {
       actionRepository: fakeActionRepository,
       whatsappPublisher: fakeWhatsappPublisher,
       webAppUrl: 'https://app.intexuraos.com',
-      logger: silentLogger,
+      logger: createMockLogger(),
     });
 
     fakeActionRepository.setFailNext(true, new Error('Database unavailable'));
@@ -118,7 +115,7 @@ describe('handleTodoAction usecase', () => {
       actionRepository: fakeActionRepository,
       whatsappPublisher: fakeWhatsappPublisher,
       webAppUrl: 'https://app.intexuraos.com',
-      logger: silentLogger,
+      logger: createMockLogger(),
     });
 
     fakeWhatsappPublisher.setFailNext(true, {
@@ -146,7 +143,7 @@ describe('handleTodoAction usecase', () => {
       actionRepository: fakeActionRepository,
       whatsappPublisher: fakeWhatsappPublisher,
       webAppUrl: 'https://app.intexuraos.com',
-      logger: silentLogger,
+      logger: createMockLogger(),
     });
 
     const event = createEvent();
@@ -174,14 +171,14 @@ describe('handleTodoAction usecase', () => {
       await fakeActionRepository.save(createAction());
 
       const fakeExecuteTodoAction = vi.fn().mockResolvedValue(
-        ok({ status: 'completed' as const, resource_url: '/#/todos/todo-123' })
+        ok({ status: 'completed' as const, resourceUrl: '/#/todos/todo-123' })
       );
 
       const usecase = registerActionHandler(createHandleTodoActionUseCase, {
         actionRepository: fakeActionRepository,
         whatsappPublisher: fakeWhatsappPublisher,
         webAppUrl: 'https://app.intexuraos.com',
-        logger: silentLogger,
+        logger: createMockLogger(),
         executeTodoAction: fakeExecuteTodoAction,
       });
 
@@ -207,7 +204,7 @@ describe('handleTodoAction usecase', () => {
         actionRepository: fakeActionRepository,
         whatsappPublisher: fakeWhatsappPublisher,
         webAppUrl: 'https://app.intexuraos.com',
-        logger: silentLogger,
+        logger: createMockLogger(),
         executeTodoAction: fakeExecuteTodoAction,
       });
 
@@ -227,7 +224,7 @@ describe('handleTodoAction usecase', () => {
         actionRepository: fakeActionRepository,
         whatsappPublisher: fakeWhatsappPublisher,
         webAppUrl: 'https://app.intexuraos.com',
-        logger: silentLogger,
+        logger: createMockLogger(),
       });
 
       const event = createEvent();

@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { useActionConfig } from '@/hooks/useActionConfig';
+import { formatDateTime } from '@/utils/dateFormat';
 import { ConfigurableActionButton } from './ConfigurableActionButton';
 import { CalendarPreviewCard } from './CalendarPreviewCard';
 import { Button } from './ui/Button';
@@ -70,17 +71,6 @@ function getTypeIcon(type: CommandType): React.JSX.Element {
 
 function getTypeLabel(type: CommandType): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function formatDate(isoDate: string): string {
-  const date = new Date(isoDate);
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 export function ActionDetailModal({
@@ -212,6 +202,11 @@ export function ActionDetailModal({
     return url;
   };
 
+  const persistedResourceUrl =
+    action.status === 'completed' && typeof action.payload['resource_url'] === 'string'
+      ? normalizeResourceUrl(action.payload['resource_url'])
+      : null;
+
   const handleResult = (result: ActionExecutionResult, button: ResolvedActionButton): void => {
     // Check for duplicate bookmark conflict
     if (result.existingBookmarkId !== undefined) {
@@ -223,8 +218,14 @@ export function ActionDetailModal({
       return;
     }
 
+    // For PATCH/DELETE endpoints (archive, reject, delete), success is indicated by
+    // not throwing an error. These return the updated action, not ActionExecutionResult.
+    // Only POST /execute endpoints return ActionExecutionResult with status field.
+    const isPatchOrDelete =
+      button.endpoint.method === 'PATCH' || button.endpoint.method === 'DELETE';
+
     // Handle success case (completed with resourceUrl)
-    if (result.status === 'completed' && result.resourceUrl !== undefined) {
+    if ((isPatchOrDelete || result.status === 'completed') && result.resourceUrl !== undefined) {
       const normalizedUrl = normalizeResourceUrl(result.resourceUrl);
       const message = button.onSuccess?.message ?? 'Action completed successfully';
       const linkLabel = button.onSuccess?.linkLabel ?? `Open ${action.type}`;
@@ -237,9 +238,17 @@ export function ActionDetailModal({
         linkLabel,
       });
 
+      // Update parent state with resource_url in payload for persistence
+      onActionUpdated?.({
+        ...action,
+        status: 'completed',
+        payload: { ...action.payload, resource_url: normalizedUrl },
+        updatedAt: new Date().toISOString(),
+      });
+
       setExecutionResult({
         actionId: result.actionId,
-        status: result.status,
+        status: 'completed',
         resourceUrl: normalizedUrl,
         message,
         linkLabel,
@@ -247,7 +256,12 @@ export function ActionDetailModal({
       return;
     }
 
-    // Handle failure case
+    // For PATCH/DELETE without resourceUrl, silently succeed (modal will close via onSuccess)
+    if (isPatchOrDelete) {
+      return;
+    }
+
+    // Handle failure case (only for POST endpoints that return status: 'failed')
     if (result.status === 'failed') {
       setExecutionResult({
         actionId: result.actionId,
@@ -404,33 +418,44 @@ export function ActionDetailModal({
           <div className="flex items-center gap-4 text-xs text-slate-500">
             <div className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              <span>Created {formatDate(action.createdAt)}</span>
+              <span>Created {formatDateTime(action.createdAt)}</span>
             </div>
             {action.updatedAt !== action.createdAt && (
               <div className="flex items-center gap-1">
-                <span>Updated {formatDate(action.updatedAt)}</span>
+                <span>Updated {formatDateTime(action.updatedAt)}</span>
               </div>
             )}
           </div>
 
           {/* Status badge */}
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <span className="text-sm font-medium text-slate-600">
-              Status:{' '}
-              <span
-                className={
-                  action.status === 'completed'
-                    ? 'text-green-600'
-                    : action.status === 'processing'
-                      ? 'text-blue-600'
-                      : action.status === 'failed' || action.status === 'rejected'
-                        ? 'text-red-600'
-                        : 'text-slate-600'
-                }
-              >
-                {action.status.charAt(0).toUpperCase() + action.status.slice(1)}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-slate-600">
+                Status:{' '}
+                <span
+                  className={
+                    action.status === 'completed'
+                      ? 'text-green-600'
+                      : action.status === 'processing'
+                        ? 'text-blue-600'
+                        : action.status === 'failed' || action.status === 'rejected'
+                          ? 'text-red-600'
+                          : 'text-slate-600'
+                  }
+                >
+                  {action.status.charAt(0).toUpperCase() + action.status.slice(1)}
+                </span>
               </span>
-            </span>
+              {persistedResourceUrl !== null && executionResult === null && (
+                <RouterLink
+                  to={persistedResourceUrl}
+                  className="inline-flex items-center gap-1 rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-200"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
+                </RouterLink>
+              )}
+            </div>
           </div>
 
           {/* Persisted failure reason */}

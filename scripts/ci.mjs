@@ -17,8 +17,10 @@ const phases = [
     parallel: true,
     commands: [
       { name: 'package-json', script: 'verify-package-json.mjs' },
+      { name: 'date-formatting', script: 'verify-date-formatting.mjs' },
       { name: 'boundaries', script: 'verify-boundaries.mjs' },
       { name: 'common', script: 'verify-common.mjs' },
+      { name: 'env-vars', script: 'verify-env-vars.mjs' },
       { name: 'firestore', script: 'verify-firestore-ownership.mjs' },
       { name: 'test-isolation', script: 'verify-test-isolation.mjs' },
       { name: 'vitest-config', script: 'verify-vitest-config.mjs' },
@@ -120,9 +122,10 @@ async function runCommand(cmd) {
   });
 }
 
-async function runPhase(phase) {
+async function runPhase(phase, phaseNumber) {
   console.log(`\n=== ${phase.name} ===\n`);
 
+  const phaseStart = Date.now();
   let results;
 
   if (phase.parallel) {
@@ -146,6 +149,10 @@ async function runPhase(phase) {
     }
   }
 
+  const phaseDuration = Date.now() - phaseStart;
+  const status = failed ? 'fail' : 'pass';
+  console.log(`@@PHASE_TIMING@@${phase.name}|${phaseNumber}|${status}|${phaseDuration}`);
+
   if (failed) {
     console.log(`\n─── ${failed.name} output ───\n`);
     console.log(failed.output.trim());
@@ -156,8 +163,8 @@ async function runPhase(phase) {
 
 (async () => {
   try {
-    for (const phase of phases) {
-      await runPhase(phase);
+    for (let i = 0; i < phases.length; i++) {
+      await runPhase(phases[i], i + 1);
     }
     console.log('\n✅ CI passed\n');
     process.exit(0);

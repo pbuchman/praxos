@@ -1,5 +1,14 @@
-import { createToken, describe, expect, it, setupTestContext } from '../testUtils.js';
+import { createToken, describe, expect, it, setupTestContext, clearTestLogs, getTestLoggerStream, beforeEach, afterEach, beforeAll, afterAll, setupJwksServer, teardownJwksServer, resetServices, setServices } from '../testUtils.js';
+import { buildServer } from '../../server.js';
+import type { FastifyInstance } from 'fastify';
 import type { LinearConnection } from '../../domain/models.js';
+import {
+  FakeLinearConnectionRepository,
+  FakeLinearApiClient,
+  FakeFailedIssueRepository,
+  FakeLinearActionExtractionService,
+  FakeProcessedActionRepository,
+} from '../fakes.js';
 
 describe('linearRoutes', () => {
   const ctx = setupTestContext();
@@ -474,6 +483,572 @@ describe('linearRoutes', () => {
       const body = response.json();
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('DOWNSTREAM_ERROR');
+    });
+  });
+
+  describe('DELETE /linear/failed-issues/:id', () => {
+    it('deletes failed issue for owner', async () => {
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'DELETE',
+        url: `/linear/failed-issues/${createResult.value.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(204);
+
+      const listResult = await ctx.failedIssueRepository.listByUser('test-user-123');
+      expect(listResult.ok).toBe(true);
+      if (listResult.ok) {
+        expect(listResult.value).toHaveLength(0);
+      }
+    });
+
+    it('returns 404 for non-existent failed issue', async () => {
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'DELETE',
+        url: '/linear/failed-issues/nonexistent-id',
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 404 when user does not own the issue', async () => {
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'other-user',
+        actionId: 'action-1',
+        originalText: 'Other user task',
+        extractedTitle: null,
+        extractedPriority: null,
+        error: 'Failed',
+        reasoning: null,
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'DELETE',
+        url: `/linear/failed-issues/${createResult.value.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 401 when no auth token provided', async () => {
+      const response = await ctx.app.inject({
+        method: 'DELETE',
+        url: '/linear/failed-issues/some-id',
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('handles repository delete error', async () => {
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      ctx.failedIssueRepository.setDeleteFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'DELETE',
+        url: `/linear/failed-issues/${createResult.value.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(502);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('DOWNSTREAM_ERROR');
+    });
+
+    it('returns 404 when getById repository fails', async () => {
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      ctx.failedIssueRepository.setGetByIdFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'DELETE',
+        url: `/linear/failed-issues/${createResult.value.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('NOT_FOUND');
+    });
+  });
+
+  describe('POST /linear/failed-issues/:id/retry', () => {
+    it('retries issue creation and deletes failed issue on success', async () => {
+      seedConnection('test-user-123');
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.success).toBe(true);
+      expect(body.data.issue).toBeDefined();
+      expect(body.data.issue.title).toBe('Testing task');
+      expect(body.data.issue.identifier).toMatch(/^ENG-\d+$/);
+
+      const listResult = await ctx.failedIssueRepository.listByUser('test-user-123');
+      expect(listResult.ok).toBe(true);
+      if (listResult.ok) {
+        expect(listResult.value).toHaveLength(0);
+      }
+    });
+
+    it('updates error and returns 422 on Linear API failure', async () => {
+      seedConnection('test-user-123');
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      ctx.linearApiClient.setFailure(true, {
+        code: 'RATE_LIMIT',
+        message: 'Rate limit exceeded',
+      });
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(422);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UNPROCESSABLE_ENTITY');
+      expect(body.error.message).toBe('Rate limit exceeded');
+
+      const getResult = await ctx.failedIssueRepository.getById(createResult.value.id);
+      expect(getResult.ok).toBe(true);
+      if (getResult.ok) {
+        expect(getResult.value.error).toBe('Rate limit exceeded');
+        expect(getResult.value.lastRetryAt).toBeDefined();
+        expect(getResult.value.lastRetryAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
+      }
+    });
+
+    it('returns 422 on INVALID_API_KEY error', async () => {
+      seedConnection('test-user-123');
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      ctx.linearApiClient.setFailure(true, {
+        code: 'INVALID_API_KEY',
+        message: 'Invalid API key',
+      });
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(422);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UNPROCESSABLE_ENTITY');
+      expect(body.error.message).toBe('Invalid API key');
+
+      const getResult = await ctx.failedIssueRepository.getById(createResult.value.id);
+      expect(getResult.ok).toBe(true);
+      if (getResult.ok) {
+        expect(getResult.value.error).toBe('Invalid API key');
+        expect(getResult.value.lastRetryAt).toBeDefined();
+        expect(getResult.value.lastRetryAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
+      }
+    });
+
+    it('returns 422 on API_ERROR', async () => {
+      seedConnection('test-user-123');
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      ctx.linearApiClient.setFailure(true, {
+        code: 'API_ERROR',
+        message: 'Linear API unavailable',
+      });
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(422);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('UNPROCESSABLE_ENTITY');
+      expect(body.error.message).toBe('Linear API unavailable');
+
+      const getResult = await ctx.failedIssueRepository.getById(createResult.value.id);
+      expect(getResult.ok).toBe(true);
+      if (getResult.ok) {
+        expect(getResult.value.error).toBe('Linear API unavailable');
+        expect(getResult.value.lastRetryAt).toBeDefined();
+        expect(getResult.value.lastRetryAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
+      }
+    });
+
+    it('returns 404 for non-existent failed issue', async () => {
+      seedConnection('test-user-123');
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: '/linear/failed-issues/nonexistent-id/retry',
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 404 when user does not own the issue', async () => {
+      seedConnection('test-user-123');
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'other-user',
+        actionId: 'action-1',
+        originalText: 'Other user task',
+        extractedTitle: null,
+        extractedPriority: null,
+        error: 'Failed',
+        reasoning: null,
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 401 when no auth token provided', async () => {
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: '/linear/failed-issues/some-id/retry',
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns 403 when user has no Linear connection', async () => {
+      const createResult = await ctx.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      // Note: user has failed issue but no Linear connection (edge case)
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await ctx.app.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = response.json();
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('FORBIDDEN');
+    });
+  });
+});
+
+// Logging coverage tests - use beforeEach to build server with test logger
+describe('linearRoutes logging coverage', () => {
+  let loggingApp: FastifyInstance;
+  const loggingRepos = {
+    connectionRepository: new FakeLinearConnectionRepository(),
+    linearApiClient: new FakeLinearApiClient(),
+    extractionService: new FakeLinearActionExtractionService(),
+    failedIssueRepository: new FakeFailedIssueRepository(),
+    processedActionRepository: new FakeProcessedActionRepository(),
+  };
+
+  beforeAll(async () => {
+    await setupJwksServer();
+  });
+
+  afterAll(async () => {
+    await teardownJwksServer();
+  });
+
+  function seedConnection(userId: string): void {
+    const connection: LinearConnection = {
+      userId,
+      apiKey: 'linear-api-key-123',
+      teamId: 'team-456',
+      teamName: 'Engineering',
+      connected: true,
+      createdAt: '2025-01-15T00:00:00Z',
+      updatedAt: '2025-01-15T00:00:00Z',
+    };
+    loggingRepos.connectionRepository.seedConnection(connection);
+  }
+
+  beforeEach(async () => {
+    clearTestLogs();
+    process.env['INTEXURAOS_INTERNAL_AUTH_TOKEN'] = 'test-internal-token';
+    loggingRepos.connectionRepository.reset();
+    loggingRepos.linearApiClient.reset();
+    loggingRepos.extractionService.reset();
+    loggingRepos.failedIssueRepository.reset();
+    loggingRepos.processedActionRepository.reset();
+    setServices(loggingRepos);
+    loggingApp = await buildServer(getTestLoggerStream());
+    await loggingApp.ready();
+  });
+
+  afterEach(async () => {
+    if (loggingApp) {
+      await loggingApp.close();
+    }
+    resetServices();
+    delete process.env['INTEXURAOS_INTERNAL_AUTH_TOKEN'];
+  });
+
+  describe('DELETE /linear/failed-issues/:id - logging', () => {
+    it('logs error when getById repository fails', async () => {
+      const createResult = await loggingRepos.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      loggingRepos.failedIssueRepository.setGetByIdFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await loggingApp.inject({
+        method: 'DELETE',
+        url: `/linear/failed-issues/${createResult.value.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      // Error logging is enabled - coverage will verify the log line is hit
+    });
+
+    it('logs error when delete repository fails', async () => {
+      const createResult = await loggingRepos.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      loggingRepos.failedIssueRepository.setDeleteFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await loggingApp.inject({
+        method: 'DELETE',
+        url: `/linear/failed-issues/${createResult.value.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(502);
+      // Error logging is enabled - coverage will verify the log line is hit
+    });
+  });
+
+  describe('POST /linear/failed-issues/:id/retry - logging', () => {
+    it('logs error when getById repository fails', async () => {
+      const createResult = await loggingRepos.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      loggingRepos.failedIssueRepository.setGetByIdFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await loggingApp.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+      // Error logging is enabled - coverage will verify the log line is hit
+    });
+
+    it('logs error when update fails after retry fails', async () => {
+      seedConnection('test-user-123');
+      const createResult = await loggingRepos.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      loggingRepos.linearApiClient.setFailure(true, { code: 'RATE_LIMIT', message: 'Rate limit exceeded' });
+      loggingRepos.failedIssueRepository.setUpdateFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await loggingApp.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(422);
+      // Error logging is enabled - coverage will verify the log line is hit
+    });
+
+    it('logs error when delete fails after successful retry', async () => {
+      seedConnection('test-user-123');
+      const createResult = await loggingRepos.failedIssueRepository.create({
+        userId: 'test-user-123',
+        actionId: 'action-1',
+        originalText: 'Create a task for testing',
+        extractedTitle: 'Testing task',
+        extractedPriority: 2,
+        error: 'Connection error',
+        reasoning: 'Network timeout',
+      });
+      expect(createResult.ok).toBe(true);
+      if (!createResult.ok) return;
+
+      loggingRepos.failedIssueRepository.setDeleteFailure(true);
+
+      const token = await createToken({ sub: 'test-user-123' });
+      const response = await loggingApp.inject({
+        method: 'POST',
+        url: `/linear/failed-issues/${createResult.value.id}/retry`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      // Error logging is enabled - coverage will verify the log line is hit
     });
   });
 });

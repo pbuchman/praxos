@@ -10,9 +10,9 @@
       "owner": "notion-service",
       "description": "Notion OAuth connection tokens and state"
     },
-    "promptvault_settings": {
-      "owner": "promptvault-service",
-      "description": "User's Notion Prompt Vault page ID configuration"
+    "research_export_settings": {
+      "owner": "research-agent",
+      "description": "Notion research export page ID configuration per user"
     },
     "whatsapp_messages": {
       "owner": "whatsapp-service",
@@ -29,6 +29,10 @@
     "whatsapp_outbound_messages": {
       "owner": "whatsapp-service",
       "description": "Tracking of outbound WhatsApp messages with wamid and correlationId for reply matching"
+    },
+    "whatsapp_phone_verifications": {
+      "owner": "whatsapp-service",
+      "description": "Phone number verification codes with TTL-based expiry for WhatsApp connection"
     },
     "mobile_notifications": {
       "owner": "mobile-notifications-service",
@@ -141,6 +145,19 @@
     "linear_processed_actions": {
       "owner": "linear-agent",
       "description": "Successfully processed actions for idempotency"
+    },
+    "code_tasks": {
+      "owner": "code-agent",
+      "description": "Code execution tasks",
+      "subcollections": ["logs"]
+    },
+    "user_spend": {
+      "owner": "code-agent",
+      "description": "User cost tracking for rate limiting"
+    },
+    "user_usage": {
+      "owner": "code-agent",
+      "description": "User rate limiting and cost tracking for code tasks (concurrent tasks, hourly limits, daily/monthly cost caps)"
     }
   }
 }

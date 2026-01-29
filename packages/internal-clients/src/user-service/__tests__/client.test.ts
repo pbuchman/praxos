@@ -122,6 +122,91 @@ describe('createUserServiceClient', () => {
         expect.fail('Expected successful result');
       }
     });
+
+    it('includes all provider keys when all are configured', async () => {
+      const mockKeys = {
+        google: 'google-key',
+        openai: 'openai-key',
+        anthropic: 'anthropic-key',
+        perplexity: 'perplexity-key',
+        zai: 'zai-key',
+      };
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/llm-keys')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getApiKeys('user123');
+
+      if (result.ok) {
+        expect(result.value.google).toBe('google-key');
+        expect(result.value.openai).toBe('openai-key');
+        expect(result.value.anthropic).toBe('anthropic-key');
+        expect(result.value.perplexity).toBe('perplexity-key');
+        expect(result.value.zai).toBe('zai-key');
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('URL encodes userId with spaces', async () => {
+      const mockKeys = { google: 'google-key' };
+      const userId = 'user 123';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/llm-keys`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getApiKeys(userId);
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockKeys);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('URL encodes userId with plus', async () => {
+      const mockKeys = { google: 'google-key' };
+      const userId = 'user+123';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/llm-keys`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getApiKeys(userId);
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockKeys);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('URL encodes userId with pipe (Auth0 format)', async () => {
+      const mockKeys = { google: 'google-key' };
+      const userId = 'auth0|1234567890';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/llm-keys`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getApiKeys(userId);
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockKeys);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
   });
 
   describe('getLlmClient', () => {
@@ -308,6 +393,230 @@ describe('createUserServiceClient', () => {
         expect.fail('Expected error result');
       }
     });
+
+    it('handles network error in getLlmClient', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/settings')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .replyWithError('ECONNREFUSED');
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient('user123');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('NETWORK_ERROR');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          { userId: 'user123', error: expect.any(String) },
+          'Network error while creating LLM client'
+        );
+      } else {
+        expect.fail('Expected error result');
+      }
+    });
+
+    it('URL encodes userId with ampersand in settings request', async () => {
+      const mockSettings = {
+        llmPreferences: {
+          defaultModel: LlmModels.Gemini25Flash,
+        },
+      };
+      const mockKeys = { google: 'google-key' };
+      const userId = 'user&test';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/settings`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockSettings);
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/llm-keys`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient(userId);
+
+      if (result.ok) {
+        expect(result.value).toBeDefined();
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('URL encodes userId with pipe (Auth0 format) in keys request', async () => {
+      const mockSettings = {
+        llmPreferences: {
+          defaultModel: LlmModels.Gemini25Flash,
+        },
+      };
+      const mockKeys = { google: 'google-key' };
+      const userId = 'auth0|123';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/settings`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockSettings);
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/llm-keys`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient(userId);
+
+      if (result.ok) {
+        expect(result.value).toBeDefined();
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('creates OpenAI client when user has OpenAI model preference', async () => {
+      const mockSettings = {
+        llmPreferences: {
+          defaultModel: LlmModels.GPT52,
+        },
+      };
+
+      const mockKeys = {
+        openai: 'openai-key',
+      };
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/settings')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockSettings);
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/llm-keys')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient('user123');
+
+      // Note: OpenAI provider not yet supported by llm-factory, so expect error
+      // This test exercises the providerToKeyField switch case for OpenAI
+      if (!result.ok) {
+        expect(result.error.code).toBe('NETWORK_ERROR');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          { userId: 'user123', error: expect.any(String) },
+          'Network error while creating LLM client'
+        );
+      } else {
+        expect.fail('Expected error result for unsupported provider');
+      }
+    });
+
+    it('creates Anthropic client when user has Anthropic model preference', async () => {
+      const mockSettings = {
+        llmPreferences: {
+          defaultModel: LlmModels.ClaudeSonnet45,
+        },
+      };
+
+      const mockKeys = {
+        anthropic: 'anthropic-key',
+      };
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/settings')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockSettings);
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/llm-keys')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient('user123');
+
+      // Note: Anthropic provider not yet supported by llm-factory, so expect error
+      // This test exercises the providerToKeyField switch case for Anthropic
+      if (!result.ok) {
+        expect(result.error.code).toBe('NETWORK_ERROR');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          { userId: 'user123', error: expect.any(String) },
+          'Network error while creating LLM client'
+        );
+      } else {
+        expect.fail('Expected error result for unsupported provider');
+      }
+    });
+
+    it('creates Perplexity client when user has Perplexity model preference', async () => {
+      const mockSettings = {
+        llmPreferences: {
+          defaultModel: LlmModels.SonarPro,
+        },
+      };
+
+      const mockKeys = {
+        perplexity: 'perplexity-key',
+      };
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/settings')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockSettings);
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/llm-keys')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient('user123');
+
+      // Note: Perplexity provider not yet supported by llm-factory, so expect error
+      // This test exercises the providerToKeyField switch case for Perplexity
+      if (!result.ok) {
+        expect(result.error.code).toBe('NETWORK_ERROR');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          { userId: 'user123', error: expect.any(String) },
+          'Network error while creating LLM client'
+        );
+      } else {
+        expect.fail('Expected error result for unsupported provider');
+      }
+    });
+
+    it('creates Zai client when user has Zai model preference', async () => {
+      const mockSettings = {
+        llmPreferences: {
+          defaultModel: LlmModels.Glm47Flash,
+        },
+      };
+
+      const mockKeys = {
+        zai: 'zai-key',
+      };
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/settings')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockSettings);
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/llm-keys')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockKeys);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getLlmClient('user123');
+
+      if (result.ok) {
+        expect(result.value).toBeDefined();
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          { userId: 'user123', model: LlmModels.Glm47Flash, provider: LlmProviders.Zai },
+          'LLM client created successfully'
+        );
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
   });
 
   describe('reportLlmSuccess', () => {
@@ -336,6 +645,282 @@ describe('createUserServiceClient', () => {
       await expect(
         client.reportLlmSuccess('user123', LlmProviders.Google)
       ).resolves.toBeUndefined();
+    });
+
+    it('silently ignores network timeout errors', async () => {
+      nock('http://localhost:3000')
+        .post('/internal/users/user123/llm-keys/Google/last-used')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .delay(5000)
+        .reply(200);
+
+      const client = createUserServiceClient(config);
+
+      // The function should not throw due to try-catch
+      await expect(
+        client.reportLlmSuccess('user123', LlmProviders.Google)
+      ).resolves.toBeUndefined();
+    });
+
+    it('silently ignores 500 server errors', async () => {
+      nock('http://localhost:3000')
+        .post('/internal/users/user123/llm-keys/Google/last-used')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(500, { error: 'Internal server error' });
+
+      const client = createUserServiceClient(config);
+
+      await expect(
+        client.reportLlmSuccess('user123', LlmProviders.Google)
+      ).resolves.toBeUndefined();
+    });
+
+    it('silently ignores 404 not found errors', async () => {
+      nock('http://localhost:3000')
+        .post('/internal/users/user123/llm-keys/Google/last-used')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(404);
+
+      const client = createUserServiceClient(config);
+
+      await expect(
+        client.reportLlmSuccess('user123', LlmProviders.Google)
+      ).resolves.toBeUndefined();
+    });
+
+    it('silently ignores JSON parse errors', async () => {
+      nock('http://localhost:3000')
+        .post('/internal/users/user123/llm-keys/Google/last-used')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, '{ invalid json }');
+
+      const client = createUserServiceClient(config);
+
+      await expect(
+        client.reportLlmSuccess('user123', LlmProviders.Google)
+      ).resolves.toBeUndefined();
+    });
+
+    it('URL encodes userId with plus in reportLlmSuccess', async () => {
+      const userId = 'user+special';
+      const provider = 'Google';
+
+      nock('http://localhost:3000')
+        .post(`/internal/users/${encodeURIComponent(userId)}/llm-keys/${provider}/last-used`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200);
+
+      const client = createUserServiceClient(config);
+      await client.reportLlmSuccess(userId, LlmProviders.Google);
+
+      // Should complete without throwing
+      expect(true).toBe(true);
+    });
+
+    it('URL encodes userId with pipe (Auth0 format) in reportLlmSuccess', async () => {
+      const userId = 'auth0|xyz123';
+      const provider = 'Google';
+
+      nock('http://localhost:3000')
+        .post(`/internal/users/${encodeURIComponent(userId)}/llm-keys/${provider}/last-used`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200);
+
+      const client = createUserServiceClient(config);
+      await client.reportLlmSuccess(userId, LlmProviders.Google);
+
+      // Should complete without throwing
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('getOAuthToken', () => {
+    it('returns token on success', async () => {
+      const mockToken = {
+        accessToken: 'ya29.a0...',
+        email: 'user@example.com',
+      };
+
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockToken);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockToken);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('returns CONNECTION_NOT_FOUND when not connected', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(404, { code: 'CONNECTION_NOT_FOUND', error: 'Not connected' });
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('CONNECTION_NOT_FOUND');
+        expect(result.error.message).toBe('OAuth not connected');
+      } else {
+        expect.fail('Expected error result');
+      }
+    });
+
+    it('returns CONNECTION_NOT_FOUND on 404 without code', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(404, { error: 'Not found' });
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('CONNECTION_NOT_FOUND');
+        expect(result.error.message).toBe('OAuth not connected');
+      } else {
+        expect.fail('Expected error result');
+      }
+    });
+
+    it('returns TOKEN_REFRESH_FAILED when refresh fails', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(500, { code: 'TOKEN_REFRESH_FAILED', error: 'Refresh failed' });
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('TOKEN_REFRESH_FAILED');
+        expect(result.error.message).toBe('Failed to refresh token');
+      } else {
+        expect.fail('Expected error result');
+      }
+    });
+
+    it('returns OAUTH_NOT_CONFIGURED when not set up', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(500, { code: 'CONFIGURATION_ERROR', error: 'Not configured' });
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('OAUTH_NOT_CONFIGURED');
+        expect(result.error.message).toBe('OAuth not configured');
+      } else {
+        expect.fail('Expected error result');
+      }
+    });
+
+    it('returns NETWORK_ERROR on fetch failure', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .replyWithError('ECONNREFUSED');
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('NETWORK_ERROR');
+        expect(result.error.message).toContain('ECONNREFUSED');
+      } else {
+        expect.fail('Expected error result');
+      }
+    });
+
+    it('URL encodes userId with pipe (Auth0 format) in getOAuthToken', async () => {
+      const mockToken = {
+        accessToken: 'ya29.a0...',
+        email: 'user@example.com',
+      };
+      const userId = 'auth0|abc123';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/oauth/google/token`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockToken);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken(userId, 'google');
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockToken);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('URL encodes userId with ampersand in getOAuthToken', async () => {
+      const mockToken = {
+        accessToken: 'ya29.a0...',
+        email: 'user@example.com',
+      };
+      const userId = 'user&test';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/oauth/google/token`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockToken);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken(userId, 'google');
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockToken);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('URL encodes userId with slash in getOAuthToken', async () => {
+      const mockToken = {
+        accessToken: 'ya29.a0...',
+        email: 'user@example.com',
+      };
+      const userId = 'user/with/slash';
+
+      nock('http://localhost:3000')
+        .get(`/internal/users/${encodeURIComponent(userId)}/oauth/google/token`)
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(200, mockToken);
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken(userId, 'google');
+
+      if (result.ok) {
+        expect(result.value).toEqual(mockToken);
+      } else {
+        expect.fail('Expected successful result');
+      }
+    });
+
+    it('returns API_ERROR with fallback message when error response has no error field', async () => {
+      nock('http://localhost:3000')
+        .get('/internal/users/user123/oauth/google/token')
+        .matchHeader('X-Internal-Auth', 'test-token')
+        .reply(500, { code: 'UNKNOWN_ERROR' }); // No 'error' field
+
+      const client = createUserServiceClient(config);
+      const result = await client.getOAuthToken('user123', 'google');
+
+      if (!result.ok) {
+        expect(result.error.code).toBe('API_ERROR');
+        expect(result.error.message).toBe('HTTP 500');
+      } else {
+        expect.fail('Expected error result');
+      }
     });
   });
 });

@@ -66,6 +66,25 @@ Verify Linear, GitHub, GCloud available.
 - Extract: title, description, state, assignee
 ```
 
+### 2.5 Parent Issue Detection (MANDATORY)
+
+Check if this issue has child subissues:
+
+```
+Call mcp__linear__list_issues(parentId: "<issue-uuid>", team: "IntexuraOS")
+```
+
+Note: Use the full UUID from `mcp__linear__get_issue` response (e.g., `a2336d05-d0cb-427d-a6e2-346eadd25480`), not the issue identifier (`INT-XXX`).
+
+**Routing Decision:**
+
+| Result                    | Action                                                     |
+| ------------------------- | ---------------------------------------------------------- |
+| Children array non-empty  | **REDIRECT** to [parent-execution.md](parent-execution.md) |
+| Children array empty/null | Continue with single-issue workflow (Step 3 below)         |
+
+**Why:** Parent issues with children require continuous execution of ALL children without stopping. The parent-execution workflow handles branch naming, commit grouping, and PR creation differently.
+
 ### 3. Pre-Flight Branch Check (MANDATORY - BLOCKS ALL WORK)
 
 ⛔ **STOP: You MUST NOT be on `development` or `main` before making ANY changes.**
@@ -112,6 +131,33 @@ git checkout -b fix/INT-123 origin/development
 - `origin/development` guarantees fresh state
 - Prevents merge conflicts and ensures CI runs against current code
 
+### 4.5. Build All Packages (MANDATORY - BLOCKS ALL WORK)
+
+⛔ **STOP: You MUST build packages before starting any implementation work.**
+
+**Always run `pnpm build` in repository root after branch checkout:**
+
+```bash
+pnpm build
+```
+
+**Why this is MANDATORY:**
+
+- Apps depend on packages' `dist/` directories for type imports
+- Without built packages, apps fail typecheck with misleading errors (50+ lint errors)
+- Fresh branch checkout means packages aren't built yet
+- The CLAUDE.md "Session Start Protocol" specifies this requirement
+
+**Signs you forgot to build:**
+
+- `Cannot find module '@intexuraos/...'` errors
+- 50+ `no-unsafe-*` lint errors in apps
+- Typecheck errors only in `apps/` not `packages/`
+
+**Time estimate:** 30-60 seconds for all packages
+
+**DO NOT proceed to state update or implementation until packages are built.**
+
 ### 5. Update State to In Progress (MANDATORY - BLOCKS ALL WORK)
 
 ⛔ **STOP: You MUST update Linear state BEFORE making any code changes.**
@@ -136,6 +182,37 @@ git checkout -b fix/INT-123 origin/development
 
 - Execute the task described in issue
 - Make commits with clear messages
+
+---
+
+## 🚨 CRITICAL: Task Completion Sequence (AUTOMATIC - NO ASKING)
+
+**Once implementation is complete, the following steps are MANDATORY and AUTOMATIC.**
+
+⛔ **FORBIDDEN PATTERN:**
+
+```
+❌ "Would you like me to commit these changes now?"
+❌ "Should I create a PR?"
+❌ "Do you want me to push?"
+```
+
+**CORRECT PATTERN:**
+After implementation completes, AUTOMATICALLY execute steps 7-10 in sequence:
+
+1. Run CI (`pnpm run ci:tracked`)
+2. If CI passes → Commit all changes
+3. Merge latest base branch
+4. Push to remote
+5. Create PR with issue ID in title
+6. Update Linear state to "In Review"
+7. Report completion with cross-link summary
+
+**The only stopping point is CI failure** — fix errors and retry.
+
+**This sequence is NON-NEGOTIABLE.** A task that ends with "Would you like me to commit?" is an INCOMPLETE task.
+
+---
 
 ### 7. CI Gate (MANDATORY - BLOCKS PR CREATION)
 
@@ -221,7 +298,10 @@ Show table of created artifacts.
 
 When working on multiple related issues (e.g., epic children), follow these rules:
 
-### One-at-a-Time Enforcement
+**⚠️ EXCEPTION: Parent Execution Mode**
+If you were redirected here from a parent issue with children (via Step 2.5), these checkpoint rules DO NOT APPLY. See [parent-execution.md](parent-execution.md) for continuous execution without checkpoints.
+
+### One-at-a-Time Enforcement (Standalone Issues Only)
 
 1. **Complete ONE issue fully** before starting the next:
    - All code changes committed
@@ -267,6 +347,7 @@ Only after user says "continue" or "next issue" → proceed.
 
 - [ ] Pre-flight branch check passed (NOT on `development` or `main`)
 - [ ] Branch created from `origin/development` (fresh state)
+- [ ] Packages built with `pnpm build` (MANDATORY after branch checkout)
 - [ ] `pnpm run ci:tracked` passes (ALL 4 checks: typecheck src, typecheck tests, lint, tests+coverage)
 - [ ] ALL CI errors fixed (even in other workspaces — ownership mindset)
 
@@ -277,8 +358,8 @@ git diff --name-only HEAD~1 | grep -E "^terraform/" && echo "TERRAFORM CHANGED" 
 ```
 
 - [ ] Verified terraform change status (document result)
-- [ ] If terraform changed: `tf fmt -check -recursive` passes
-- [ ] If terraform changed: `tf validate` passes
+- [ ] If terraform changed: `terraform fmt -check -recursive` passes (with env var clearing)
+- [ ] If terraform changed: `terraform validate` passes (with env var clearing)
 
 **Required before PR:**
 

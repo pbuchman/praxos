@@ -4,6 +4,34 @@ GCloud authentication, Terraform operations, and Cloud Build deployment details.
 
 ---
 
+## Default Region
+
+**All GCP resources are located in `europe-central2` unless specified otherwise.**
+
+When using `gcloud` commands that require a region, always specify `--region=europe-central2`:
+
+```bash
+# Cloud Build
+gcloud builds list --region=europe-central2
+gcloud builds describe <BUILD_ID> --region=europe-central2
+gcloud builds log <BUILD_ID> --region=europe-central2
+gcloud builds triggers list --region=europe-central2
+gcloud builds triggers run <TRIGGER_NAME> --region=europe-central2 --sha=<COMMIT_SHA>
+
+# Cloud Run
+gcloud run services list --region=europe-central2
+gcloud run services describe <SERVICE> --region=europe-central2
+
+# Artifact Registry
+gcloud artifacts repositories list --location=europe-central2
+```
+
+**Project ID:** `intexuraos-dev-pbuchman`
+
+**Artifact Registry URL:** `europe-central2-docker.pkg.dev/intexuraos-dev-pbuchman/intexuraos-dev`
+
+---
+
 ## GCloud Authentication
 
 **RULE:** NEVER claim "gcloud is not authenticated" without first verifying service account credentials.
@@ -49,29 +77,28 @@ GCloud authentication, Terraform operations, and Cloud Build deployment details.
 
 **RULE:** Always use the service account for Terraform operations. Never rely on browser-based authentication.
 
-### Terraform Alias
+### Running Terraform Commands
 
-Use `tf` command instead of `terraform`. This alias clears emulator env vars that break Terraform:
-
-```bash
-alias tf='STORAGE_EMULATOR_HOST= FIRESTORE_EMULATOR_HOST= PUBSUB_EMULATOR_HOST= terraform'
-```
-
-Note: The alias may not be available in spawned subshells - if `tf` is not found, the user should run commands manually.
-
-### Commands with Service Account
+**Always clear emulator env vars and set credentials inline:**
 
 ```bash
-# Set credentials and clear emulator env vars
-GOOGLE_APPLICATION_CREDENTIALS=~/personal/gcloud-claude-code-dev.json \
+# Plan changes
 STORAGE_EMULATOR_HOST= FIRESTORE_EMULATOR_HOST= PUBSUB_EMULATOR_HOST= \
+GOOGLE_APPLICATION_CREDENTIALS=$HOME/personal/gcloud-claude-code-dev.json \
 terraform plan
 
 # Apply changes
-GOOGLE_APPLICATION_CREDENTIALS=~/personal/gcloud-claude-code-dev.json \
 STORAGE_EMULATOR_HOST= FIRESTORE_EMULATOR_HOST= PUBSUB_EMULATOR_HOST= \
+GOOGLE_APPLICATION_CREDENTIALS=$HOME/personal/gcloud-claude-code-dev.json \
 terraform apply
+
+# Init (when needed)
+STORAGE_EMULATOR_HOST= FIRESTORE_EMULATOR_HOST= PUBSUB_EMULATOR_HOST= \
+GOOGLE_APPLICATION_CREDENTIALS=$HOME/personal/gcloud-claude-code-dev.json \
+terraform init
 ```
+
+**⚠️ Hook enforced:** Running bare `terraform` commands without env var clearing is blocked by `.claude/hooks/validate-terraform.sh`.
 
 ### Why Service Account Over Browser Auth
 

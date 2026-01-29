@@ -16,10 +16,10 @@
  *   - .envrc.local configured (cp .envrc.local.example .envrc.local)
  *
  * Usage:
- *   npm run dev             # Start all with TUI
- *   npm run dev -- --no-tui # Start all with plain log output
- *   npm run dev:emulators   # Start only emulators (no TUI)
- *   npm run dev:services    # Start only services (assumes emulators running)
+ *   pnpm run dev             # Start all with TUI
+ *   pnpm run dev -- --no-tui # Start all with plain log output
+ *   pnpm run dev:emulators   # Start only emulators (no TUI)
+ *   pnpm run dev:services    # Start only services (assumes emulators running)
  *
  * TUI Controls:
  *   q, Escape, Ctrl+C - Quit
@@ -50,7 +50,6 @@ const ROOT_DIR = join(__dirname, '..');
 
 const SERVICES = [
   { name: 'app-settings-service', port: 8122, color: '\x1b[95m' },
-  { name: 'promptvault-service', port: 8111, color: '\x1b[33m' },
   { name: 'notion-service', port: 8112, color: '\x1b[35m' },
   { name: 'whatsapp-service', port: 8113, color: '\x1b[32m' },
   { name: 'mobile-notifications-service', port: 8114, color: '\x1b[34m' },
@@ -61,6 +60,8 @@ const SERVICES = [
   { name: 'bookmarks-agent', port: 8124, color: '\x1b[38;5;141m' },
   { name: 'calendar-agent', port: 8125, color: '\x1b[38;5;220m' },
   { name: 'linear-agent', port: 8126, color: '\x1b[95m' },
+  { name: 'code-agent', port: 8128, color: '\x1b[38;5;214m' },
+  { name: 'web-agent', port: 8127, color: '\x1b[38;5;159m' },
 
   // these services depend on app-settings-service, so start them after
   { name: 'user-service', port: 8110, color: '\x1b[36m' },
@@ -150,7 +151,7 @@ function logEmulator(message) {
   log('[emulators]', message, '\x1b[90m');
 }
 
-function logResearchAgent(message) {
+function logService(message) {
   log('[dev]', message, `${BOLD}\x1b[97m`);
 }
 
@@ -192,7 +193,7 @@ async function checkPortInUse(port) {
  * @throws {Error} If any port is already in use
  */
 async function checkPortsAvailable() {
-  logResearchAgent('Checking for port conflicts...');
+  logService('Checking for port conflicts...');
 
   const allPorts = [
     ...SERVICES.map((s) => ({ name: s.name, port: s.port, type: 'service' })),
@@ -244,7 +245,7 @@ async function checkPortsAvailable() {
     throw new Error('Port conflicts detected. Please resolve the conflicts above and try again.');
   }
 
-  logResearchAgent('All ports are available.');
+  logService('All ports are available.');
 }
 
 async function checkDockerRunning() {
@@ -257,19 +258,17 @@ async function checkDockerRunning() {
 }
 
 async function generateFirestoreConfig() {
-  logResearchAgent('Generating Firestore config from migrations...');
+  logService('Generating Firestore config from migrations...');
   const generatorPath = join(ROOT_DIR, 'scripts', 'generate-firestore-config.mjs');
   const module = await import(pathToFileURL(generatorPath).href);
   if (module.generate) {
     const stats = await module.generate(true);
-    logResearchAgent(
-      `Generated ${stats.indexCount} indexes, ${stats.collectionCount} collection rules`
-    );
+    logService(`Generated ${stats.indexCount} indexes, ${stats.collectionCount} collection rules`);
   }
 }
 
 async function syncFirestore() {
-  logResearchAgent('Syncing Firestore data from GCP...');
+  logService('Syncing Firestore data from GCP...');
 
   const syncScript = join(ROOT_DIR, 'scripts', 'sync-firestore.sh');
   if (!existsSync(syncScript)) {
@@ -300,14 +299,14 @@ async function syncFirestore() {
     },
   });
 
-  logResearchAgent('Firestore sync completed');
+  logService('Firestore sync completed');
 }
 
 async function startEmulators() {
   // Sync Firestore data from GCP first
   await syncFirestore();
 
-  logResearchAgent('Starting emulators...');
+  logService('Starting emulators...');
 
   const composeFile = join(ROOT_DIR, 'docker', 'docker-compose.local.yaml');
   if (!existsSync(composeFile)) {
@@ -387,7 +386,6 @@ function validateEnvVars() {
 
 const API_DOCS_HUB_ENV = {
   INTEXURAOS_USER_SERVICE_OPENAPI_URL: 'http://localhost:8110/openapi.json',
-  INTEXURAOS_PROMPTVAULT_SERVICE_OPENAPI_URL: 'http://localhost:8111/openapi.json',
   INTEXURAOS_NOTION_SERVICE_OPENAPI_URL: 'http://localhost:8112/openapi.json',
   INTEXURAOS_WHATSAPP_SERVICE_OPENAPI_URL: 'http://localhost:8113/openapi.json',
   INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_OPENAPI_URL: 'http://localhost:8114/openapi.json',
@@ -401,6 +399,8 @@ const API_DOCS_HUB_ENV = {
   INTEXURAOS_TODOS_AGENT_OPENAPI_URL: 'http://localhost:8123/openapi.json',
   INTEXURAOS_BOOKMARKS_AGENT_OPENAPI_URL: 'http://localhost:8124/openapi.json',
   INTEXURAOS_CALENDAR_AGENT_OPENAPI_URL: 'http://localhost:8125/openapi.json',
+  INTEXURAOS_LINEAR_AGENT_OPENAPI_URL: 'http://localhost:8126/openapi.json',
+  INTEXURAOS_WEB_AGENT_OPENAPI_URL: 'http://localhost:8127/openapi.json',
 };
 
 // Common auth secrets for all services (mirrors Terraform local.common_service_secrets)
@@ -411,6 +411,8 @@ const COMMON_SERVICE_ENV = {
   INTEXURAOS_AUTH0_DOMAIN: process.env.INTEXURAOS_AUTH0_DOMAIN ?? '',
   INTEXURAOS_AUTH0_CLIENT_ID: process.env.INTEXURAOS_AUTH0_CLIENT_ID ?? '',
   INTEXURAOS_INTERNAL_AUTH_TOKEN: process.env.INTEXURAOS_INTERNAL_AUTH_TOKEN ?? 'local-dev-token',
+  INTEXURAOS_GCP_PROJECT_ID: process.env.INTEXURAOS_GCP_PROJECT_ID ?? 'intexuraos-dev',
+  INTEXURAOS_WEB_APP_URL: process.env.INTEXURAOS_WEB_APP_URL ?? 'http://localhost:3000',
   FIREBASE_AUTH_EMULATOR_HOST: 'localhost:8104',
 };
 
@@ -418,7 +420,6 @@ const COMMON_SERVICE_ENV = {
 // All services get all URLs so they can call each other
 const COMMON_SERVICE_URLS = {
   INTEXURAOS_USER_SERVICE_URL: 'http://localhost:8110',
-  INTEXURAOS_PROMPTVAULT_SERVICE_URL: 'http://localhost:8111',
   INTEXURAOS_NOTION_SERVICE_URL: 'http://localhost:8112',
   INTEXURAOS_WHATSAPP_SERVICE_URL: 'http://localhost:8113',
   INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_URL: 'http://localhost:8114',
@@ -432,7 +433,9 @@ const COMMON_SERVICE_URLS = {
   INTEXURAOS_TODOS_AGENT_URL: 'http://localhost:8123',
   INTEXURAOS_BOOKMARKS_AGENT_URL: 'http://localhost:8124',
   INTEXURAOS_CALENDAR_AGENT_URL: 'http://localhost:8125',
-  INTEXURAOS_WEB_AGENT_URL: 'http://localhost:8126',
+  INTEXURAOS_LINEAR_AGENT_URL: 'http://localhost:8126',
+  INTEXURAOS_CODE_AGENT_URL: 'http://localhost:8128',
+  INTEXURAOS_WEB_AGENT_URL: 'http://localhost:8127',
 };
 
 // Service-specific env vars (Pub/Sub topics, non-URL config)
@@ -441,6 +444,14 @@ const SERVICE_ENV_MAPPINGS = {
   'research-agent': {
     INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC:
       process.env.INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC ?? 'whatsapp-send-message',
+    INTEXURAOS_IMAGE_PUBLIC_BASE_URL:
+      process.env.INTEXURAOS_IMAGE_PUBLIC_BASE_URL ?? 'http://localhost:3000',
+    INTEXURAOS_SHARED_CONTENT_BUCKET:
+      process.env.INTEXURAOS_SHARED_CONTENT_BUCKET ?? 'intexuraos-shared-content',
+    INTEXURAOS_SHARE_BASE_URL: process.env.INTEXURAOS_SHARE_BASE_URL ?? 'http://localhost:3000',
+    INTEXURAOS_PUBSUB_RESEARCH_PROCESS_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_RESEARCH_PROCESS_TOPIC ?? 'research-process',
+    INTEXURAOS_PUBSUB_LLM_CALL_TOPIC: process.env.INTEXURAOS_PUBSUB_LLM_CALL_TOPIC ?? 'llm-call',
   },
   'whatsapp-service': {
     INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC:
@@ -451,6 +462,22 @@ const SERVICE_ENV_MAPPINGS = {
       process.env.INTEXURAOS_PUBSUB_MEDIA_CLEANUP_TOPIC ?? 'whatsapp-media-cleanup',
     INTEXURAOS_PUBSUB_COMMANDS_INGEST_TOPIC:
       process.env.INTEXURAOS_PUBSUB_COMMANDS_INGEST_TOPIC ?? 'commands-ingest',
+    INTEXURAOS_WHATSAPP_ACCESS_TOKEN: process.env.INTEXURAOS_WHATSAPP_ACCESS_TOKEN ?? '',
+    INTEXURAOS_WHATSAPP_APP_SECRET: process.env.INTEXURAOS_WHATSAPP_APP_SECRET ?? '',
+    INTEXURAOS_WHATSAPP_WABA_ID: process.env.INTEXURAOS_WHATSAPP_WABA_ID ?? '',
+    INTEXURAOS_WHATSAPP_PHONE_NUMBER_ID: process.env.INTEXURAOS_WHATSAPP_PHONE_NUMBER_ID ?? '',
+    INTEXURAOS_WHATSAPP_VERIFY_TOKEN: process.env.INTEXURAOS_WHATSAPP_VERIFY_TOKEN ?? 'test-token',
+    INTEXURAOS_WHATSAPP_MEDIA_BUCKET:
+      process.env.INTEXURAOS_WHATSAPP_MEDIA_BUCKET ?? 'whatsapp-media',
+    INTEXURAOS_PUBSUB_MEDIA_CLEANUP_SUBSCRIPTION:
+      process.env.INTEXURAOS_PUBSUB_MEDIA_CLEANUP_SUBSCRIPTION ?? 'whatsapp-media-cleanup-sub',
+    INTEXURAOS_SPEECHMATICS_API_KEY: process.env.INTEXURAOS_SPEECHMATICS_API_KEY ?? '',
+    INTEXURAOS_PUBSUB_WEBHOOK_PROCESS_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_WEBHOOK_PROCESS_TOPIC ?? 'whatsapp-webhook-process',
+    INTEXURAOS_PUBSUB_TRANSCRIPTION_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_TRANSCRIPTION_TOPIC ?? 'whatsapp-transcription',
+    INTEXURAOS_PUBSUB_APPROVAL_REPLY_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_APPROVAL_REPLY_TOPIC ?? 'approval-reply',
   },
   'actions-agent': {
     INTEXURAOS_PUBSUB_ACTIONS_QUEUE: process.env.INTEXURAOS_PUBSUB_ACTIONS_QUEUE ?? 'actions-queue',
@@ -459,6 +486,56 @@ const SERVICE_ENV_MAPPINGS = {
     INTEXURAOS_PUBSUB_CALENDAR_PREVIEW_TOPIC:
       process.env.INTEXURAOS_PUBSUB_CALENDAR_PREVIEW_TOPIC ?? 'calendar-preview',
     INTEXURAOS_WEB_APP_URL: process.env.INTEXURAOS_WEB_APP_URL ?? 'http://localhost:3000',
+  },
+  'code-agent': {
+    INTEXURAOS_SERVICE_URL: 'http://localhost:8128',
+    INTEXURAOS_DISPATCH_SIGNING_SECRET: 'dev-dispatch-signing-secret',
+    INTEXURAOS_WEBHOOK_VERIFY_SECRET: 'dev-webhook-secret',
+    INTEXURAOS_CF_ACCESS_CLIENT_ID: 'dev-cf-client-id',
+    INTEXURAOS_CF_ACCESS_CLIENT_SECRET: 'dev-cf-client-secret',
+    INTEXURAOS_ORCHESTRATOR_MAC_URL: 'http://localhost:8199',
+    INTEXURAOS_ORCHESTRATOR_VM_URL: 'http://localhost:8198',
+    INTEXURAOS_CODE_WORKERS: 'mac:http://localhost:8199:1,vm:http://localhost:8198:2',
+    INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC ?? 'whatsapp-send-message',
+  },
+  'bookmarks-agent': {
+    INTEXURAOS_PUBSUB_BOOKMARK_ENRICH:
+      process.env.INTEXURAOS_PUBSUB_BOOKMARK_ENRICH ?? 'bookmark-enrich',
+    INTEXURAOS_PUBSUB_BOOKMARK_SUMMARIZE:
+      process.env.INTEXURAOS_PUBSUB_BOOKMARK_SUMMARIZE ?? 'bookmark-summarize',
+    INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC:
+      process.env.INTEXURAOS_PUBSUB_WHATSAPP_SEND_TOPIC ?? 'whatsapp-send-message',
+  },
+  'image-service': {
+    INTEXURAOS_IMAGE_BUCKET: process.env.INTEXURAOS_IMAGE_BUCKET ?? 'intexuraos-images',
+    INTEXURAOS_IMAGE_PUBLIC_BASE_URL:
+      process.env.INTEXURAOS_IMAGE_PUBLIC_BASE_URL ?? 'http://localhost:3000',
+  },
+  // Services with only common env vars (no service-specific configuration)
+  'api-docs-hub': {},
+  'app-settings-service': {},
+  'calendar-agent': {},
+  'commands-agent': {
+    INTEXURAOS_PUBSUB_ACTIONS_QUEUE: process.env.INTEXURAOS_PUBSUB_ACTIONS_QUEUE ?? 'actions-queue',
+  },
+  'data-insights-agent': {},
+  'linear-agent': {},
+  'mobile-notifications-service': {},
+  'notes-agent': {},
+  'notion-service': {},
+  'todos-agent': {
+    INTEXURAOS_TODOS_PROCESSING_TOPIC:
+      process.env.INTEXURAOS_TODOS_PROCESSING_TOPIC ?? 'todos-processing',
+  },
+  'user-service': {
+    INTEXURAOS_TOKEN_ENCRYPTION_KEY: process.env.INTEXURAOS_TOKEN_ENCRYPTION_KEY ?? '',
+    INTEXURAOS_ENCRYPTION_KEY: process.env.INTEXURAOS_ENCRYPTION_KEY ?? '',
+    INTEXURAOS_GOOGLE_OAUTH_CLIENT_ID: process.env.INTEXURAOS_GOOGLE_OAUTH_CLIENT_ID ?? '',
+    INTEXURAOS_GOOGLE_OAUTH_CLIENT_SECRET: process.env.INTEXURAOS_GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+  },
+  'web-agent': {
+    INTEXURAOS_CRAWL4AI_API_KEY: process.env.INTEXURAOS_CRAWL4AI_API_KEY ?? '',
   },
 };
 
@@ -479,7 +556,7 @@ function startService(service) {
     NODE_ENV: 'development',
   };
 
-  const child = spawn('npx', ['tsx', 'watch', 'src/index.ts'], {
+  const child = spawn('pnpm', ['exec', 'tsx', 'watch', 'src/index.ts'], {
     cwd: serviceDir,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -527,10 +604,12 @@ function startWebApp() {
 
   const env = {
     ...process.env,
+    ...COMMON_SERVICE_ENV,
+    ...COMMON_SERVICE_URLS,
     NODE_ENV: 'development',
   };
 
-  const child = spawn('npm', ['run', 'dev'], {
+  const child = spawn('pnpm', ['run', 'dev'], {
     cwd: webDir,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -609,23 +688,23 @@ async function startAllServices() {
     initUI(SERVICES, WEB_APP);
   }
 
-  logResearchAgent('Following docker container logs...');
+  logService('Following docker container logs...');
   for (const dockerService of DOCKER_LOG_SERVICES) {
     followDockerLogs(dockerService);
   }
 
-  logResearchAgent('Starting services...');
+  logService('Starting services...');
 
   for (const service of SERVICES) {
     startService(service);
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  logResearchAgent('Starting web app...');
+  logService('Starting web app...');
   startWebApp();
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  logResearchAgent(`All ${String(SERVICES.length)} services + web app started!`);
+  logService(`All ${String(SERVICES.length)} services + web app started!`);
 
   if (useTUI) {
     healthPollInterval = setInterval(() => {
@@ -633,18 +712,18 @@ async function startAllServices() {
     }, 3000);
     void pollHealth(SERVICES, WEB_APP);
   } else {
-    logResearchAgent('');
+    logService('');
     console.log(`  Web App:          ${BOLD}http://localhost:${String(WEB_APP.port)}${RESET}`);
     console.log(`  API Docs:         ${BOLD}http://localhost:8115/docs${RESET}`);
     console.log(`  Firebase UI:      http://localhost:8100`);
     console.log(`  Pub/Sub UI:       ${BOLD}http://localhost:8105${RESET}`);
-    logResearchAgent('');
-    logResearchAgent('Press Ctrl+C to stop all services');
+    logService('');
+    logService('Press Ctrl+C to stop all services');
   }
 }
 
 async function stopEmulators() {
-  logResearchAgent('Stopping emulators...');
+  logService('Stopping emulators...');
   const composeFile = join(ROOT_DIR, 'docker', 'docker-compose.local.yaml');
   try {
     execSync(`docker compose -f "${composeFile}" down`, {
@@ -721,8 +800,8 @@ async function main() {
   useTUI = !noTUI && !emulatorsOnly && process.stdout.isTTY;
 
   if (!useTUI) {
-    logResearchAgent('IntexuraOS Local Development Environment');
-    logResearchAgent('');
+    logService('IntexuraOS Local Development Environment');
+    logService('');
   }
 
   if (!(await checkDockerRunning())) {
@@ -738,12 +817,12 @@ async function main() {
 
     if (servicesOnly) {
       // Assume emulators are already running
-      logResearchAgent('Starting services only (emulators should be running)...');
+      logService('Starting services only (emulators should be running)...');
       await startAllServices();
     } else if (emulatorsOnly) {
       // Start only emulators
       await startEmulators();
-      logResearchAgent('Emulators started. Press Ctrl+C to stop.');
+      logService('Emulators started. Press Ctrl+C to stop.');
     } else {
       // Full startup: emulators + services
       await startEmulators();

@@ -6,7 +6,7 @@
 import { getProviderForModel } from '@intexuraos/llm-contract';
 import type { ResearchRepository, NotificationSender } from '../../domain/research/ports/index.js';
 import type { ServiceContainer, DecryptedApiKeys, ImageServiceClient } from '../../services.js';
-import type { UserServiceClient } from '../../infra/user/index.js';
+import type { UserServiceClient } from '@intexuraos/internal-clients';
 import type { ShareStoragePort } from '../../domain/research/ports/index.js';
 import type { ShareConfig } from '../../services.js';
 import { runSynthesis } from '../../domain/research/index.js';
@@ -124,6 +124,8 @@ export async function handleAllCompleted(params: AllCompletedHandlerParams): Pro
       },
     },
     imageApiKeys: apiKeys,
+    notionServiceClient: services.notionServiceClient,
+    researchExportSettings: services.researchExportSettings,
   });
 
   if (synthesisResult.ok) {

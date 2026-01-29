@@ -1,6 +1,6 @@
 {
   "name": "@intexuraos/todos-agent",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -42,6 +42,6 @@
     "jose": "^6.0.10",
     "nock": "^14.0.3",
     "typescript": "^5.7.2",
-    "vitest": "^3.0.4"
+    "vitest": "^4.0.16"
   }
 }

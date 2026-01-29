@@ -33,6 +33,7 @@ import {
 } from '@/components';
 import { useAuth } from '@/context';
 import { useLlmKeys, useResearch } from '@/hooks';
+import { stripMarkdown } from '@/utils';
 import {
   approveResearch,
   confirmPartialFailure,
@@ -41,6 +42,7 @@ import {
   retryFromFailed,
   toggleResearchFavourite,
   unshareResearch,
+  exportToNotion,
 } from '@/services/researchAgentApi';
 import {
   getProviderForModel,
@@ -53,45 +55,7 @@ import {
   type SupportedModel,
 } from '@/services/researchAgentApi.types';
 
-/**
- * Format elapsed time in a human-readable format.
- */
-function formatElapsedTime(isoDate: string): string {
-  const date = new Date(isoDate);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) {
-    return `${String(diffDays)}d ago`;
-  }
-  if (diffHours > 0) {
-    return `${String(diffHours)}h ago`;
-  }
-  if (diffMinutes > 0) {
-    return `${String(diffMinutes)}m ago`;
-  }
-  return 'just now';
-}
-
-/**
- * Strip markdown formatting from text for clean display.
- * Handles bold, italic, headers, code markers, and surrounding quotes.
- */
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*/g, '') // Remove bold markers
-    .replace(/__/g, '') // Remove bold (underscore)
-    .replace(/(?<!\*)\*(?!\*)/g, '') // Remove italic markers (single asterisk)
-    .replace(/(?<!_)_(?!_)/g, '') // Remove italic (single underscore)
-    .replace(/^#+\s*/gm, '') // Remove headers
-    .replace(/`/g, '') // Remove code markers
-    .replace(/^["']|["']$/g, '') // Remove surrounding quotes
-    .trim();
-}
+import { formatRelative } from '@/utils/dateFormat';
 
 interface StatusBadgeProps {
   status: ResearchStatus;
@@ -243,6 +207,9 @@ export function ResearchDetailPage(): React.JSX.Element {
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [togglingFavourite, setTogglingFavourite] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState<{ mainPageUrl: string } | null>(null);
   const [enhanceModelSelections, setEnhanceModelSelections] = useState<
     Map<LlmProvider, SupportedModel | null>
   >(() => new Map());
@@ -479,6 +446,35 @@ export function ResearchDetailPage(): React.JSX.Element {
     }
   };
 
+  const handleExportToNotion = async (): Promise<void> => {
+    if (id === undefined || id === '') return;
+
+    setExporting(true);
+    setExportError(null);
+    setExportSuccess(null);
+
+    try {
+      const token = await getAccessToken();
+      const updatedResearch = await exportToNotion(token, id);
+
+      if (updatedResearch.notionExportInfo !== undefined) {
+        setExportSuccess({ mainPageUrl: updatedResearch.notionExportInfo.mainPageUrl });
+      }
+      await refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to export to Notion';
+      if (message.includes('NOTION_NOT_CONNECTED')) {
+        setExportError('Please connect Notion first in Settings');
+      } else if (message.includes('PAGE_NOT_CONFIGURED')) {
+        setExportError('Please configure Research Export Page ID in Settings');
+      } else {
+        setExportError(message);
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const getExistingProviders = (): Set<LlmProvider> => {
     if (research === null) return new Set();
     return new Set(research.selectedModels.map(getProviderForModel));
@@ -567,12 +563,12 @@ export function ResearchDetailPage(): React.JSX.Element {
               className={`h-5 w-5 ${research.favourite === true ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`}
             />
           </button>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-500 w-full sm:w-auto">
             {isProcessing || research.status === 'awaiting_confirmation'
-              ? `Started ${formatElapsedTime(research.startedAt)}`
+              ? `Started ${formatRelative(research.startedAt)}`
               : research.completedAt !== undefined
-                ? `Finished ${formatElapsedTime(research.completedAt)}`
-                : `Started ${formatElapsedTime(research.startedAt)}`}
+                ? `Finished ${formatRelative(research.completedAt)}`
+                : `Started ${formatRelative(research.startedAt)}`}
           </span>
         </div>
 
@@ -644,6 +640,24 @@ export function ResearchDetailPage(): React.JSX.Element {
                 <span className="hidden sm:inline">Unshare</span>
               </Button>
             )}
+          </div>
+        ) : null}
+
+        {research.notionExportInfo !== undefined ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2">
+            <span className="text-sm text-purple-700">Exported to Notion</span>
+            <a
+              href={research.notionExportInfo.mainPageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              View in Notion
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <span className="text-xs text-slate-400">
+              {new Date(research.notionExportInfo.exportedAt).toLocaleDateString()}
+            </span>
           </div>
         ) : null}
 
@@ -727,15 +741,41 @@ export function ResearchDetailPage(): React.JSX.Element {
               </Button>
             ) : null}
             {research.status === 'completed' ? (
-              <Button
-                onClick={(): void => {
-                  setShowEnhanceModal(true);
-                }}
-                disabled={deleting}
-              >
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Enhance</span>
-              </Button>
+              <>
+                <Button
+                  onClick={(): void => {
+                    setShowEnhanceModal(true);
+                  }}
+                  disabled={deleting}
+                >
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Enhance</span>
+                </Button>
+                {research.notionExportInfo === undefined &&
+                research.synthesizedResult !== undefined &&
+                research.synthesizedResult !== '' ? (
+                  <Button
+                    onClick={(): void => {
+                      void handleExportToNotion();
+                    }}
+                    disabled={exporting || deleting}
+                    isLoading={exporting}
+                    variant="secondary"
+                  >
+                    {exporting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 sm:mr-2 animate-spin" />
+                        <span className="hidden sm:inline">Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Export to Notion</span>
+                      </>
+                    )}
+                  </Button>
+                ) : null}
+              </>
             ) : null}
             {showDeleteConfirm ? (
               <>
@@ -791,6 +831,26 @@ export function ResearchDetailPage(): React.JSX.Element {
         {retryError !== null && retryError !== '' ? (
           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {retryError}
+          </div>
+        ) : null}
+
+        {exportError !== null && exportError !== '' ? (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {exportError}
+          </div>
+        ) : null}
+
+        {exportSuccess !== null ? (
+          <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+            Research exported to Notion!{' '}
+            <a
+              href={exportSuccess.mainPageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline hover:text-green-800"
+            >
+              View in Notion
+            </a>
           </div>
         ) : null}
       </div>
@@ -1305,7 +1365,7 @@ function ProcessingStatus({
     }
     if (result.status === 'processing') {
       if (result.startedAt !== undefined) {
-        return `Started ${formatElapsedTime(result.startedAt)}, processing...`;
+        return `Started ${formatRelative(result.startedAt)}, processing...`;
       }
       return 'Processing...';
     }

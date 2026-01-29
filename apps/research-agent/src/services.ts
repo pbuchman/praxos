@@ -22,12 +22,20 @@ import {
   type LlmCallPublisher,
   type ResearchEventPublisher,
 } from './infra/pubsub/index.js';
-import { createUserServiceClient, type UserServiceClient } from './infra/user/index.js';
+import { createUserServiceClient, type UserServiceClient } from '@intexuraos/internal-clients';
 import { createImageServiceClient, type ImageServiceClient } from './infra/image/index.js';
+import { createNotionServiceClient, type NotionServiceClient } from './infra/notion/index.js';
+import { exportResearchToNotion } from './infra/notion/notionResearchExporter.js';
+import {
+  getResearchPageId,
+  saveResearchPageId,
+  type ResearchExportSettingsError,
+  type ResearchExportSettings,
+} from './infra/firestore/researchExportSettingsRepository.js';
 
-export type { DecryptedApiKeys } from './infra/user/index.js';
+export type { DecryptedApiKeys } from '@intexuraos/internal-clients';
 export type { ImageServiceClient, GeneratedImageData } from './infra/image/index.js';
-import type { Logger } from '@intexuraos/common-core';
+import type { Logger, Result } from '@intexuraos/common-core';
 import type { ModelPricing, ResearchModel, FastModel } from '@intexuraos/llm-contract';
 import type { IPricingContext } from '@intexuraos/llm-pricing';
 import {
@@ -52,14 +60,24 @@ export interface ShareConfig {
 /**
  * Service container holding all adapter instances.
  */
+export interface ResearchExportSettingsPort {
+  getResearchPageId(userId: string): Promise<Result<string | null, ResearchExportSettingsError>>;
+  saveResearchPageId(
+    userId: string,
+    pageId: string
+  ): Promise<Result<ResearchExportSettings, ResearchExportSettingsError>>;
+}
+
 export interface ServiceContainer {
   researchRepo: ResearchRepository;
+  researchExportSettings: ResearchExportSettingsPort;
   pricingContext: IPricingContext;
   generateId: () => string;
   researchEventPublisher: ResearchEventPublisher;
   llmCallPublisher: LlmCallPublisher;
   userServiceClient: UserServiceClient;
   imageServiceClient: ImageServiceClient | null;
+  notionServiceClient: NotionServiceClient;
   notificationSender: NotificationSender;
   shareStorage: ShareStoragePort | null;
   shareConfig: ShareConfig | null;
@@ -99,6 +117,7 @@ export interface ServiceContainer {
     pricing: ModelPricing,
     logger: Logger
   ) => InputValidationProvider;
+  notionExporter: typeof exportResearchToNotion;
 }
 
 let container: ServiceContainer | null = null;
@@ -219,14 +238,24 @@ export function initializeServices(pricingContext: IPricingContext): void {
         })
       : null;
 
+  const notionServiceClient = createNotionServiceClient({
+    baseUrl: process.env['INTEXURAOS_NOTION_SERVICE_URL'] ?? 'http://localhost:8012',
+    internalAuthToken: process.env['INTEXURAOS_INTERNAL_AUTH_TOKEN'] ?? '',
+  });
+
   container = {
     researchRepo,
+    researchExportSettings: {
+      getResearchPageId,
+      saveResearchPageId,
+    },
     pricingContext,
     generateId: (): string => crypto.randomUUID(),
     researchEventPublisher,
     llmCallPublisher,
     userServiceClient,
     imageServiceClient,
+    notionServiceClient,
     notificationSender,
     shareStorage,
     shareConfig,
@@ -236,5 +265,6 @@ export function initializeServices(pricingContext: IPricingContext): void {
     createTitleGenerator,
     createContextInferrer,
     createInputValidator,
+    notionExporter: exportResearchToNotion,
   };
 }
