@@ -40,6 +40,8 @@ export BASE_URL="https://your-research-agent-url"
 
 ### Step 1.1: Submit a Research Request
 
+Use allowlisted `or:` IDs for research. Choose `or:minimax/minimax-m3` or `or:openai/gpt-5.4` for synthesis; other research models are not valid synthesis choices. Historical direct-provider IDs can be read in saved results but cannot be retried.
+
 ```bash
 curl -s -X POST "$BASE_URL/" \
   -H "Authorization: Bearer $TOKEN" \
@@ -47,7 +49,7 @@ curl -s -X POST "$BASE_URL/" \
   -d '{
     "prompt": "What are the main tradeoffs between PostgreSQL and MongoDB for a SaaS product?",
     "selectedModels": ["or:google/gemini-3.6-flash", "or:anthropic/claude-sonnet-4.6"],
-    "synthesisModel": "or:google/gemini-3.6-flash"
+    "synthesisModel": "or:minimax/minimax-m3"
   }' | jq .
 ```
 
@@ -62,7 +64,7 @@ curl -s -X POST "$BASE_URL/" \
     "title": "",
     "prompt": "What are the main tradeoffs...",
     "selectedModels": ["or:google/gemini-3.6-flash", "or:anthropic/claude-sonnet-4.6"],
-    "synthesisModel": "or:google/gemini-3.6-flash",
+    "synthesisModel": "or:minimax/minimax-m3",
     "llmResults": [
       { "model": "or:google/gemini-3.6-flash", "status": "pending" },
       { "model": "or:anthropic/claude-sonnet-4.6", "status": "pending" }
@@ -225,7 +227,7 @@ curl -s -X POST "$BASE_URL/" \
   -d '{
     "prompt": "Compare React Server Components vs traditional SSR approaches",
     "selectedModels": ["or:google/gemini-3.6-flash", "or:x-ai/grok-4.20-beta", "or:qwen/qwen3.5-plus-02-15"],
-    "synthesisModel": "or:google/gemini-3.6-flash"
+    "synthesisModel": "or:minimax/minimax-m3"
   }' | jq .
 ```
 
@@ -349,7 +351,7 @@ curl -s -X POST "$BASE_URL/" \
   -d '{
     "prompt": "What is dependency injection?",
     "selectedModels": ["or:google/gemini-3.6-flash"],
-    "synthesisModel": "or:google/gemini-3.6-flash",
+    "synthesisModel": "or:minimax/minimax-m3",
     "skipSynthesis": true
   }' | jq .
 ```

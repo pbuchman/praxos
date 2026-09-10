@@ -120,6 +120,10 @@ No TODO, FIXME, or HACK comments found in the worker codebase.
 
 ---
 
+## Release Hardening
+
+Since v3.8.0, host-rendered task environments replace container-side secret synchronization. Codex restores baked Linear/Error Hub MCP configuration, and image/MCP verification fixtures cover the private SentryBox connection. These changes remove the old dependency on a general GCP service-account mount during startup.
+
 ## Resolved Issues
 
 ### Claude Resume Silent Fresh Session (2026-04-10)
@@ -192,7 +196,7 @@ Added `WORKER_FORENSICS=1` mode that captures core dumps, GDB backtraces, debug 
 
 ### Secret Sync Moved to Container (2026-03-03)
 
-Moved GCP Secret Manager sync from the orchestrator to the container entrypoint. The container now runs `scripts/sync-secrets.sh` during startup, writes `/repo/.envrc`, and loads it via `source` and `direnv allow`. Added `direnv` to the installed toolchain. Previously, secrets had to be synced and mounted by the orchestrator before container start.
+Historical change: startup secret sync moved into the container in March. This behavior was superseded after v3.8.0: startup now loads a host-rendered task projection, and container-side GCP activation and Secret Manager sync have been removed.
 
 ### INT-684: Token Refresh Propagation Fix (2026-03-06)
 

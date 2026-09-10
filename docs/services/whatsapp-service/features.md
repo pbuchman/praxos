@@ -26,9 +26,15 @@ Sender-day aggregates group private messages by sender and Warsaw day key. They 
 
 Group classification is preserved during ingest. If an existing chat is already classified as `group`, a later `direct` or `unknown` event does not downgrade it.
 
+## Media, Transcripts, And Reactions
+
+Private chats show stored image previews, audio/video playback, and inline reactions beside their source messages. Per-chat transcription controls enable private voice/video transcripts. This is separate from the Intex voice-input boundary below. WhatsApp Business video messages also have a storage and transcription path.
+
+Media access is owner-checked. Matrix synchronization and media recovery preserve source-account boundaries, including legacy relations and retried/backfilled attachments.
+
 ## Conversation Assistant
 
-Conversation Assistant lets an authenticated user discuss a frozen slice of one private WhatsApp conversation with an AI model. The original slice never changes after preparation, so earlier answers remain reproducible.
+Conversation Assistant lets an authenticated user discuss a frozen slice of one private WhatsApp conversation with an AI model. Users choose a date range and an available model, inspect captured messages, and receive streamed answers. They can export the analysis as a PDF. The original slice never changes after preparation, so its captured context remains inspectable. Model-specific input budgets still bound every request.
 
 During a longer analysis, the user can choose **Include new messages** and write the next question in the same composer. The service freezes everything available after the last committed boundary, prepares it as a visible context update, and attaches that immutable update to the question only when the user sends. The AI answer begins with a server-produced receipt that states exactly how many messages were included, the captured range, and any omissions or corrections.
 
@@ -45,11 +51,11 @@ Important behavior:
 
 Legacy analyses that do not have reliable continuation boundaries fail closed and offer a new analysis instead of guessing which messages are new.
 
-## Unsupported Voice Handling
+## Audio Transcription And Text Actions
 
-Voice messages are intentionally unsupported for now. The service replies with a clear text-only message and does not start transcription for Intex conversations.
+WhatsApp Business voice messages are stored and sent for transcription. They do not automatically execute an Intex action. Reply with text to a completed audio message to supply its transcript as context for the text request.
 
-Interactive button replies from retired workflows are also ignored. They are marked as read when possible and are not routed into Intex Agent.
+Buttons with an `intex_confirm:` identifier are forwarded as `whatsapp_button` events to confirm or cancel Intex actions. Other retired workflow buttons remain ignored.
 
 ## Notifications
 

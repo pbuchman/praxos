@@ -86,6 +86,10 @@ Network setup complete: code-worker-net
 
 ---
 
+## Prepare the Current Runtime
+
+Before a real worker run, render the reviewed configuration package on the host using the [orchestrator setup](../../../workers/orchestrator/README.md#local-development-setup). The worker receives the filtered task environment; do not supply renderer or general Secret Manager credentials to the container. For Codex, verify that startup restores MCP configuration and that the configured `ERROR_HUB_HOST` is reachable through the approved worker network.
+
 ## Part 4: Run a Container Manually (Legacy Mode) (10 minutes)
 
 For one-shot execution, run the selected runtime once and exit:
@@ -101,7 +105,6 @@ git init && echo "# Test" > README.md && git add . && git commit -m "init"
 
 ```bash
 mkdir -p /tmp/test-secrets
-echo '{"type": "service_account"}' > /tmp/test-secrets/gcp-sa.json
 echo "ghp_test_token_here" > /tmp/test-secrets/github-token
 echo "You are a helpful coding assistant." > /tmp/test-secrets/system-prompt.txt
 echo "List the files in the repository." > /tmp/test-secrets/user-prompt.txt
@@ -121,7 +124,6 @@ docker run -it --rm \
   -e ANTHROPIC_BASE_URL=https://api.anthropic.com \
   -e LINEAR_API_KEY=your-linear-key \
   -e ERROR_HUB_HOST=home-dev.example.ts.net:8443 \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-sa.json \
   -e GIT_USER_NAME="Test User" \
   -e GIT_USER_EMAIL="test@example.com" \
   -v /tmp/test-repo:/repo:rw \
@@ -146,7 +148,6 @@ docker run -it --rm \
   -e TASK_ID=codex-test \
   -e WORKER_RUNTIME=codex \
   -e CODEX_REASONING_EFFORT=xhigh \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-sa.json \
   -e GIT_USER_NAME="Test User" \
   -e GIT_USER_EMAIL="test@example.com" \
   -v /tmp/test-repo:/repo:rw \
@@ -170,12 +171,9 @@ docker run -it --rm \
 [entrypoint] Plugin cache restored (2 marketplaces)
 [entrypoint] Codex skill discovery restored
 [entrypoint] Git repo verified: /repo
-[entrypoint] GCP auth successful
-[entrypoint] Syncing secrets from GCP Secret Manager...
-[entrypoint] Secret sync complete
 [entrypoint] Loaded environment from /repo/.envrc (15 vars)
 [entrypoint] GitHub token loaded and git credential configured
-[entrypoint] Bootstrap evidence: codex_skills=restored github_token=loaded gcp_auth=active secret_sync=synced envrc=loaded
+[entrypoint] Bootstrap evidence: codex_skills=restored github_token=loaded gcp_auth=skipped secret_sync=skipped envrc=loaded
 [entrypoint] Installing dependencies...
 [entrypoint] Dependencies installed
 [entrypoint] Attribution set: Crafted with love by ...
@@ -384,8 +382,7 @@ The stub streams output line-by-line to match real Codex behavior.
 | Issue                       | Symptom                                                     | Solution                                                                           |
 | --------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Container exits immediately | `[entrypoint] ERROR: Running as root is forbidden`          | Run with `--user 1001:1001`                                                        |
-| GCP auth fails              | `[entrypoint] GCP auth failed (non-fatal)`                  | Verify `/secrets/gcp-sa.json` contains a valid SA key                              |
-| Secret sync fails           | `[entrypoint] Secret sync failed (non-fatal...)`            | Check GCP SA has Secret Manager access; existing .envrc used                       |
+| Runtime configuration missing | Expected task settings are absent | Prepare the host-rendered task projection before starting the container |
 | No git repo detected        | `[entrypoint] WARNING: /repo is not a git repository`       | Ensure the mounted directory has a `.git` dir or file                              |
 | Claude onboarding prompt    | Interactive setup screens on startup                        | Check that config defaults are at `/opt/claude-defaults/`                          |
 | Plugins not loaded          | MCP servers fail to start                                   | Check `/opt/claude-plugins/.claude/plugins/` exists in image                       |

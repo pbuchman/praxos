@@ -9,11 +9,11 @@
 
 | Category    | Count | Severity |
 | ----------- | ----- | -------- |
-| Code Smells | 2     | Low      |
+| Code Smells | 1     | Low      |
 | Test Gaps   | 0     | -        |
 | Type Issues | 0     | -        |
 | TODOs       | 0     | -        |
-| **Total**   | **2** | Low      |
+| **Total**   | **1** | Low      |
 
 ---
 
@@ -34,10 +34,9 @@
 
 | File                               | Issue                                   | Impact                                                                                             |
 | ---------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `apps/api-docs-hub/src/server.ts`  | Health endpoint uses raw `reply.send()` | Bypasses the `reply.ok()` / `reply.fail()` response contract; intentional but undocumented in code |
 | `apps/api-docs-hub/package.json`   | Unused `@intexuraos/common-core` dep    | Adds unnecessary weight to the dependency graph; import was removed from `config.ts` in v3.5.0     |
 
-The `/health` endpoint uses `reply.send()` directly rather than `reply.ok()`. This is a deliberate exception: health check response format must be stable for infrastructure monitoring, independent of app-level response envelope changes. Adding a `// @allow-raw-send: health check format must be stable` comment would make the intent explicit.
+The health endpoint now uses the shared `registerHealthCheck()` helper. The config probe checks that sources exist; it does not check upstream availability.
 
 The `@intexuraos/common-core` package is still listed as a dependency in `package.json` but is no longer imported anywhere in the source code. The shared `INTERNAL_API_SERVICE_CATALOG` was replaced by a local `OPEN_API_SOURCE_CATALOG` in `config.ts`. Removing the dependency would clean up the graph.
 

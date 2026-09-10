@@ -8,6 +8,19 @@ Learn to manage Google Calendar events through IntexuraOS with preview support.
 - Google account connected via user-service
 - Familiarity with ISO 8601 datetime formats
 
+## Daily Lookahead And Confirmed WhatsApp Updates
+
+For the current WhatsApp flow, send a text request to Intex, resolve any missing details, and use its confirmation buttons before changes execute. For an update, identify the event and requested change; Intex queries first and clarifies ambiguous matches. Review each event in a multiple-event confirmation because those operations execute independently.
+
+To configure daily lookahead, call `PUT /schedules/calendar-daily-lookahead` with the user’s bearer token and a body such as:
+
+```json
+{ "enabled": true, "localTime": "08:00", "timeZone": "Europe/Warsaw" }
+```
+
+Inspect `GET /schedules/calendar-daily-lookahead` for delivery readiness and the next run. This needs the connected private WhatsApp/Matrix outbound path. The schedule starts a fresh Intex conversation requesting events in the next 24 hours. Set `enabled` to `false` to pause it.
+
+
 ## Part 1: Hello World — List Events
 
 List your upcoming calendar events:
@@ -109,7 +122,7 @@ Note: All-day events use `date` (YYYY-MM-DD), not `dateTime`. End date is exclus
 
 ## Part 3: Using Preview Generation
 
-The preview flow allows users to see what will be created before committing. There are two generation modes: synchronous (direct HTTP) and asynchronous (Pub/Sub).
+The preview flow allows users to see what will be created before committing. Use the synchronous internal HTTP endpoint. Stored preview reads remain available, but retired asynchronous Pub/Sub preview topics are not part of the current flow.
 
 ### Step 3.1: Generate Preview Synchronously (Recommended)
 
@@ -153,7 +166,7 @@ The synchronous endpoint returns the preview data directly in the response, avoi
 
 ### Step 3.2: Check Preview Status
 
-After an async preview is submitted, check the preview status:
+For a preview created through a trusted internal caller, inspect its stored status:
 
 ```bash
 curl -X GET "https://calendar-agent.intexuraos.com/internal/calendar/preview/action-123" \
@@ -496,7 +509,7 @@ curl -X DELETE "https://calendar-agent.intexuraos.com/failed-events/failed-001" 
 ### Hard
 
 1. Find next available 1-hour slot for multiple attendees
-2. Implement preview polling with exponential backoff for async flow
+2. Handle a stored preview that is not yet ready
 3. Handle all preview states (pending, ready, failed) in UI
 4. Build a failed events review flow with retry and delete support
 

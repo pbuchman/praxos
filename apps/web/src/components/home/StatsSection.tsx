@@ -10,9 +10,9 @@ export function StatsSection(): React.JSX.Element {
         </p>
         <div className="flex flex-wrap items-center justify-between gap-8">
           <StatBlock value="24" label="Services" />
-          <StatBlock value="5" label="Direct Tools" />
-          <StatBlock value="5" label="AI Providers" />
-          <StatBlock value="15" label="AI Models" />
+          <StatBlock value="12" label="Direct Tools" />
+          <StatBlock value="1" label="Application LLM Gateway" />
+          <StatBlock value="6" label="Models per Research (Max)" />
           <StatBlock value="1" label="Developer" />
         </div>
       </div>

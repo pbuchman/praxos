@@ -108,6 +108,10 @@ sequenceDiagram
 
 ## Recent Changes
 
+### Changes since v3.8.0
+
+Prompt enhancement and image generation now execute through OpenRouter with user-key precedence and platform fallback. The public aliases remain `gpt-4.1` and `gpt-image-1`, so stored image metadata stays readable. Direct Google generation has been removed; `INTEXURAOS_OPENROUTER_APP_API_KEY` is required at startup.
+
 ### v3.6.0 (since v3.5.0)
 
 Centralized LLM pricing removal and usage sink migration. No new endpoints or user-facing behavior changes.
@@ -146,7 +150,7 @@ Minor maintenance changes only — no new features or architectural changes to i
 - v8 ignore blocks removed from `serviceFactory.ts` — env var fallback branches now covered by a real test that deletes env vars and verifies `initializeServices` still succeeds
 - `FakeUserServiceClient` updated to conform to new `getUserTimezone` method added to `UserServiceClient` interface in `@intexuraos/internal-clients`
 
-**Caller-side change (INT-1310):** research-agent now implements provider failover when calling image-service endpoints. If the primary provider (e.g., OpenAI) fails, research-agent retries with the alternate provider (e.g., Google) automatically. This does not change image-service behavior — the failover logic lives entirely in the caller.
+**Historical caller-side change (INT-1310):** research-agent previously retried an alternate direct provider for cover images. The current caller uses one OpenRouter pipeline and continues publishing without a cover if that pipeline fails.
 
 ### v3.4.0 (since v3.3.0)
 
@@ -295,6 +299,7 @@ None. Image-service does not publish or subscribe to Pub/Sub events.
 | `INTEXURAOS_IMAGE_BUCKET`             | Yes      | GCS bucket name for image storage             |
 | `INTEXURAOS_IMAGE_PUBLIC_BASE_URL`    | Yes      | Public base URL for GCS objects               |
 | `INTEXURAOS_LLM_USAGE_SERVICE_URL`    | Yes      | LLM usage service URL for usage reporting     |
+| `INTEXURAOS_OPENROUTER_APP_API_KEY` | Yes | Platform OpenRouter credential and fallback |
 | `INTEXURAOS_SENTRY_DSN`               | No       | Sentry error tracking DSN                     |
 
 ## Gotchas

@@ -81,6 +81,10 @@ All annotations use valid categories from the project's coverage exemption rules
 
 ---
 
+## Release Reliability Improvements
+
+Since v3.8.0, handler tests cover video-event validation, the orchestration suite verifies private-source/media-kind preservation on success and failure, and publisher tests cover those fields. Expected provider rejection and polling warnings are suppressed from error reporting while remaining in logs. Speechmatics remains the sole implemented provider.
+
 ## Resolved Issues
 
 | Date       | Issue                                                        | Resolution                                                |

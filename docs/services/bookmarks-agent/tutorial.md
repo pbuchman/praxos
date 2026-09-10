@@ -101,7 +101,8 @@ curl -X POST http://localhost:8124/internal/bookmarks \
   "success": true,
   "data": {
     "id": "bookmark_def456",
-    "url": "/#/bookmarks/bookmark_def456",
+    "url": "https://intexuraos.cloud/#/bookmarks/bookmark_def456",
+    "resourceUrl": "https://intexuraos.cloud/#/bookmarks/bookmark_def456",
     "bookmark": {
       "id": "bookmark_def456",
       "ogFetchStatus": "pending",
@@ -111,7 +112,7 @@ curl -X POST http://localhost:8124/internal/bookmarks \
 }
 ```
 
-Note the `url` field is the app deep link, not the bookmarked URL. This endpoint also publishes a `bookmarks.enrich` event via the `enrichPublisher` passed to the `createBookmark` use case.
+The `url` and `resourceUrl` fields contain the same absolute app deep link. The original bookmarked URL remains in `bookmark.url`. This endpoint also publishes a `bookmarks.enrich` event via the `enrichPublisher` passed to the `createBookmark` use case.
 
 ### Step 2.2: Wait for enrichment
 

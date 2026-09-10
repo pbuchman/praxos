@@ -42,6 +42,10 @@ Summarize the LLM cost of a single research run by `correlation.researchId`, wit
 
 Usage events preserve image generation metadata through `usage.imageCount` and optional `usage.imageSize`, and the pricing engine applies configured per-size image prices for Google and OpenAI image-capable models. OpenRouter calls, including MiMo Pro 2.5 model strings such as `xiaomi/mimo-v2.5-pro`, are stored and aggregated through the same provider/model/client dimensions as other LLM calls.
 
+## Recent Changes Since v3.8.0
+
+Embedding requests are accepted as a distinct usage operation, making them visible alongside generation, research, image generation, and tool calling. Aggregate storage safely handles component names containing slashes while preserving the original component value for filtering and reporting.
+
 ## Use Case
 
 A developer opens the LLM Usage dashboard to understand last week's spending. They query aggregated usage grouped by provider and model, filtered to user-owned events. The response shows that Claude 4.6 accounts for 60% of cost but only 30% of calls, while GPT-5.4 handles high-volume low-cost tasks. They drill into individual events for the most expensive model, seeing full correlation data (task IDs, research IDs, session IDs) that links each call back to a specific code task or research run.

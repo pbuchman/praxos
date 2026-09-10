@@ -48,11 +48,11 @@ The loop enforces guardrails: remediation tasks can only address findings from t
 
 **Example:** The review agent posts three findings on a PR: a missing null check, an unused import, and an inconsistent error message. The system creates a remediation task that addresses all three. After fixing the code, a fresh review confirms the findings are resolved and sets the `ready-to-merge` label on the Linear issue - all without you opening the PR.
 
-### Ask Agent - Interactive Claude Code Sessions
+### Ask Agent - Interactive Codex Sessions
 
-Open a conversation with Claude Code directly from the web dashboard. Unlike regular code tasks that follow a design-then-build workflow, Ask Agent sessions are interactive, back-and-forth conversations for exploring ideas, debugging issues, or asking questions about your codebase.
+Open a conversation with Codex directly from the web dashboard. Unlike regular code tasks that follow a design-then-build workflow, Ask Agent sessions are interactive, back-and-forth conversations for exploring ideas, debugging issues, or asking questions about your codebase.
 
-Sessions use the Opus model and run on your configured workers, inheriting the same security and infrastructure controls as regular code tasks. The conversation persists across devices - start a session on your desktop, continue it from your phone.
+Sessions use the Codex worker type and run on your configured workers, inheriting the same security and infrastructure controls as regular code tasks. The conversation persists across devices - start a session on your desktop, continue it from your phone.
 
 **Example:** You are reviewing a PR and want to understand the implications of a type change. You open an Ask Agent session, paste the type definition, and ask "What callers would break if I change this field from optional to required?" The agent searches the codebase on your machine and gives you a concrete list of affected files with the exact lines that need updating.
 
@@ -186,6 +186,14 @@ On the GitHub side, every action taken on a pull request - triage decision, task
 
 **Example:** A task has been running for twenty minutes and you want to know if it is stuck. You open the dashboard, see the live log showing the agent midway through the test suite, and close the tab. No guessing, no pinging, no waiting.
 
+## Recent Changes Since v3.8.0
+
+Actionable SentryBox issue alerts can create code tasks automatically. Durable event reservations and correlated-error deduplication prevent repeated alerts from creating competing remediation work; an existing active remediation task is reused.
+
+Dispatch now claims per-user ownership in Firestore, fences stale attempts, and coordinates PR review locks. Queued implementation and other non-review work take precedence over review so reviews inspect the updated result. Task lifecycle timestamps and persisted merge-ready evidence keep task groups and queue status consistent.
+
+Planning produces one reviewable artifact and one evidence/planning PR. You can send follow-up messages to completed planning tasks to refine the plan. Ask Agent uses Codex for interactive help.
+
 ## Getting Started
 
 Connect a worker machine, link your Linear and GitHub accounts through the dashboard, and submit your first task from the web console or Intex Agent. The agent handles everything from issue creation through pull request.
@@ -194,7 +202,7 @@ Connect a worker machine, link your Linear and GitHub accounts through the dashb
 
 - **Execution memory makes the agent smarter over time** - Lessons from previous runs are retrieved and injected into future tasks, reducing repeated mistakes
 - **Autonomous remediation closes the review loop** - Review findings trigger automatic fix tasks, running without human intervention until the PR is clean
-- **Ask Agent for interactive exploration** - Back-and-forth conversations with Claude Code directly from the dashboard, with persistent sessions across devices
+- **Ask Agent for interactive exploration** - Back-and-forth conversations with Codex directly from the dashboard, with persistent sessions across devices
 - **Merge queue eliminates manual PR coordination** - Bot-authored PRs merge in order, automatically, with CI checks verified before each merge
 - **Merge conflict resolution runs unattended** - Conflicts are detected by a dedicated cron job and dispatched for resolution without blocking the webhook pipeline
 - **Design before code with explicit mode selection** - Choose planning or execution mode, or let the system default; you approve the plan before a single line is written

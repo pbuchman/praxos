@@ -108,6 +108,10 @@ Text ingestion failures are handled by whatsapp-service and Intex. No bookmarks-
 
 ## Recent Changes
 
+### Changes since v3.8.0
+
+Internal bookmark creation now returns an absolute `https://intexuraos.cloud/#/bookmarks/{id}` link in both `url` and `resourceUrl`. Callers can forward either link directly; the original destination remains in `bookmark.url` (INT-1709).
+
 | Commit     | Description                                                                 | Date       |
 | ---------- | --------------------------------------------------------------------------- | ---------- |
 | `227c87d6` | WhatsApp bookmark recovery and mobile bookmark rows integration (INT-1662)  | 2026-06-11 |
@@ -316,7 +320,7 @@ All required env vars are validated at startup via `validateRequiredEnv()` in `i
 
 ## Gotchas
 
-- **Enrichment is async** — `POST /internal/bookmarks` returns immediately with `{ id, url, bookmark }` where `url` is the app deep link (`/#/bookmarks/{id}`); OG data and AI summary populate later via Pub/Sub
+- **Enrichment is async** — `POST /internal/bookmarks` returns immediately with `{ id, url, resourceUrl, bookmark }` where `url` and `resourceUrl` are the absolute app deep link (`https://intexuraos.cloud/#/bookmarks/{id}`); OG data and AI summary populate later via Pub/Sub
 - **Enrichment only triggers on internal create** — The public `POST /` endpoint does NOT trigger the enrichment pipeline; only `POST /internal/bookmarks` publishes the `bookmarks.enrich` event (via `enrichPublisher` dependency on `createBookmark`)
 - **Duplicate detection by userId+url** — Same URL can exist for different users
 - **Replay recovery uses duplicate detection** — Replayed WhatsApp bookmark commands receive `409 CONFLICT` with `existingBookmarkId` when the bookmark already exists; bookmarks-agent does not dedupe by WhatsApp message ID or `sourceId`

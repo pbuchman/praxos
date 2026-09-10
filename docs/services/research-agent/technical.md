@@ -103,6 +103,12 @@ sequenceDiagram
 
 ## Recent Changes
 
+### Changes since v3.8.0
+
+- Research, synthesis, titles, context inference, and validation use OpenRouter with a user key or platform fallback. New runs and retries enforce the curated research allowlist; synthesis accepts only MiniMax M3 or GPT-5.4 through their `or:` IDs. Historical direct-provider records remain readable but cannot execute.
+- Internal creation returns an absolute `resourceUrl` built from `INTEXURAOS_WEB_APP_URL`, allowing assistants to send a usable research link (INT-1708).
+- Handled model failures and missing cover images retain their recovery behavior without duplicate actionable error alerts. Recovered parser diagnostics are debug-level; cover failure still permits publishing the report without an image (INT-2064, INT-2065, INT-2066).
+
 The entries below are historical release records. They describe the behavior introduced at each release, not the current runtime contract; the current contract is OpenRouter-only as documented above.
 
 ### v3.6.0 Changes (since v3.5.0)
@@ -357,7 +363,7 @@ The entries below are historical release records. They describe the behavior int
 
 Research Agent reports usage to `llm-usage-service` for every model it invokes. The current routed catalog is the 16-model OpenRouter allowlist:
 
-**Research and synthesis models** (`or:` prefix required in API payloads):
+**Research models** (`or:` prefix required in API payloads):
 - DeepSeek V4 Flash (DeepSeek)
 - Qwen 3.5 Plus, Qwen 3.5 Flash (Qwen)
 - MiniMax M3 (MiniMax)
@@ -369,13 +375,15 @@ Research Agent reports usage to `llm-usage-service` for every model it invokes. 
 - MiMo V2.5 Pro (Xiaomi)
 - GLM 5 Turbo (Z.ai)
 
+**Synthesis models:** `or:minimax/minimax-m3` (default) and `or:openai/gpt-5.4`. The research allowlist is broader than this synthesis subset.
+
 **Fast model** (title generation, context inference, input validation):
 - `or:minimax/minimax-m3` (platform OpenRouter default)
 
 **Image model** (optional cover image generation):
 - `gpt-image-1` public alias, executed as `openai/gpt-image-1` through OpenRouter
 
-Raw Google model constants remain readable only for historical data compatibility. New execution rejects every raw `gemini-*` identifier and never requests a Google LLM credential.
+Stored direct-provider model names remain readable for historical data compatibility. New execution and retries require allowlisted `or:` IDs; historical direct Google, OpenAI, Anthropic, and Perplexity IDs cannot be executed. Synthesis also checks its narrower supported subset.
 
 ## Gotchas
 

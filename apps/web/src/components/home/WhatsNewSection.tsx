@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MessagesSquare, Workflow } from 'lucide-react';
+import { MessagesSquare, ScrollText } from 'lucide-react';
 
 interface FeatureEntry {
   title: string;
@@ -15,19 +15,19 @@ interface FeatureEntry {
 export function WhatsNewSection(): React.JSX.Element {
   const features: FeatureEntry[] = [
     {
-      title: 'Intex Agent Unified Actions',
+      title: 'Custom WhatsApp Message Digests',
       description:
-        'One Intex Agent workflow now creates code tasks, research drafts, bookmarks, notes, and calendar actions.',
-      icon: Workflow,
+        'Schedule prompt-driven summaries of a private group or direct chat, with preview, history, and WhatsApp delivery.',
+      icon: ScrollText,
       borderColor: 'border-emerald-200',
       bgGradient: 'bg-gradient-to-br from-emerald-50 to-white',
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-700',
     },
     {
-      title: 'Private WhatsApp Workspace',
+      title: 'WhatsApp Conversation Assistant',
       description:
-        'Mirror and inspect private WhatsApp conversations with group context, sender/day views, Matrix sync, and read-only logs.',
+        'Ask questions about your private chats using inspectable captured context, selected date ranges, and streamed responses.',
       icon: MessagesSquare,
       borderColor: 'border-cyan-200',
       bgGradient: 'bg-gradient-to-br from-cyan-50 to-white',
@@ -53,17 +53,17 @@ export function WhatsNewSection(): React.JSX.Element {
             </a>
           </div>
           <h2 className="mb-6 text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">
-            v3.8.0 —{' '}
+            v4.0.0 —{' '}
             <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-              unified actions, private WhatsApp.
+              message digests, conversation answers.
             </span>
           </h2>
           <p className="text-lg leading-relaxed text-neutral-600">
-            Intex Agent now owns the action path, and private WhatsApp has a dedicated workspace.
+            Choose what your WhatsApp summaries focus on, then explore your conversations with an AI assistant.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
@@ -83,6 +83,15 @@ export function WhatsNewSection(): React.JSX.Element {
               </motion.div>
             );
           })}
+        </div>
+
+        <div className="mt-12 border-t border-neutral-100 pt-8">
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
+            3.x history
+          </h3>
+          <p className="text-neutral-600">
+            Previous highlights included unified Intex actions and the private WhatsApp workspace.
+          </p>
         </div>
       </div>
     </section>

@@ -26,7 +26,7 @@
 interface SubmitResearchInput {
   prompt: string;                  // Research question (min 1 char)
   selectedModels: ResearchModel[]; // Executable model IDs; Google models must use or:google/...
-  synthesisModel: ResearchModel;   // Model to use for synthesis
+  synthesisModel: ResearchModel;   // or:minimax/minimax-m3 or or:openai/gpt-5.4
   inputContexts?: {
     content: string;               // Max 60,000 chars per context
     label?: string;
@@ -64,7 +64,7 @@ interface SubmitResearchOutput {
     "or:anthropic/claude-sonnet-4.6",
     "or:x-ai/grok-4.20-beta"
   ],
-  "synthesisModel": "or:google/gemini-3.6-flash"
+  "synthesisModel": "or:minimax/minimax-m3"
 }
 
 // Response
@@ -336,7 +336,7 @@ interface CreateDraftResearchBody {
 interface ServiceFeedback {
   status: 'completed' | 'failed';
   message: string;
-  resourceUrl?: string;   // e.g., "/#/research/{id}"
+  resourceUrl?: string;   // e.g., "https://intexuraos.cloud/#/research/{id}"
   errorCode?: string;
 }
 ```
@@ -389,7 +389,7 @@ interface ServiceFeedback {
 
 ```
 1. POST /internal/research/draft with userId, title, prompt, originalMessage
-2. Response includes resourceUrl = "/#/research/{id}"
+2. Response includes resourceUrl = "https://intexuraos.cloud/#/research/{id}"
 3. User visits dashboard, reviews draft, clicks approve
 4. Research moves to pending -> processing -> completed
 ```

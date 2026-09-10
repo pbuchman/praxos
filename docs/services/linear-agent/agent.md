@@ -177,6 +177,7 @@ interface CreateIssueInput {
   title: string;
   description: string;
   labels?: string[]; // Accepted but not forwarded to Linear yet
+  idempotencyKey?: string; // Stable logical request key, 1–1024 characters
 }
 ```
 
@@ -492,6 +493,12 @@ interface SyncOutput {
 
 ---
 
+## Retry and Authentication Contract
+
+For `POST /internal/issues`, retain the same `idempotencyKey` across retries of one logical creation request. Keys are scoped by user; do not reuse one for unrelated issues. The route can return an existing issue after a concurrent create.
+
+Issue-list synchronization retries transient upstream/network failures. Webhooks require an authenticated team context and valid HMAC even when their event type will be ignored.
+
 ## Constraints
 
 **Do NOT:**
@@ -582,6 +589,7 @@ interface SyncOutput {
 | 401        | Unauthorized                        | Check `X-Internal-Auth` and `X-User-Id` headers        |
 | 403        | User not connected to Linear        | User must connect via `POST /connection` first  |
 | 404        | Issue not found or wrong team       | Verify identifier and that user is on correct team     |
+| 503 | Linear temporarily unavailable | Retry with backoff using the same logical request key |
 | 500        | Internal or downstream error        | Retry with backoff; check Linear API status            |
 
 ## Events Published

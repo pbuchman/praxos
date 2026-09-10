@@ -239,7 +239,7 @@ curl -s -X POST http://localhost:8121/internal/notes \
   "data": {
     "status": "completed",
     "message": "Note \"Research Results: AI Trends 2026\" created successfully",
-    "resourceUrl": "/#/notes/xyz789abc"
+    "resourceUrl": "https://intexuraos.cloud/#/notes/xyz789abc"
   }
 }
 ```
@@ -373,8 +373,8 @@ RESOURCE_URL=$(curl -s -X POST http://localhost:8121/internal/notes \
   -d '{"userId":"auth0|user_xyz","title":"From Internal","content":"Created internally","tags":["internal"],"source":"test","sourceId":"ex-3"}' \
   | jq -r '.data.resourceUrl')
 
-# Extract note ID from resourceUrl (format: /#/notes/<id>)
-INTERNAL_NOTE_ID=$(echo $RESOURCE_URL | sed 's|/#/notes/||')
+# Extract the final path segment from the absolute resourceUrl
+INTERNAL_NOTE_ID="${RESOURCE_URL##*/}"
 
 # Retrieve via public endpoint
 curl -s http://localhost:8121/$INTERNAL_NOTE_ID \

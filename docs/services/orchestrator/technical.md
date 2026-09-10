@@ -19,19 +19,20 @@ The orchestrator is a Fastify-based HTTP service that runs on local machines beh
 ### Prompt markers and final blocks
 
 - Preserved marker: `[WORKER-MODE]`
-- Exactly one injected marker: `[AGENT:PLANNING]` / `[AGENT:EXECUTION]` / `[AGENT:PULL_REQUEST]` / `[AGENT:REVIEW]` / `[AGENT:REMEDIATION]` / `[AGENT:ASK_AGENT]`
-- Final block names: `PLANNING_AGENT_FINAL`, `EXECUTION_AGENT_FINAL`, `PULL_REQUEST_AGENT_FINAL`, `REVIEW_AGENT_FINAL`, `REMEDIATION_AGENT_FINAL`; ask-agent conversations intentionally do not require an `ASK_AGENT_FINAL` block
+- Exactly one injected marker: `[AGENT:PLANNING]` / `[AGENT:EXECUTION]` / `[AGENT:PULL_REQUEST]` / `[AGENT:REVIEW]` / `[AGENT:REMEDIATION]` / `[AGENT:ASK_AGENT]` / `[AGENT:SENTRY]`
+- Final block names: `PLANNING_AGENT_FINAL`, `EXECUTION_AGENT_FINAL`, `PULL_REQUEST_AGENT_FINAL`, `REVIEW_AGENT_FINAL`, `REMEDIATION_AGENT_FINAL`, `SENTRY_AGENT_FINAL`; ask-agent conversations intentionally do not require an `ASK_AGENT_FINAL` block
 - All prompts follow the versioned `PromptBuilder` pattern (semver versioned, CI-enforced bump-on-change)
 
 ### Agent types
 
 | Agent Type     | Description                                                  | Verification Contract                        |
 | -------------- | ------------------------------------------------------------ | -------------------------------------------- |
-| `planning`     | Analyze issues, produce plans, create subtasks               | Outcome label, Linear URL, plan doc presence |
+| `planning`     | Analyze issues, update one issue, produce one planning artifact               | Outcome label, Linear URL, plan doc presence |
 | `execution`    | Implement code, run CI, create PRs                           | PR URL, skill usage, outcome label           |
 | `pull_request` | Respond to PR comments/reviews, push to existing branch      | PR URL, comment reply status                 |
 | `review`       | Read-only PR review with structured inline comments          | PR URL, review types, comments posted        |
 | `remediation`  | Address review findings, push fixes, decide on re-review     | PR URL, re-review decision                   |
+| `sentry` | Investigate an actionable SentryBox issue and remediate it | Sentry issue, outcome, verification evidence |
 | `ask_agent`    | Interactive Q&A — no PR, no Linear, direct message delivery  | Lighter contract, no PR URL required         |
 
 ### Review Agent types
@@ -57,9 +58,7 @@ Flattened Planning Agent `result` fields:
 - `planning_outcome_label`
 - `planning_superpowers_writing_plans_used`
 - `planning_linear_url`
-- `planning_is_complex`
 - `planning_has_plan_doc`
-- `planning_subtask_urls`
 - `planning_pr_url`
 - `planning_unclear_clarification`
 
@@ -105,7 +104,7 @@ Flattened Review Agent `result` fields:
 graph TB
     subgraph "Cloud (GCP)"
         CA[code-agent<br/>Cloud Run]
-        SM[Secret Manager<br/>GitHub PEM, secrets]
+        SM[Host-rendered package<br/>GitHub PEM, configuration]
         GH[GitHub API<br/>Installation tokens]
     end
 
@@ -179,6 +178,14 @@ graph TB
     ACV -->|gh pr comment| GH
     ORCH --> SM
 ```
+
+## Changes Since v3.8.0
+
+- **Guarded restart:** admission freezing and the versioned health contract expose active admissions, worker containers, terminal callbacks, and log-forwarder drain/activity evidence. Inspect the [health and admission-freeze contract](#hmac-authentication) before restarting the retained worker.
+- **Planning contract:** a SIMPLE task updates the original issue plus one evidence PR; PLAN-DOC creates one document and one planning PR. Child-issue and subtask outputs are removed.
+- **SentryBox integration:** the dedicated Sentry prompt uses the private `error_hub` MCP connection; expected retry and cleanup warnings remain in logs without redundant reports.
+- **Configuration:** the host renders one pinned DEV secret package together with versioned public settings. Startup reads `INTEXURAOS_GITHUB_APP_PRIVATE_KEY_PATH`, validates PEM shape and mode `0600`, and has no Secret Manager or gcloud fallback for that key. Worker task environments receive a filtered projection.
+- **Recovery:** persisted state is written privately and atomically; callback retry serialization and activity tracking retain delivery evidence during guarded shutdown.
 
 ## Recent Changes
 
@@ -605,7 +612,7 @@ Delivers signed completion notifications to code-agent:
 
 Atomic file-based state management:
 
-- Write-to-temp then atomic rename (POSIX rename guarantees)
+- Write-to-temp with mode `0600`, close, then atomic rename
 - `modify()` uses `async-mutex` for safe read-modify-write
 - Corruption detection: backs up corrupted files with timestamp suffix
 - Orphan worktree detection: compares `git worktree list` against active tasks
@@ -707,7 +714,7 @@ Collects per-task resource and token metrics after completion:
 | `INTEXURAOS_CODE_WORKER_FORENSICS_PATH`     | No       | `~/.code-orchestrator/forensics`   |
 | `INTEXURAOS_GIT_USER_NAME`                  | No       | (host git config)                  |
 | `INTEXURAOS_GIT_USER_EMAIL`                 | No       | (host git config)                  |
-| `INTEXURAOS_GITHUB_APP_PRIVATE_KEY`         | No       | (Secret Manager)                   |
+| `INTEXURAOS_GITHUB_APP_PRIVATE_KEY_PATH` | Yes | Path to host-rendered mode-0600 PEM |
 | `INTEXURAOS_ENVIRONMENT`                    | No       | `NODE_ENV` or `development`        |
 | `INTEXURAOS_SENTRY_DSN`                     | No       | (empty)                            |
 | `INTEXURAOS_RELEASE`                        | No       | (empty; fallback after `K_REVISION`) |

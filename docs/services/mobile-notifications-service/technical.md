@@ -6,6 +6,10 @@
 
 The service has no WhatsApp summary generation, scheduler, LLM client, summary state, or outbound WhatsApp publisher. Those responsibilities belong to [Message Digest Service](../message-digest-service/technical.md) and WhatsApp Service.
 
+## Changes since v3.8.0
+
+WhatsApp digests moved to Message Digest Service, preserving the existing Fishing digest continuity while adding configurable private-chat summaries. The former public and internal digest routes, group-message query route, digest repositories, LLM dependencies, and WhatsApp publisher have been removed here. `digestRemoval.test.ts` verifies that retired routes return 404 and ordinary notification routes remain registered.
+
 ## Architecture
 
 ```mermaid

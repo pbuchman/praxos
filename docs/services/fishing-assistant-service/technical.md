@@ -53,7 +53,7 @@ All application routes use bearer authentication through `withAuth`. `/status`, 
 | ------ | ---- | ----------- | ---- |
 | GET | `/digest-groups` | Compatibility view of the user's migrated Fishing definition in message-digest-service. | Bearer token |
 | GET | `/digests` | Query digests by `groupKey`, `dateFrom`, `dateTo`, optional comma-separated `terms`, and optional `limit`. | Bearer token |
-| GET | `/digests/:groupKey/:date` | Load one digest plus digest state when available. | Bearer token |
+| GET | `/digests/:groupKey/:date` | Load one canonical digest; legacy digest state is not returned. | Bearer token |
 
 ### System
 

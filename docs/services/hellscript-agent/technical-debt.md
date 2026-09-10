@@ -87,7 +87,7 @@ None identified.
 
 ## Deprecations
 
-None.
+The direct `infra-gemini` dependency and platform Gemini fallback were removed after v3.8.0. The active adapters are `LlmIntentInterpreter` and `LlmDraftGenerator`; deployments require the OpenRouter platform credential.
 
 ---
 

@@ -104,6 +104,14 @@ sequenceDiagram
 
 ## Recent Changes
 
+### Changes Since v3.8.0
+
+- `PATCH /users/:uid/settings` accepts a separate Intex selector body containing exactly `intexAgentModel` (supported model or `null`) and `expectedRevision`. Stale revisions conflict; mixed selector/general-model patches are invalid.
+- `GET /users/:uid/settings/llm-keys` includes selector availability and, when available, explicit/effective model and revision. Availability requires the configured subject and fresh conformant catalog evidence.
+- `GET /internal/users/:uid/settings/intex-agent-runtime` exposes the effective model and time zone for the runtime; unavailable selection uses the platform default.
+- User settings expose the independent Test Runs read capability for the configured evaluator. The actual run evidence belongs to intex-agent.
+- Active LLM configuration uses OpenRouter. Personal key deletion removes the key and test result without clearing model preferences, allowing platform fallback. Earlier release notes below describe historical behavior.
+
 ### v3.6.0
 
 - **Primary + fallback LLM model selection** (INT-1362, PRs #1793, #1789): Added `fallbackModel` to `LlmPreferences` domain model. `PATCH /users/:uid/settings` now accepts an optional `fallbackModel` field. The service validates that fallback differs from default, that the user has an API key for the fallback provider, and that the model passes `isDefaultEligibleModel()`. Deleting an API key cascades to clear both `defaultModel` and `fallbackModel` if either depends on the deleted provider. Internal `GET /internal/users/:uid/settings` now returns `fallbackModel` alongside `defaultModel`. GET `/users/:uid/settings/llm-keys` returns `fallbackModel` in the response.
@@ -374,6 +382,8 @@ None — user-service does not publish or subscribe to Pub/Sub events.
 | `INTEXURAOS_GITHUB_OAUTH_CLIENT_SECRET` | Yes      | GitHub OAuth client secret                                |
 | `INTEXURAOS_SENTRY_DSN`                 | No       | Sentry DSN for error tracking (optional)                  |
 
+Configuration also includes `INTEXURAOS_INTEX_AGENT_MODEL_SELECTOR_USER_ID` (exact eligible subject or `disabled`) and `INTEXURAOS_INTEX_AGENT_TEST_RUNS_READ_ENABLED` (`true` or `false`). Enabled selection requires `INTEXURAOS_OPENROUTER_APP_API_KEY`. Enabled Test Runs require `INTEXURAOS_MATRIX_CORPUS_RUNTIME_AUDIENCE=hetzner-prod` and `INTEXURAOS_MATRIX_CORPUS_EVALUATOR_USER_ID`.
+
 ## Gotchas
 
 **Encryption key format**: The `INTEXURAOS_ENCRYPTION_KEY` must be exactly 64 hex characters (32 bytes) for AES-256-GCM.
@@ -388,7 +398,7 @@ None — user-service does not publish or subscribe to Pub/Sub events.
 
 **API key masking**: In logs and API responses, keys are masked showing only first 4 and last 4 characters.
 
-**LLM key testing costs money**: The `/test` endpoint validates keys by making actual API calls to the provider (except OpenRouter validation, which uses a free key-check endpoint).
+**Validation versus testing**: Saving an OpenRouter key uses the zero-token key-check endpoint. Explicit `/test` calls generate a short response and can incur usage.
 
 **Rate limit vs API key errors**: Error parser checks rate limits before API key patterns to avoid misdiagnosis.
 
@@ -398,9 +408,9 @@ None — user-service does not publish or subscribe to Pub/Sub events.
 
 **Default model validation**: `PATCH /users/:uid/settings` validates `defaultModel` against `isDefaultEligibleModel()` from `@intexuraos/llm-contract` and verifies resolved OpenRouter access (user key or platform fallback). Unsupported model names return 400 `INVALID_REQUEST`.
 
-**Fallback model validation**: `fallbackModel` must pass the same `isDefaultEligibleModel()` check, differ from `defaultModel`, and be resolvable through a personal provider key or the platform OpenRouter route. Pass `null` to clear the fallback.
+**Fallback model validation**: `fallbackModel` must pass the same `isDefaultEligibleModel()` check, differ from `defaultModel`, and be resolvable through a personal OpenRouter key or the platform OpenRouter route. Pass `null` to clear the fallback.
 
-**Model cascade on key deletion**: Deleting an LLM API key automatically clears `defaultModel` (and `fallbackModel`) if they use the deleted provider. If only the fallback uses the deleted provider, only the fallback is cleared while the default is preserved.
+**Personal key deletion**: Deleting the OpenRouter key removes its stored key and test result while preserving model preferences. Execution resolves platform fallback when available.
 
 **OAuth2 routes use raw send**: OAuth2 spec routes (`/auth/oauth/token`, `/auth/oauth/authorize`) intentionally bypass the response contract via `@allow-raw-send` annotations because the OAuth2 spec requires flat `{ error, error_description }` responses.
 
@@ -424,7 +434,7 @@ None — user-service does not publish or subscribe to Pub/Sub events.
 
 **OpenRouter or: prefix**: OpenRouter model identifiers may use an `or:` prefix that must be stripped before passing to the OpenRouter API.
 
-**Internal /llm-keys returns openrouter**: The `GET /internal/users/:uid/llm-keys` endpoint returns a fifth key field (`openrouter`) alongside the original four providers. Callers should handle the additional field.
+**Internal key response**: `GET /internal/users/:uid/llm-keys` returns `openrouter` and historical `openai`, `anthropic`, and `perplexity` compatibility fields. It no longer returns a Google LLM key field. Active clients resolve OpenRouter access separately from Google OAuth.
 
 ## File Structure
 
@@ -495,9 +505,9 @@ apps/user-service/src/
     gitHubOAuthConnectionRoutes.ts # GitHub OAuth connection management
     configRoutes.ts            # Auth0 config
     settingsRoutes.ts          # User settings + default/fallback model + transcription + timezone
-    llmKeysRoutes.ts           # LLM key management (4 providers + legacy Google deletion)
+    llmKeysRoutes.ts           # OpenRouter key management
     frontendRoutes.ts          # Login/logout/me pages
-    internalRoutes.ts          # Service-to-service (6 endpoints)
+    internalRoutes.ts          # Service-to-service endpoints
     schemas.ts                 # Zod request schemas
     shared.ts                  # Shared helpers (loadAuth0Config)
     httpClient.ts              # HTTP client for Auth0 calls

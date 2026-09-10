@@ -210,7 +210,7 @@ interface InternalCreateNoteInput {
 interface ServiceFeedback {
   status: 'completed' | 'failed';
   message: string;
-  resourceUrl?: string; // e.g. "/#/notes/<id>" on success
+  resourceUrl?: string; // e.g. "https://intexuraos.cloud/#/notes/<id>" on success
   errorCode?: string;   // on failure
 }
 
@@ -240,7 +240,7 @@ interface ServiceFeedback {
   "data": {
     "status": "completed",
     "message": "Note \"Action Output\" created successfully",
-    "resourceUrl": "/#/notes/ghi789"
+    "resourceUrl": "https://intexuraos.cloud/#/notes/ghi789"
   }
 }
 ```

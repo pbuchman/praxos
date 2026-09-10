@@ -105,6 +105,22 @@ New Message Digest Pub/Sub events use `kind: message_digest_v2`, the approved Po
 | `whatsapp.conversation-assistant.context-attachment.prepare` | Prepare an immutable continuation update |
 | `whatsapp.private-account.erasure` | Advance one bounded physical-erasure batch |
 
+## Media, Transcript, And Analysis Routes
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `PATCH` | `/private/chats/:chatId/transcription` | Update the owned chat’s transcription setting |
+| `GET` | `/private/messages/:messageId/media` | Owner-checked original media access |
+| `GET` | `/private/messages/:messageId/thumbnail` | Owner-checked image thumbnail access |
+| `POST` | `/conversation-assistant/context/check` | Check proposed source-context availability |
+| `GET` | `/conversation-assistant/sessions/:sessionId/context` | Inspect the prepared initial context |
+| `GET` | `/conversation-assistant/sessions/:sessionId/context/history` | Inspect committed context history |
+| `GET` | `/conversation-assistant/sessions/:sessionId/export.pdf` | Export the owned analysis as binary PDF |
+
+Session creation accepts an optional supported `model`. The model is stored with the session; prompt-budget checks use that model’s supported input limit. Reactions are projected beside source messages, while relation-only rows do not become ordinary digest content.
+
+Matrix corpus control routes coordinate evaluation transport with intex-agent. Evaluation action tools remain mocked, and evidence/logging must not expose raw private content.
+
 ## Private Workspace Storage
 
 The private workspace uses these Firestore collections:
@@ -150,19 +166,19 @@ Request logs and Sentry transactions use registered route templates. Dynamic ses
 
 Conversation Assistant metrics use fixed operation/outcome labels only. Dedicated numeric measures cover included, omitted, corrected, redacted, newly available, and late-ingested message counts; conservative estimated tokens; prompt-budget rejections; time to first model delta; two-tab conflicts; and orphan chunk cleanup. None of these measures carries user, session, chat, request, source-message, content, or hash dimensions.
 
-## Private WhatsApp Image Storage
+## Private WhatsApp Media Storage
 
-New private WhatsApp `image` messages synchronized from Matrix are copied into the private WhatsApp media bucket before the message event is ingested. The Matrix adapter owns Matrix media downloads. `whatsapp-service` owns GCS upload, thumbnail generation, Firestore metadata, and signed URL access.
+Private image, audio, video, and file media synchronized from Matrix can be copied into the private WhatsApp media bucket before the message event is ingested. Images receive thumbnails; audio/video originals support playback and enabled transcription. The Matrix adapter owns Matrix media downloads. `whatsapp-service` owns GCS upload, thumbnail generation, Firestore metadata, and signed URL access.
 
 Stored private media uses `whatsapp/private/{userId}/{messageId}/{mediaId}.{ext}` and `whatsapp/private/{userId}/{messageId}/{mediaId}_thumb.jpg`. Browser reads use owner-checked signed URL routes. Internal processors use the internal signed URL route with `sourceAccountId` validation.
 
-Existing image messages without stored GCS metadata intentionally remain as placeholders.
+Messages without stored media remain placeholders until media recovery or backfill supplies valid metadata. Backfill and signed access preserve account-generation and ownership checks.
 
 ## Voice Boundary
 
-Audio/voice webhook events do not publish transcription jobs for Intex. They send the unsupported voice reply and complete the webhook without creating an Intex message event.
+Audio/voice webhook events pass through `ProcessAudioMessageUseCase`, which stores the media and publishes an audio-stored event for transcription. Audio alone does not create an Intex message ingest. A later text reply to completed audio can attach the transcript as bounded reply context; incomplete or unsafe transcript context is not forwarded.
 
-Button and interactive replies from retired workflows are ignored and are not routed into Intex Agent.
+Buttons with an `intex_confirm:` identifier are forwarded as `whatsapp_button` events to confirm or cancel Intex actions. Other retired workflow buttons remain ignored.
 
 ## Intex Image Forwarding
 

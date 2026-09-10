@@ -169,6 +169,10 @@ curl -X POST http://localhost:8080/internal/usage/events \
 
 ---
 
+## Check Embedding Attribution
+
+To adapt the ingestion example to embeddings, set `request.operation` to `embedding` and use the actual provider/model and measured token counts from that call. Give the event a new event ID. A component such as `context/embedding` can be sent as-is; verify that queries return that original component. Replaying the same event ID should still be counted as a duplicate.
+
 ## Part 3: Query Usage Data (10 minutes)
 
 ### Step 3.1: Retrieve the Event by ID

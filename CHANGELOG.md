@@ -1,5 +1,61 @@
 # Changelog
 
+## 4.0.0
+
+### Added
+
+- Added configurable WhatsApp Message Digests with prompts, schedules, previews, history and delivery for a private group or direct conversation while preserving existing Fishing digest continuity (INT-1943, INT-1962, INT-1964).
+- Added Conversation Assistant analysis of private WhatsApp conversations with inspectable captured context, selectable date ranges and streamed responses so users can ask questions about their chats (INT-1813, INT-1815, INT-1816).
+- Added daily scheduled calendar lookahead notifications so users can receive upcoming-event summaries in WhatsApp (INT-1850, INT-1855).
+- Added confirmed calendar attendee changes and general updates to one or multiple events, helping users resolve missing details before changes are applied (INT-2032, INT-2040, INT-2041).
+- Added an explicit Include new messages action in Conversation Assistant so users can extend an analysis with a visible context capture while preserving its original context (INT-1887).
+- Added model selection in Conversation Assistant so users can choose the model for their conversation analysis (INT-1844).
+- Added Conversation Assistant PDF export so users can save and share their analysis in a readable document (INT-1837, INT-1838, INT-1839).
+- Added inline reactions to private WhatsApp conversations so users can see reactions alongside their source messages (INT-1834, INT-1884).
+- Added automated Intex and Matrix corpus evaluations with Test Runs for operators to inspect assistant behavior using mocked action tools without performing real product mutations (INT-1826, INT-1859, INT-1860).
+- Added explicit WhatsApp confirmation before Intex changes data, with calendar readiness checks and clearer event details so users can review intended actions (INT-1719, INT-1911, INT-2051).
+- Added automatic code-task creation from actionable errors with duplicate-task protection and active-task reuse so operators can track remediation without repeated work (INT-1718, INT-1720, INT-1756).
+- Added Intex settings with model selection and versioned personal preferences so users can choose how their assistant responds and manages remembered instructions (INT-1703, INT-1847, INT-1985).
+- Added WhatsApp video transcription and per-chat controls for private voice and video transcripts so users can read enabled conversations alongside their media (INT-1715, INT-1798, INT-1808).
+- Added Intex external saving with connection checks and optional image captions so users can send supported content to their configured external destination (INT-1714, INT-1717).
+- Added Intex calendar list and count queries, including deterministic today and tomorrow lookups, so users can ask about their schedule directly (INT-1697, INT-2047).
+- Added private WhatsApp image previews and audio/video playback with secure media access and backfill fixes so users can view and play attachments within their conversations (INT-1712, INT-1716, INT-1757).
+
+### Changed
+
+- Changed DEV operations to support reversible hibernation with documented recovery evidence and retained recovery resources, reducing idle infrastructure use (INT-2095, INT-2113).
+- Changed Ask Agent to use Codex for existing code-task assistance (INT-2123).
+- Changed runtime configuration and secrets to versioned packages with public settings separated from secrets, making deployment configuration more consistent (INT-1961, INT-2048, INT-2049).
+- Changed more AI workloads to use OpenRouter and updated supported models and usage reporting to preserve existing research, image and assistant workflows (INT-1702, INT-1968, INT-2050).
+- Changed error reporting and worker integration to SentryBox with safer retries and issue transitions, preserving the existing remediation workflow (INT-1942, INT-1944, INT-1945).
+
+### Fixed
+
+- Fixed private WhatsApp synchronization and media recovery, including legacy relations, storage credentials and authorized media-status checks, so conversations and attachments load more reliably.
+- Fixed duplicate code-task execution and overlapping review work through durable dispatch ownership, review locks and retry-safe recovery (INT-1773, INT-1794, INT-1820).
+- Fixed private WhatsApp chat identity and loading behavior so conversation lists and message views resolve more consistently (INT-1835, INT-1836, INT-1854).
+- Fixed links returned after creating objects and reduced duplicate reports for handled recomputation failures so users can open their results and support can focus on actionable errors (INT-1704, INT-1705, INT-1706).
+- Fixed default code-worker selection across settings, task creation and dispatch so tasks use the expected worker (INT-1698, INT-1699, INT-1700).
+- Fixed Firebase error handling on hardened browsers so a cancelled operation does not disrupt subsequent application requests (INT-2062).
+- Fixed service-runtime quota attribution for Firestore so database requests use the intended project quota (INT-1990).
+- Fixed the version shown with the application logo so the interface reports the release consistently (INT-1696).
+
+### Improved
+
+- Improved code-task recovery during guarded worker restarts by pausing new admissions and retaining recovery evidence (INT-1787, INT-2112).
+- Improved protection of application secrets and persisted worker state, completing the exposure cutover with deployment hardening and fix-forward recovery after removal of legacy compatibility and rollback paths (INT-1963, INT-2124).
+- Improved privacy in WhatsApp logs and validation of private identifiers, reducing exposure of conversation metadata during troubleshooting (INT-1776, INT-1972, INT-1973).
+- Improved code-task lifecycle timing and Dispatch Queue status so progress and waiting times better reflect actual execution (INT-1723, INT-1939, INT-1940).
+- Improved asynchronous delivery recovery and retries for transient Linear failures so temporary outages are less likely to interrupt completed work (INT-1800, INT-1801, INT-1858).
+- Improved durable evidence that code tasks are ready to merge and made completion notifications more actionable (INT-1771, INT-1846, INT-1849).
+- Improved code-task planning with one reviewable plan artifact and restored follow-up messages to completed planning tasks (INT-1841, INT-2119).
+- Improved Intex intent recognition, clarification, language consistency and reply handling so conversations produce more reliable responses (INT-1772, INT-1789, INT-1799).
+- Improved Intex session diagnostics and interface wording so support investigations and on-screen guidance are easier to follow (INT-1797, INT-1881).
+- Improved error reporting by consolidating handled authentication, capacity, parsing, recovery and transcription outcomes while retaining actionable alerts (INT-1570, INT-1713, INT-1724).
+- Improved generated research-page uploads and retained safe failure details to make upload problems easier to diagnose (INT-2069).
+- Improved deployment health verification to check the backend over HTTPS (INT-2036).
+- Improved navigation menu organization and interaction so users can move between application areas more easily (INT-1842).
+
 ## 3.8.0
 
 ### Added

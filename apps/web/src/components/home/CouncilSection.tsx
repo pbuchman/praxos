@@ -11,21 +11,21 @@ export function CouncilSection(): React.JSX.Element {
       icon: Layers,
     },
     {
-      name: 'ANTHROPIC',
-      models: 'Claude reasoning models',
-      role: 'Analysis, validation, autonomous coding',
+      name: 'RESEARCH',
+      models: 'Up to six selected models',
+      role: 'Independent reports on the same question',
       icon: Brain,
     },
     {
-      name: 'OPENAI',
-      models: 'Research, reasoning, images',
-      role: 'Deep research, synthesis, image generation',
+      name: 'SYNTHESIS',
+      models: 'Attributed findings',
+      role: 'Agreement and disagreement across reports',
       icon: Zap,
     },
     {
-      name: 'PERPLEXITY',
-      models: 'Search and deep research',
-      role: 'Real-time web search, citations',
+      name: 'SOURCES',
+      models: 'Reports and citations',
+      role: 'Inspect the evidence behind the result',
       icon: Eye,
     },
   ];
@@ -44,8 +44,8 @@ export function CouncilSection(): React.JSX.Element {
             </span>
           </h2>
           <p className="max-w-2xl text-lg leading-relaxed text-neutral-400">
-            The research-agent can run a multi-model research council across OpenRouter-routed models
-            and supported user-key providers. It surfaces agreement, disagreement, citations, and model
+            The research-agent runs a multi-model research council using OpenRouter-routed models.
+            It surfaces agreement, disagreement, citations, and model
             attribution instead of flattening every response into one opaque answer.
           </p>
         </div>
@@ -69,8 +69,8 @@ export function CouncilSection(): React.JSX.Element {
 
         <div className="mt-12 border-t border-neutral-800 pt-8">
           <p className="text-sm text-neutral-500">
-            Specify models in natural language: &quot;Research AI trends with Claude and GPT&quot; — or
-            let the system choose an OpenRouter-routed model. Every LLM call is tracked by model,
+            Select models from the research draft, or let the system choose an OpenRouter-routed
+            model. Use your own OpenRouter key or available platform access. Every LLM call is tracked by model,
             tokens, and cost so the result can be inspected after synthesis.
           </p>
         </div>

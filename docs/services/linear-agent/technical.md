@@ -235,6 +235,13 @@ sequenceDiagram
     LA-->>User: PruneDeleteStats
 ```
 
+## Changes Since v3.8.0
+
+- `POST /internal/issues` accepts optional `idempotencyKey` (1–1024 characters). The user ID and key determine a stable Linear issue ID. The route returns an existing issue before creation and rechecks after a failed create to recover a race; reuse the key only for the same logical issue.
+- Issue-list page reads retry transient 5xx and transport failures up to three times, with exponential backoff and bounded jitter. Exhaustion returns `UPSTREAM_UNAVAILABLE`; route mapping uses `SERVICE_UNAVAILABLE`. Authentication and other permanent failures do not enter this retry path.
+- Webhook processing authenticates the issue/team context and HMAC before filtering unsupported event types. Missing secrets, unknown comment issues, and unrecognizable payloads fail authentication rather than being silently accepted.
+- Pruning and other platform fallback AI calls use the shared OpenRouter client. Expected handled errors retain logs without redundant error reports.
+
 ## Recent Changes
 
 | Commit      | Description                                                                           | Date       |
@@ -658,9 +665,9 @@ Linear webhooks are verified using HMAC-SHA256 signatures. The raw request body 
 ### Multi-Tenant Fan-Out
 
 1. Extract team ID from webhook payload (issue events) or look up from synced issue (comment events)
-2. Look up ALL connected users by team ID (`findUserIdsByTeamId`)
-3. Look up webhook secret for team (`findWebhookSecretByTeamId`)
-4. Validate HMAC-SHA256 signature
+2. Look up webhook secret for team (`findWebhookSecretByTeamId`)
+3. Validate HMAC-SHA256 signature before ignoring unsupported event types
+4. Look up ALL connected users by team ID (`findUserIdsByTeamId`)
 5. Fan out sync to ALL connected users concurrently via `Promise.allSettled`
 6. Check auto-trigger conditions (first user only, to avoid duplicate code tasks)
 7. On label changes, notify code-agent to recompute group summaries

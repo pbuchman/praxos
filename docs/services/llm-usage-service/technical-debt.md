@@ -80,6 +80,10 @@ None identified.
 
 ---
 
+## Release Compatibility Improvements
+
+Since v3.8.0, schema tests cover embedding ingestion. Aggregate-key tests cover slash-containing component names and distinguish literal percent escapes; repository tests verify that storage keeps the original component dimension. This removes an invalid-document-path failure without changing the public dimension format.
+
 ## Resolved Issues
 
 | Date       | Issue                                                      | Resolution                                             |

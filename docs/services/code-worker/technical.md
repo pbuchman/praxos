@@ -68,7 +68,6 @@ sequenceDiagram
     participant E as entrypoint.sh
     participant R as Runtime (Claude/Codex)
     participant GH as GitHub
-    participant GCP as GCP Secret Manager
 
     O->>E: docker exec run-attempt
     E->>E: Verify /tmp/worker-ready
@@ -82,6 +81,12 @@ sequenceDiagram
     E->>E: Cleanup child processes (SIGTERM/SIGKILL)
     E-->>O: Return exit code
 ```
+
+## Changes Since v3.8.0
+
+The entrypoint restores Codex MCP configuration from `/opt/codex-home/.codex` into its temporary home. `config-defaults/codex-config.toml` configures Linear with `LINEAR_API_KEY` and `error_hub` with `ERROR_HUB_HOST`; the Error Hub client connects to the private SentryBox compatibility API with Seer disabled.
+
+The worker no longer mounts/activates a general GCP service-account key for startup secret sync. It consumes the host-rendered task projection. Docker image and orchestrator MCP verification tests cover the restored configuration and private error-service connection.
 
 ## Recent Changes
 
@@ -164,7 +169,6 @@ Network: `code-worker-net` (dual-stack bridge driver, fixed Linux bridge `code-w
 
 | File                | Required | Description                                       |
 | ------------------- | -------- | ------------------------------------------------- |
-| `gcp-sa.json`       | Optional | GCP service account key for gcloud auth           |
 | `github-token`      | Optional | GitHub access token (refreshed every 30 min)      |
 | `system-prompt.txt` | Required | Worker system prompt (read at `run-attempt` time) |
 | `user-prompt.txt`   | Required | Worker user prompt (read via stdin redirect)      |
@@ -185,7 +189,6 @@ Network: `code-worker-net` (dual-stack bridge driver, fixed Linux bridge `code-w
 | `CODEX_REASONING_EFFORT`              | Orchestrator     | Reasoning effort level for Codex runtime (e.g., `xhigh`)                                 |
 | `LINEAR_API_KEY`                      | Orchestrator env | Linear integration key                                                                   |
 | `ERROR_HUB_HOST`                      | Orchestrator env | Private SentryBox host for the `error_hub` MCP entry                                      |
-| `GOOGLE_APPLICATION_CREDENTIALS`      | Fixed            | `/secrets/gcp-sa.json`                                                                   |
 | `CLAUDE_PROJECT_DIR`                  | Fixed            | `/repo`                                                                                  |
 | `CODE_WORKER_MODE`                    | Fixed            | `1` — identifies this as an automated worker process                                     |
 | `WORKER_MANAGED_MODE`                 | Orchestrator     | `1` = stay alive, accept `run-attempt` via docker exec                                   |
@@ -226,8 +229,8 @@ The `entrypoint.sh` script supports two invocation modes:
 5. **Plugin restoration** — Copies pre-installed Claude Code plugins from `/opt/claude-plugins/.claude/plugins/` to `/home/claude/.claude/plugins/`, rewriting staging paths to match the runtime HOME directory
 6. **Codex skill restoration** — Copies pre-staged Codex Superpowers skills from `/opt/codex-home/.agents/` to `/home/claude/.agents/`
 7. **Mount verification** — Checks that `/repo` exists and contains a git repository (supports both `.git` directory and worktree `.git` file)
-8. **GCP authentication** — Activates GCP service account from `/secrets/gcp-sa.json` via `gcloud auth`
-9. **Secret sync** — Runs `scripts/sync-secrets.sh dev` to pull environment variables from GCP Secret Manager into `/repo/.envrc`
+8. **Codex MCP restoration** — Copies `/opt/codex-home/.codex/` into `/home/claude/.codex/`
+9. **Host configuration boundary** — Uses the host-rendered, task-filtered `/repo/.envrc`; does not activate GCP credentials or fetch Secret Manager values
 10. **Environment loading** — Sources `/repo/.envrc` and runs `direnv allow /repo` so env vars auto-load for all subsequent commands
 11. **Git identity setup** — Configures `user.name` / `user.email` from `GIT_USER_NAME` / `GIT_USER_EMAIL` env vars at both global and repo level
 12. **GitHub token setup** — Reads token from `/secrets/github-token`; configures git credential helper to read the token file directly on each git operation
@@ -493,7 +496,7 @@ docker/code-worker/
 
 **GitHub token is read from file, not env** — The `GITHUB_TOKEN` env var set at startup is a point-in-time snapshot that may go stale within long-running attempts. The git credential helper reads `/secrets/github-token` directly on each git operation (`$(cat /secrets/github-token)` in gitconfig). The `gh` CLI uses a wrapper at `/usr/local/bin/gh` that re-reads the file before each invocation. Both mechanisms pick up token refreshes from the orchestrator's `TokenRefresher` without any background watcher.
 
-**Secret sync runs inside the container** — The entrypoint calls `scripts/sync-secrets.sh dev` to pull environment variables from GCP Secret Manager into `/repo/.envrc`. This requires the GCP service account key to be mounted. If sync fails, the entrypoint continues with any pre-existing `.envrc` file.
+**Configuration is prepared on the host** — The entrypoint loads the host-rendered, task-filtered `/repo/.envrc`. Container-side GCP activation and Secret Manager synchronization are removed; prepare the projection before starting the worker.
 
 **direnv hook in .bashrc** — The entrypoint bakes `eval "$(direnv hook bash)"` into `.bashrc` so that environment variables from `.envrc` auto-load when Claude (or any bash subprocess) enters `/repo`. The `.envrc` is also sourced explicitly during startup before the direnv hook takes effect.
 

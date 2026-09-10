@@ -179,6 +179,10 @@ Worktrees accumulate until manually cleaned or the stale threshold is exceeded. 
 
 ---
 
+## Changes Since v3.8.0
+
+Guarded restart support adds a persistent admission freeze and evidence for in-flight admissions, terminal callbacks, and log forwarding. This complements the existing shutdown endpoint; operators must use the guarded restart procedure. State writes use restricted permissions. Host-rendered pinned configuration and a private SentryBox MCP replace the legacy secret-fetch and error-service compatibility paths. Existing restart, state-persistence, webhook, planning-contract, and MCP tests cover these boundaries.
+
 ## Recent Improvements (current release documentation)
 
 The following release-relevant reliability changes landed since v3.7.0:

@@ -8,36 +8,31 @@ You remember the dentist appointment while you are mid-conversation on WhatsApp.
 
 So you tell yourself you will add it later. Sometimes you do. Often you do not. The appointment slips out of short-term memory and never makes it onto the calendar. The problem was never the calendar itself — it was the seven-step form standing between the thought and the event.
 
-What if scheduling took exactly as long as saying the words out loud?
+Scheduling can start with a short text in the conversation you already have open.
 
-## Use Case: A Week of Voice Scheduling
+## Use Case: Plan And Adjust From WhatsApp
 
-You are a founder who splits time between Warsaw and London, switches between Polish and English without thinking about it, and treats WhatsApp as your primary inbox.
+1. Send a text such as “Dentist next Tuesday at 15:00 for 45 minutes.”
+2. Intex resolves missing details and presents the proposed event for confirmation. With no end or duration, it shows a 60-minute default in that confirmation.
+3. Ask “What is on my calendar tomorrow?” or “How many meetings did I have last month?” for a bounded calendar query.
+4. Ask to move an existing event or add an attendee. Intex first looks up the exact event, resolves ambiguous matches, and asks you to confirm the change.
+5. Several identified event updates can share one confirmation. They remain independent operations, so a failure does not roll back earlier successful updates.
 
-1. Monday morning, mid-conversation, you send a voice note: "Dentist next Tuesday at 3pm." That is the entire interaction on your end.
-2. The system interprets your message, extracts the event details, and builds a preview. When you check your dashboard, the preview is waiting — event title, date, start and end times, duration in plain language, and a short explanation of how the AI read your words. You glance at it, confirm it looks right, and approve. The event appears in your Google Calendar.
-3. Tuesday, you dictate in Polish: "Nastepny czwartek o dziesiatej, spotkanie z Markiem." The system knows what day it is, counts forward to Thursday, and presents a preview with the correct date and a 10:00 start time. No translation step, no confusion about relative dates.
-4. Wednesday, you say "Holiday on March 15th" without mentioning a time. The system recognizes there is no time component and sets it up as an all-day event.
-5. Thursday, you say "Lunch at Cafe Moro, Friday noon." The preview includes the location — Cafe Moro — alongside the date and time. You approve, and the event lands in your calendar with the location field filled in.
-6. Friday, you mumble something vague into a voice note: "Meeting sometime next week." There is no date, no time, no duration — not enough to build an event. Rather than discard it, the system saves the attempt to a review list where you can see what the AI tried to extract, retry it with more detail, or dismiss it.
+Intex accepts text for this flow; voice commands remain unsupported.
 
-Six moments across a week. None of them required opening a calendar app, tapping through a form, or typing a single character.
+## Recent Changes
+
+Since v3.8.0, calendar queries, confirmed attendee/general updates, and daily lookahead schedules extend existing event creation. The daily schedule sends the next-24-hours request to Intex through the connected private WhatsApp/Matrix path, starting a fresh session at the configured local time.
 
 ## How It Helps
 
-### Preview Everything Before It Touches Your Calendar
+### Review Intex Changes Before They Reach Your Calendar
 
-Nothing reaches your Google Calendar without your say-so. Every event the system extracts from your words is presented as a preview first. You see the title, the proposed start and end times, the calculated duration in plain language — "1 hour 30 minutes" rather than a pair of timestamps — whether it is flagged as an all-day event, and any location or description the system picked up. You also see the AI's reasoning: how it interpreted your phrasing, why it chose a particular date, what assumptions it made.
+Intex asks for missing title, date, or start details and displays a confirmation before creating or changing an event. Confirmed updates preserve fields you did not request to change and reject a stale event snapshot if the calendar changed after review. The separate internal preview API remains available for trusted callers; direct Calendar API callers own their own authorization and review flow.
 
-This is not a rubber-stamp step. It is where you catch mistakes before they happen. If the system read "next Tuesday" as the wrong Tuesday, you see it in the preview and correct it — before the event exists.
+### Write In Natural Language — "Pojutrze Rano" Works as Well as "Tomorrow at 9"
 
-The agent commits to a single interpretation rather than asking clarifying questions — the preview exists precisely so you can reject a bad parse without the agent needing to query you mid-flow. When you approve, the event is created directly from the preview data. There is no second round of interpretation, no chance for the system to change its mind between your approval and the calendar entry.
-
-**Example:** You say "Coffee with Anna, Thursday 4pm, Blue Bottle on Broad Street." The preview shows the title ("Coffee with Anna"), the date (this Thursday), the start time (4:00 PM), and the location (Blue Bottle on Broad Street). You approve it in one tap.
-
-### Speak Any Language — "Pojutrze Rano" Works as Well as "Tomorrow at 9"
-
-The system does not require English, formal grammar, or any particular sentence structure. It understands relative date expressions — "next Thursday," "this weekend," "in two days" — in any language. A Polish speaker can say "nastepny czwartek o dziesiatej" and the system resolves the correct date, because it knows what day of the week today is and can count forward accordingly.
+Natural-language parsing supports conversational English and Polish. It understands relative date expressions — "next Thursday," "this weekend," "in two days" — in supported phrasing. A Polish speaker can write "nastepny czwartek o dziesiatej" and the system resolves the correct date, because it knows what day of the week today is and can count forward accordingly.
 
 The same applies to informal phrasing, abbreviations, and conversational shorthand. You describe the event the way you would tell a friend. The system figures out the structure.
 
@@ -57,13 +52,13 @@ When you create or update an event through the dashboard, you can include attend
 
 **Example:** You create a "Product review Friday at 2pm" event and add your co-founder's email. The event lands on both calendars with a standard Google Calendar invitation.
 
-### Recover What the AI Could Not Parse
+### Receive A Daily Calendar Lookahead
 
-Not every voice note contains enough information for a calendar event. Some are too vague. Some trail off mid-sentence. Rather than discard these, the system saves them to a review list. You can see what the AI attempted to extract — maybe it caught a title and a rough date but no time — and decide what to do. If the start and end times are present, you can retry. If the message was genuinely useless, you dismiss it. Nothing disappears into a silent failure.
+Enable daily lookahead with a local time and IANA time zone. The schedule checks the private WhatsApp delivery setup and starts a new Intex session with a request for events in the next 24 hours. You can pause it without deleting your calendar events.
 
-Most voice scheduling tools silently drop what they cannot parse. You never know the message was lost until you realize the event is not on your calendar — days later, if at all. Calendar Agent takes the opposite approach: every attempt is visible, every failure is recoverable, and you decide what to do with the ambiguous ones.
+### Recover Failed Extractions
 
-**Example:** You said "Catch up with Jakub sometime next week" — no day, no time. The system saves it with the AI's best attempt: it extracted the title and a rough week, but no specific slot. You dismiss it from the review list and send a new voice note with more detail: "Catch up with Jakub, Wednesday 11am." This time, the preview generates cleanly.
+The Calendar API retains failed-event review and retry routes. Intex’s conversational path instead asks for missing information before requesting confirmation. These are separate entry points; an incomplete WhatsApp request is not automatically a failed-extraction dashboard record.
 
 ## Getting Connected
 
@@ -71,12 +66,12 @@ Connect your Google account through your IntexuraOS profile settings. Once linke
 
 ## Key Benefits
 
-- **Voice to calendar in seconds** — describe an event in natural language and it appears as a preview, ready for one-tap approval
+- **Text to calendar** — describe an event and confirm the complete proposal in WhatsApp
 - **Preview before commit** — see exactly what will be created, including duration, all-day detection, and the AI's reasoning, before anything touches your calendar
-- **Any language, any phrasing** — relative dates and natural expressions work in any language, including Polish
+- **Natural phrasing** — describe dates conversationally, including in Polish
 - **Your existing Google Calendar** — primary, secondary, and shared calendars with no migration and no parallel system
 - **Availability across calendars** — query free/busy status across multiple calendars for any time range
-- **Nothing silently lost** — vague or incomplete requests are saved for review, not discarded
+- **Visible missing details** — Intex asks for clarification; failed API extractions have a separate recovery view
 
 ## Limitations
 
@@ -84,7 +79,7 @@ Connect your Google account through your IntexuraOS profile settings. Once linke
 - **Google account required** — you must connect your Google account before calendar features work; the system explains what is missing if you have not
 - **Google-imposed volume limits** — if you send a very high volume of requests in a short period, Google may temporarily pause new calendar updates
 - **No recurring events** — single events only; weekly standup patterns and similar repetitions are not supported
-- **No reminders** — reminder configuration is not available through the agent
+- **No event reminder editing** — daily lookahead is supported, but per-event reminder configuration is not exposed
 - **No event colors** — color customization is not exposed
 - **No file attachments** — you cannot attach files to events through the agent
 

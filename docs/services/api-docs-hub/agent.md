@@ -7,7 +7,7 @@
 | Attribute   | Value                                                                   |
 | ----------- | ----------------------------------------------------------------------- |
 | **Name**    | api-docs-hub                                                            |
-| **Role**    | Aggregates OpenAPI specs from 20 services into a single Swagger UI      |
+| **Role**    | Aggregates OpenAPI specs from 17 services into a single Swagger UI      |
 | **Goal**    | Provide a unified documentation portal for all IntexuraOS service APIs  |
 | **Version** | 3.5.0 (package) / 0.0.5 (OpenAPI spec)                                  |
 
@@ -23,7 +23,7 @@
 
 **Note:** This endpoint serves an HTML page (Swagger UI). It is browser-only and not useful for programmatic access by agents.
 
-**Output:** Interactive Swagger UI HTML page with a service selector dropdown listing all 20 configured services.
+**Output:** Interactive Swagger UI HTML page with a service selector dropdown listing all 17 configured services.
 
 ### Check Health
 
@@ -35,9 +35,10 @@
 
 ```typescript
 interface HealthResponse {
-  status: 'healthy' | 'degraded' | 'down';
+  status: 'ok' | 'degraded' | 'down';
   serviceName: 'api-docs-hub';
   version: '0.0.5';
+  timestamp: string;
   checks: HealthCheck[];
 }
 
@@ -45,9 +46,7 @@ interface HealthCheck {
   name: 'config';
   status: 'ok' | 'down';
   latencyMs: number;
-  details: {
-    sourceCount: number;  // Expected: 20
-  };
+  details: { detail: string } | null;
 }
 ```
 
@@ -59,15 +58,16 @@ interface HealthCheck {
 
 // Response
 {
-  "status": "healthy",
+  "status": "ok",
   "serviceName": "api-docs-hub",
   "version": "0.0.5",
+  "timestamp": "2026-09-10T10:00:00.000Z",
   "checks": [
     {
       "name": "config",
       "status": "ok",
       "latencyMs": 0,
-      "details": { "sourceCount": 20 }
+      "details": null
     }
   ]
 }
@@ -85,7 +85,7 @@ interface HealthCheck {
 
 **Requires:**
 
-- All 20 `INTEXURAOS_*_OPENAPI_URL` environment variables set at startup
+- All 17 `INTEXURAOS_*_OPENAPI_URL` environment variables set at startup
 - Target services must be running and CORS-enabled for the browser to fetch their specs
 
 ---
@@ -96,8 +96,8 @@ interface HealthCheck {
 
 ```
 1. GET /health
-2. Assert response.status === 'healthy'
-3. Assert response.checks[0].details.sourceCount === 20
+2. Assert response.status === 'ok'
+3. Assert response.checks[0].status === 'ok'
 ```
 
 ### Pattern 2: Direct Service Spec Access
@@ -120,6 +120,8 @@ To programmatically access a service's OpenAPI spec, bypass the hub entirely and
 | Notion Service API               | `INTEXURAOS_NOTION_SERVICE_OPENAPI_URL`                   |
 | WhatsApp Service API             | `INTEXURAOS_WHATSAPP_SERVICE_OPENAPI_URL`                 |
 | Mobile Notifications Service API | `INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_OPENAPI_URL`     |
+| Message Digest Service API | `INTEXURAOS_MESSAGE_DIGEST_SERVICE_OPENAPI_URL` |
+| Fishing Assistant Service API | `INTEXURAOS_FISHING_ASSISTANT_SERVICE_OPENAPI_URL` |
 | Research Agent API               | `INTEXURAOS_RESEARCH_AGENT_OPENAPI_URL`                   |
 | Intex Agent API                  | `INTEXURAOS_INTEX_AGENT_OPENAPI_URL`                      |
 | Image Service API                | `INTEXURAOS_IMAGE_SERVICE_OPENAPI_URL`                    |
@@ -141,7 +143,7 @@ To programmatically access a service's OpenAPI spec, bypass the hub entirely and
 | 200    | Success                              | None needed                                          |
 | 404    | Unknown path                         | Use `/docs` or `/health` only                        |
 | 500    | Server error                         | Check logs for startup misconfiguration              |
-| N/A    | Service fails to start               | Verify all 20 env vars are set; check `direnv allow` |
+| N/A    | Service fails to start               | Verify all 17 env vars are set; check `direnv allow` |
 
 ---
 
@@ -157,10 +159,10 @@ To programmatically access a service's OpenAPI spec, bypass the hub entirely and
 
 ## Architecture
 
-The hub serves Swagger UI HTML to the browser. The browser then fetches OpenAPI specs directly from each of the 20 target services. The hub does not proxy or cache any specs.
+The hub serves Swagger UI HTML to the browser. The browser then fetches OpenAPI specs directly from each of the 17 target services. The hub does not proxy or cache any specs.
 
 1. Browser sends `GET /docs` to API Docs Hub
-2. Hub returns Swagger UI HTML with `urls` config listing all 20 services
+2. Hub returns Swagger UI HTML with `urls` config listing all 17 services
 3. Browser fetches `GET /openapi.json` from the selected target service
 4. Browser renders the interactive API documentation
 
