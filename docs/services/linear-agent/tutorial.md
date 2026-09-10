@@ -455,6 +455,12 @@ curl http://localhost:3000/internal/linear/issues/ISSUE_ID/direct-children \
 
 ---
 
+## Retry Issue Creation Safely
+
+When integrating error remediation with `POST /internal/issues`, include a stable `idempotencyKey` alongside `title` and `description`, and retain it if the response is lost or a transient failure occurs. Repeating that logical request returns the same issue; use a new key for a different issue.
+
+For webhook troubleshooting, verify the team secret and synced issue context before retrying. Missing authentication context is rejected, including for event types that the service does not process.
+
 ## Part 6: Auto-Trigger Code Tasks (3 minutes)
 
 When an issue with a "planning-task" or "code-task" label is assigned for the first time, the Linear Agent automatically triggers a code task.

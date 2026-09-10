@@ -2,7 +2,7 @@
 
 > **Migration note:** Voice transcription has been part of IntexuraOS since v2.x (originally inline in whatsapp-service using Speechmatics). In v3.2.0, transcription was extracted into this dedicated Cloud Function worker with event-driven processing via Pub/Sub.
 
-Convert WhatsApp voice notes into searchable text — automatically, accurately, and in any language.
+Convert WhatsApp voice notes and videos into searchable text — automatically, accurately, and in any language.
 
 ## The Problem
 
@@ -38,7 +38,7 @@ A built-in vocabulary of 100+ domain-specific terms ensures accurate transcripti
 
 A user is walking and remembers three things they need to do for their IntexuraOS project. They open WhatsApp, record a voice note: "I need to pushowac the changes to the monorepo, check the Sentry alerts for the calendar-agent, and create a Linear issue for the Firestore migration."
 
-When a standalone audio job is published, the transcription worker generates a signed URL for the audio file, submits it to Speechmatics with the custom vocabulary, polls until complete, and publishes the transcript. WhatsApp Intex conversations do not currently use this path; voice messages are answered with a text-only unsupported reply.
+When an audio or media transcription request is published, the worker generates a signed media URL, submits it to Speechmatics with the custom vocabulary, polls until complete, and publishes the transcript. Requests can identify public or private WhatsApp messages so results return to the correct source. Private-chat transcription controls are applied by whatsapp-service before publishing work.
 
 ## Key Benefits
 
@@ -46,11 +46,15 @@ When a standalone audio job is published, the transcription worker generates a s
 - Enhanced accuracy through domain-specific custom vocabulary
 - Language-agnostic: works with any spoken language, auto-detected
 - AI summaries reduce time spent reading long transcriptions
-- Resilient error handling: always publishes a result, even on failure
+- Attempts to publish success or failure results with source and media-kind metadata
+
+## Recent Changes Since v3.8.0
+
+Video transcription shares the existing Speechmatics pipeline. Private voice/video requests preserve their conversation source on successful and failed results. Handled provider rejections remain visible in logs without creating duplicate error alerts.
 
 ## Limitations
 
-- Only processes audio from WhatsApp (triggered by `whatsapp.audio.stored` events)
+- Processes stored WhatsApp audio and video through `whatsapp.audio.stored` or `whatsapp.media.transcription.requested` events
 - Currently supports only Speechmatics as a transcription provider (provider factory is extensible but no alternatives are implemented)
 - Polling-based completion check with exponential backoff can take up to ~5 minutes for long audio files
 - Speechmatics rate limits and quotas apply (service handles these gracefully but cannot bypass them)

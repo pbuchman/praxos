@@ -95,6 +95,10 @@ sequenceDiagram
 
 ## Recent Changes
 
+### Changes since v3.8.0
+
+The platform OpenRouter credential is now required at startup and passed to `createUserServiceClient()` as `platformOpenRouterApiKey`. This completes the configured fallback path for page summaries; link preview and page-summary endpoints retain their existing contracts.
+
 | Commit     | Description                                                            | Date       |
 | ---------- | ---------------------------------------------------------------------- | ---------- |
 | `20aa37c4` | Fix page summary prompt review findings                                | 2026-04-02 |

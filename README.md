@@ -1,13 +1,13 @@
 <div align="center">
   <a href="https://intexuraos.cloud/" target="_blank">
-    <img src="docs/assets/screenshots/dashboard.png" alt="IntexuraOS Dashboard" width="100%">
+    <img src="docs/assets/screenshots/dashboard.png" alt="IntexuraOS 4.0 product overview with demo code tasks, Intex Agent, research, calendar, and WhatsApp message digests" width="100%">
   </a>
 
   <p>
     <a href="https://github.com/pbuchman/intexuraos/actions"><img src="https://img.shields.io/github/actions/workflow/status/pbuchman/intexuraos/ci.yml?branch=main&label=Build&style=flat-square&logo=github" alt="Build Status"></a>
-    <img src="https://img.shields.io/badge/Coverage-100%25-success?style=flat-square&logo=codecov" alt="Coverage">
+    <img src="https://img.shields.io/badge/Coverage_Gate-95%25-success?style=flat-square&logo=codecov" alt="95% coverage gate">
     <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript Strict">
-    <img src="https://img.shields.io/badge/AI_Providers-5-purple?style=flat-square" alt="AI Providers">
+    <img src="https://img.shields.io/badge/LLM_Access-OpenRouter-purple?style=flat-square" alt="Application LLM access through OpenRouter">
     <img src="https://img.shields.io/badge/Infrastructure-Terraform-623CE4?style=flat-square&logo=terraform&logoColor=white" alt="Terraform">
   </p>
 </div>
@@ -19,6 +19,17 @@
 > A thought becomes a note. A date becomes a calendar event. A link becomes an enriched bookmark. A question becomes a multi-model research report. A bug report becomes a planned, tested code change running on your own machine.
 
 **[Why It Is Different](#why-it-is-different)** · **[Agentic Patterns](#agentic-patterns-in-production)** · **[System Flow](#system-flow)** · **[Self-Building Code](#flagship-subsystem-self-building-code)** · **[Research Council](#multi-model-research-council)** · **[Engineering Proof](#engineering-proof)** · **[Getting Started](#getting-started)** · **[Documentation](#documentation)**
+
+---
+
+## What's New in v4.0.0
+
+| Feature                             | Description                                                                                                                                              |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Custom WhatsApp Message Digests** | Schedule summaries of a private group or direct chat with your own instructions, preview the result, and review past digests delivered through WhatsApp. |
+| **WhatsApp Conversation Assistant** | Ask questions about private chats using a chosen date range, inspect the captured context, and follow streamed responses.                                |
+
+See [CHANGELOG.md](CHANGELOG.md) for all release changes.
 
 ---
 
@@ -40,8 +51,8 @@ The result is closer to a personal operating system than a productivity app: a s
 
 | Pattern                     | IntexuraOS implementation                                                                                              | What it proves                                                                                           |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Direct-tool action agent    | [`intex-agent`](docs/services/intex-agent/features.md)                                                                 | WhatsApp text is classified through deterministic gates before one supported tool is exposed.            |
-| Multi-model council         | [`research-agent`](docs/services/research-agent/features.md)                                                           | Several providers answer independently, then synthesis preserves attribution and disagreements.          |
+| Direct-tool action agent    | [`intex-agent`](docs/services/intex-agent/features.md)                                                                 | WhatsApp text passes intent gates, with explicit confirmation before supported mutations.                |
+| Multi-model council         | [`research-agent`](docs/services/research-agent/features.md)                                                           | Selected models answer independently, then synthesis preserves attribution and disagreements.            |
 | Citation-grounded RAG       | [`fishing-assistant-service`](docs/services/fishing-assistant-service/features.md)                                     | Knowledge, digest, and raw-message evidence are retrieved, ranked, cited, validated, and repaired.       |
 | Writing-state agent         | [`hellscript-agent`](docs/services/hellscript-agent/features.md)                                                       | User utterances become durable buffer events before drafts are generated from personal writing samples.  |
 | Extraction-to-action agents | [`calendar-agent`](docs/services/calendar-agent/features.md), [`linear-agent`](docs/services/linear-agent/features.md) | Natural language is parsed into structured data, validated, and either executed or stored for recovery.  |
@@ -115,15 +126,15 @@ flowchart LR
 
 You submit tasks while walking, commuting, or thinking of something else. WhatsApp is the mobile interface because it is already on your phone and already open. IntexuraOS turns that text into structured work.
 
-| You say                                            | What happens                                                                  |
-| -------------------------------------------------- | ----------------------------------------------------------------------------- |
-| _"Fix the Safari login redirect"_                  | Code task starts in planning mode for design review.                          |
-| _"Research quantum computing with Claude and GPT"_ | Research draft is created with selected models and reviewable context.        |
-| _"Schedule a sync with engineering Tuesday at 2"_  | Calendar event is created when title, date, and time are clear.               |
-| _"Save a note about the Q4 report"_                | Note is saved with a generated title and searchable metadata.                 |
-| _"Save this link about TypeScript 5.0"_            | Bookmark is saved, enriched, summarized, and delivered back through WhatsApp. |
+| You say                                            | What happens                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| _"Fix the Safari login redirect"_                  | After confirmation, a code task starts in planning mode for design review.            |
+| _"Research quantum computing with Claude and GPT"_ | After confirmation, a research draft is created for review.                           |
+| _"Schedule a sync with engineering Tuesday at 2"_  | Event details are clarified and shown for confirmation before creation.               |
+| _"Save a note about the Q4 report"_                | After confirmation, a note is saved with a generated title and searchable metadata.   |
+| _"Save this link about TypeScript 5.0"_            | After confirmation, the bookmark is saved, enriched, and summarized through WhatsApp. |
 
-The direct tools are intentionally limited: notes, calendar events, research drafts, bookmarks, and code tasks. Unsupported requests get a clear response instead of a guessed action.
+Direct tools cover notes, calendar queries and updates, research drafts, bookmarks, code tasks, configured external saving, and personal preferences. Read-only calendar and preference queries can return immediately; changes require confirmation. Unsupported requests get a clear response.
 
 ## Flagship Subsystem: Self-Building Code
 
@@ -159,12 +170,12 @@ flowchart LR
 
 ## Multi-Model Research Council
 
-Research-agent does not ask one model and trust the answer. It sends the same structured research plan to multiple providers, stores each result independently, then synthesizes the reports with attribution.
+Research-agent does not ask one model and trust the answer. It sends the same structured research plan to selected models through OpenRouter, stores each result independently, then synthesizes the reports with attribution.
 
 ```mermaid
 flowchart TB
     Q[Research prompt and context] --> DRAFT[Reviewable research draft]
-    DRAFT --> FANOUT[Parallel model fan-out]
+    DRAFT --> FANOUT[Parallel models via OpenRouter]
     FANOUT --> GEM[Gemini]
     FANOUT --> GPT[GPT]
     FANOUT --> CLAUDE[Claude]
@@ -208,7 +219,7 @@ The system can only delegate work safely because the engineering discipline is s
 
 | Discipline                 | How it is enforced                                                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **100% branch coverage**   | Every branch is tested or explicitly exempted with a documented blocker.                                           |
+| **95% coverage gate**      | CI enforces at least 95% line, branch, function, and statement coverage.                                           |
 | **Strict TypeScript**      | `noUncheckedIndexedAccess`, exact optional properties, explicit booleans, and typed results.                       |
 | **Prompt versioning**      | LLM prompts are `PromptBuilder` objects with semver versions and CI-enforced bump checks.                          |
 | **Cross-LLM verification** | The writer and verifier are different providers for high-stakes code workflows.                                    |
@@ -227,14 +238,16 @@ The system can only delegate work safely because the engineering discipline is s
 | **Workers**        | Cloud Functions and VM-hosted orchestrator                                   |
 | **Data**           | Firestore, Google Cloud Storage                                              |
 | **Messaging**      | Cloud Pub/Sub                                                                |
-| **AI Providers**   | Google, OpenAI, Anthropic, Perplexity, OpenRouter                            |
+| **Application AI** | Models accessed through OpenRouter                                           |
 | **Integrations**   | WhatsApp Business API, Linear, GitHub, Google Calendar, Notion, Speechmatics |
 | **Infrastructure** | Terraform, Docker, PM2, nginx, GitHub Actions                                |
 
 ---
 
 <details>
-<summary><h2>What's New in v3.8.0</h2></summary>
+<summary><h2>Version History: v3.x</h2></summary>
+
+### v3.8.0
 
 > See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 
@@ -259,7 +272,7 @@ You need three things: a WhatsApp account, a Google account, and a web browser.
 2. **Link your Google account** for calendar access.
 3. **Send your first text message** and the system routes it immediately.
 
-The platform provides fallback AI model access, so you can run research and generate bookmarks before configuring your own API keys. For coding tasks, connect a worker machine. For project tracking, connect Linear. For research exports, connect Notion. Each integration is optional and independent.
+The platform provides fallback OpenRouter access, so you can run research and generate bookmarks before configuring your own OpenRouter key. For coding tasks, connect a worker machine. For project tracking, connect Linear. For research exports, connect Notion. Each integration is optional and independent.
 
 ### For Developers
 
@@ -295,26 +308,26 @@ Full setup: **[Development Setup Guide](docs/setup/05-local-dev-with-gcp-deps.md
 <details>
 <summary><strong>Core Services</strong></summary>
 
-| Service                                                                                    | What it does                                                                                            |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| **[intex-agent](docs/services/intex-agent/features.md)**                                   | WhatsApp text runtime with direct tools for notes, calendar, research, bookmarks, and code tasks.       |
-| **[code-agent](docs/services/code-agent/features.md)**                                     | Autonomous code planning, execution dispatch, GitHub feedback loops, cost controls, and task lifecycle. |
-| **[orchestrator](docs/services/orchestrator/features.md)**                                 | Local isolated coding sessions, worker supervision, completion verification, and status callbacks.      |
-| **[research-agent](docs/services/research-agent/features.md)**                             | Multi-model research with draft review, parallel provider calls, synthesis, and share/export flows.     |
-| **[fishing-assistant-service](docs/services/fishing-assistant-service/features.md)**       | User-scoped RAG with citations over fishing knowledge, digests, and recent message evidence.            |
-| **[hellscript-agent](docs/services/hellscript-agent/features.md)**                         | Writing assistant with stateful buffers, personal samples, style config, and versioned drafts.          |
-| **[calendar-agent](docs/services/calendar-agent/features.md)**                             | Calendar event extraction, Google Calendar creation, preview, and failed-event recovery.                |
-| **[linear-agent](docs/services/linear-agent/features.md)**                                 | Linear sync, issue extraction, assignment-triggered code tasks, and AI-assisted pruning.                |
-| **[bookmarks-agent](docs/services/bookmarks-agent/features.md)**                           | Bookmark CRUD, OpenGraph enrichment, AI summaries, duplicate handling, and WhatsApp delivery.           |
-| **[notes-agent](docs/services/notes-agent/features.md)**                                   | User-scoped notes with tags, source tracking, and direct-tool creation.                                 |
-| **[web-agent](docs/services/web-agent/features.md)**                                       | Link preview and page-summary extraction for research and bookmark workflows.                           |
-| **[message-digest-service](docs/services/message-digest-service/features.md)**             | Configurable WhatsApp group and direct-chat summaries with scheduled delivery and run history.          |
-| **[mobile-notifications-service](docs/services/mobile-notifications-service/features.md)** | Android notification capture, search, and structured notification history.                              |
-| **[llm-usage-service](docs/services/llm-usage-service/features.md)**                       | Usage events, provider pricing, prompt-type attribution, and cost visibility.                           |
-| **[image-service](docs/services/image-service/features.md)**                               | Research cover image prompt generation, image creation, storage, and thumbnails.                        |
-| **[notion-service](docs/services/notion-service/features.md)**                             | Notion connection and research export support.                                                          |
-| **[whatsapp-service](docs/services/whatsapp-service/features.md)**                         | WhatsApp verification, inbound text ingestion, outbound notifications, and delivery events.             |
-| **[web](docs/services/web/features.md)**                                                   | Dashboard, PWA shell, live code logs, integrations, research, tasks, and settings.                      |
+| Service                                                                                    | What it does                                                                                                |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| **[intex-agent](docs/services/intex-agent/features.md)**                                   | WhatsApp text runtime with direct tools for notes, calendar, research, bookmarks, and code tasks.           |
+| **[code-agent](docs/services/code-agent/features.md)**                                     | Autonomous code planning, execution dispatch, GitHub feedback loops, cost controls, and task lifecycle.     |
+| **[orchestrator](docs/services/orchestrator/features.md)**                                 | Local isolated coding sessions, worker supervision, completion verification, and status callbacks.          |
+| **[research-agent](docs/services/research-agent/features.md)**                             | Multi-model research with draft review, parallel OpenRouter model calls, synthesis, and share/export flows. |
+| **[fishing-assistant-service](docs/services/fishing-assistant-service/features.md)**       | User-scoped RAG with citations over fishing knowledge, digests, and recent message evidence.                |
+| **[hellscript-agent](docs/services/hellscript-agent/features.md)**                         | Writing assistant with stateful buffers, personal samples, style config, and versioned drafts.              |
+| **[calendar-agent](docs/services/calendar-agent/features.md)**                             | Calendar event queries, confirmed creation and updates through Intex, and failed-event recovery.            |
+| **[linear-agent](docs/services/linear-agent/features.md)**                                 | Linear sync, issue extraction, assignment-triggered code tasks, and AI-assisted pruning.                    |
+| **[bookmarks-agent](docs/services/bookmarks-agent/features.md)**                           | Bookmark CRUD, OpenGraph enrichment, AI summaries, duplicate handling, and WhatsApp delivery.               |
+| **[notes-agent](docs/services/notes-agent/features.md)**                                   | User-scoped notes with tags, source tracking, and direct-tool creation.                                     |
+| **[web-agent](docs/services/web-agent/features.md)**                                       | Link preview and page-summary extraction for research and bookmark workflows.                               |
+| **[message-digest-service](docs/services/message-digest-service/features.md)**             | Configurable WhatsApp group and direct-chat summaries with scheduled delivery and run history.              |
+| **[mobile-notifications-service](docs/services/mobile-notifications-service/features.md)** | Android notification capture, search, and structured notification history.                                  |
+| **[llm-usage-service](docs/services/llm-usage-service/features.md)**                       | Usage events, provider pricing, prompt-type attribution, and cost visibility.                               |
+| **[image-service](docs/services/image-service/features.md)**                               | Research cover image prompt generation, image creation, storage, and thumbnails.                            |
+| **[notion-service](docs/services/notion-service/features.md)**                             | Notion connection and research export support.                                                              |
+| **[whatsapp-service](docs/services/whatsapp-service/features.md)**                         | WhatsApp messaging, private conversations, captured-context analysis, and delivery events.                  |
+| **[web](docs/services/web/features.md)**                                                   | Dashboard, PWA shell, live code logs, integrations, research, tasks, and settings.                          |
 
 </details>
 
@@ -331,9 +344,9 @@ IntexuraOS is designed for individual power users who want depth in one workflow
 - **Android for notification capture**: iOS notification forwarding is not supported.
 - **English and Polish natively**: other languages may work, but are not explicitly tested.
 - **Designed for individual use**: no shared workspaces or team collaboration features.
-- **No recurring events or tasks**: calendar events and todos are single instances.
+- **No recurring calendar creation**: calendar event creation handles single instances; Message Digests and calendar lookahead have their own schedules.
 - **Two worker machines**: one primary and one fallback coding worker.
-- **Manual API keys**: provider keys are generated by the user and validated before storage.
+- **Optional OpenRouter key**: your own key is validated before storage; platform access supplies a fallback.
 - **Design review before code execution**: a deliberate quality gate, not an optimization to remove.
 
 </details>

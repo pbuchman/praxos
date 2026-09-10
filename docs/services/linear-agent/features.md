@@ -102,6 +102,12 @@ Networks hiccup. Updates miss a beat. Over weeks, the local copy can drift from 
 
 **Example:** After a server restart, you suspect the board might be stale. You trigger a full refresh. The agent reconciles every issue — creates three that were missing, updates twelve that had changed, and removes one that was deleted from Linear. Your dashboard matches your Linear board exactly.
 
+## Recent Changes Since v3.8.0
+
+Internal issue creation accepts a stable caller key so retries and concurrent error-remediation requests can reuse the same Linear issue. Issue-list synchronization retries transient upstream and network failures with backoff. Expected outages return a clear temporary-unavailability result while retaining useful logs.
+
+Webhook signatures are checked before unsupported events are ignored; a missing team secret or unverifiable comment context is rejected. Platform AI fallback uses OpenRouter.
+
 ## Getting Connected
 
 Connect your Linear account through the settings page — you will need your API key and team selection (your IT admin can help if needed). Once connected, the agent receives board updates automatically. Each user connects independently — your board, your credentials, your sync.

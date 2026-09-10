@@ -32,7 +32,7 @@
 | POST | `/pages/:pageId/reindex` | Reindex a page's current raw text. | Path `pageId` |
 | GET | `/digest-groups` | List the migrated Fishing definition from message-digest-service. | None |
 | GET | `/digests` | Query digests. | Query `{ groupKey: string; dateFrom: string; dateTo: string; terms?: string; limit?: string }` |
-| GET | `/digests/:groupKey/:date` | Load one digest and digest state. | Path `groupKey`, `date` |
+| GET | `/digests/:groupKey/:date` | Load one canonical digest without legacy digest state. | Path `groupKey`, `date` |
 
 ### Pub/Sub Events
 

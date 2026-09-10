@@ -1,7 +1,7 @@
 # User Service — Tutorial
 
 > **Time:** 20–30 minutes
-> **Prerequisites:** Node.js 20+, IntexuraOS dev environment, Auth0 tenant
+> **Prerequisites:** Node.js 22+, IntexuraOS dev environment, Auth0 tenant
 > **You'll learn:** How to authenticate, manage the OpenRouter API key, set default and fallback models, connect Google and GitHub OAuth, configure transcription preferences, and set timezone
 
 ---
@@ -13,7 +13,7 @@ A working integration that:
 - Authenticates via the device code flow
 - Stores and validates the user's OpenRouter API key
 - Reports whether LLM access comes from the user key, platform fallback, or is unavailable
-- Sets a default LLM model and an optional fallback model for all agents
+- Sets a default LLM model and an optional fallback model for workloads that use these preferences
 - Configures transcription preferences
 - Sets timezone preferences
 - Connects Google and GitHub accounts
@@ -199,7 +199,7 @@ curl -X PATCH https://user-service.intexuraos.com/users/YOUR_USER_ID/settings/ll
   }'
 ```
 
-Unlike other providers, OpenRouter validation uses a lightweight `/api/v1/key` endpoint that costs zero tokens.
+OpenRouter validation uses a lightweight `/api/v1/key` endpoint that costs zero tokens.
 
 **Success response:**
 
@@ -305,13 +305,13 @@ curl -X DELETE https://user-service.intexuraos.com/users/YOUR_USER_ID/settings/l
 }
 ```
 
-If the deleted provider was used by the default or fallback model, those preferences are automatically cleared.
+Deleting the personal OpenRouter key removes its test result but preserves model preferences. The platform key can supply fallback access when configured.
 
 ---
 
 ## Part 6: Set Default and Fallback LLM Models (5 minutes)
 
-Configure which models all agents use by default and as a fallback.
+Configure the general default and fallback models. Intex and Conversation Assistant have separate model controls.
 
 ### Step 6.1: Set a default model
 
@@ -408,6 +408,12 @@ Agents now use the selected `or:` default and fallback models through the same r
 
 ---
 
+## Intex Model Selection
+
+Open Intex settings and use its model selector when available. For API clients, read `intexAgentModelSelector` from `GET /users/:uid/settings/llm-keys`, then send a separate `PATCH /users/:uid/settings` body with the supported `intexAgentModel` and the current `expectedRevision`. A conflict means the setting changed: reload before retrying. `null` clears the explicit choice. Availability is restricted by the configured eligible subject and model-catalog checks.
+
+Manage itemized prompt instructions through intex-agent’s `/preferences/prompt` routes, not this user-service model patch.
+
 ## Part 7: Set Transcription Preferences (2 minutes)
 
 Choose which transcription provider processes your voice notes.
@@ -436,7 +442,7 @@ curl -X PATCH https://user-service.intexuraos.com/users/YOUR_USER_ID/settings/tr
 
 ### Checkpoint
 
-Voice notes from WhatsApp are now processed through Speechmatics.
+Supported media transcription uses Speechmatics. Private chat transcripts also need the chat’s transcription setting enabled; Intex voice commands remain unsupported.
 
 ---
 
@@ -615,7 +621,6 @@ curl https://user-service.intexuraos.com/internal/users/YOUR_USER_ID/llm-keys \
 {
   "success": true,
   "data": {
-    "google": null,
     "openai": "sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     "anthropic": null,
     "perplexity": null,
@@ -624,7 +629,7 @@ curl https://user-service.intexuraos.com/internal/users/YOUR_USER_ID/llm-keys \
 }
 ```
 
-The `google` field is retained as `null` for response compatibility. Direct Google LLM credentials are never returned for execution; Google-family models use OpenRouter. The OAuth token endpoint below is separate and remains required for Calendar access.
+The internal response omits the retired Google LLM field. Remaining direct-provider fields are historical compatibility data; active model execution uses OpenRouter. The OAuth token endpoint below is separate and remains required for Calendar access.
 
 ### Step 11.2: Get Google OAuth token (for calendar-agent)
 
@@ -699,8 +704,8 @@ curl https://user-service.intexuraos.com/internal/users/YOUR_USER_ID/settings \
   "success": true,
   "data": {
     "llmPreferences": {
-      "defaultModel": "claude-3-5-haiku-20241022",
-      "fallbackModel": "gpt-4o-mini"
+      "defaultModel": "or:minimax/minimax-m3",
+      "fallbackModel": "or:google/gemini-3.6-flash"
     },
     "transcriptionPreferences": {
       "provider": "speechmatics"
@@ -713,20 +718,6 @@ curl https://user-service.intexuraos.com/internal/users/YOUR_USER_ID/settings \
 ---
 
 ## Part 12: Handle Errors (3 minutes)
-
-### Error: Invalid API key format
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Invalid OpenAI API key"
-  }
-}
-```
-
-**Solution:** Verify the key format. OpenAI keys start with `sk-`.
 
 ### Error: Invalid OpenRouter API key
 
@@ -742,19 +733,9 @@ curl https://user-service.intexuraos.com/internal/users/YOUR_USER_ID/settings \
 
 **Solution:** Verify the key format. OpenRouter keys typically start with `sk-or-`.
 
-### Error: No API key for default model provider
+### Error: No OpenRouter Access
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Cannot set default model to claude-3-5-haiku-20241022: no API key configured for provider 'anthropic'"
-  }
-}
-```
-
-**Solution:** Add an API key for the model's provider before setting the default model.
+If model selection reports `No OpenRouter access is available for this user.`, add a valid personal OpenRouter key or restore platform fallback access. Direct-provider keys cannot satisfy this request.
 
 ### Error: Fallback same as default
 
@@ -853,8 +834,8 @@ curl https://user-service.intexuraos.com/internal/users/YOUR_USER_ID/settings \
 | Token refresh fails      | Access token expired            | User may have revoked access; re-authentication required         |
 | Rate limit misdiagnosed  | "Invalid API key" for 429 error | Rate limits are correctly identified — ensure service is current |
 | Test costs money         | Charges on provider account     | Test endpoint makes real API calls; use sparingly                |
-| Default model rejected   | 400 INVALID_REQUEST             | Model must pass `isDefaultEligibleModel()` AND have API key set  |
-| Fallback model rejected  | 400 INVALID_REQUEST             | Fallback must differ from default AND have API key for provider  |
+| Default model rejected   | 400 INVALID_REQUEST             | Model must be eligible and have personal or platform OpenRouter access  |
+| Fallback model rejected  | 400 INVALID_REQUEST             | Fallback must differ from default and resolve through OpenRouter  |
 | GitHub token not found   | 404 NOT_FOUND                   | User must connect GitHub account first                           |
 | OpenRouter key rejected  | 400 INVALID_REQUEST             | Verify key starts with `sk-or-` and is active on OpenRouter      |
 | Invalid timezone         | 400 INVALID_REQUEST             | Use IANA timezone strings, not UTC offsets or abbreviations      |
@@ -894,7 +875,7 @@ Now that you understand the basics:
 2. Implement a service that fetches internal API keys (including OpenRouter)
 3. Create a full OAuth flow handler for calendar integration
 4. Connect GitHub and use the internal endpoint to find a user by username
-5. Set default + fallback models, delete the fallback provider's API key, verify the cascade clears only the fallback
+5. Set default + fallback models, delete the personal OpenRouter key, and verify model preferences remain available for platform fallback
 
 <details>
 <summary>Solutions</summary>
@@ -912,10 +893,10 @@ curl https://user-service.intexuraos.com/auth/config
 curl -X PATCH https://user-service.intexuraos.com/users/$UID/settings/llm-keys \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"provider": "openai", "apiKey": "sk-proj-..."}'
+  -d '{"provider": "openrouter", "apiKey": "sk-or-v1-..."}'
 
 # Test key
-curl -X POST https://user-service.intexuraos.com/users/$UID/settings/llm-keys/openai/test \
+curl -X POST https://user-service.intexuraos.com/users/$UID/settings/llm-keys/openrouter/test \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -926,7 +907,7 @@ curl -X POST https://user-service.intexuraos.com/users/$UID/settings/llm-keys/op
 curl -X PATCH https://user-service.intexuraos.com/users/$UID/settings \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"defaultModel": "claude-3-5-haiku-20241022", "fallbackModel": "gpt-4o-mini"}'
+  -d '{"defaultModel": "or:minimax/minimax-m3", "fallbackModel": "or:google/gemini-3.6-flash"}'
 
 # Verify via internal endpoint
 curl https://user-service.intexuraos.com/internal/users/$UID/settings \
@@ -982,33 +963,8 @@ async function deviceLogin(): Promise<string> {
 }
 ```
 
-### Exercise 6: Hard — Cascade Test
+### Exercise 6: Hard — Personal Key Removal
 
-```bash
-# Set up: add OpenAI and Anthropic keys
-curl -X PATCH https://user-service.intexuraos.com/users/$UID/settings/llm-keys \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "openai", "apiKey": "sk-proj-..."}'
-
-curl -X PATCH https://user-service.intexuraos.com/users/$UID/settings/llm-keys \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "anthropic", "apiKey": "sk-ant-..."}'
-
-# Set default (Anthropic) + fallback (OpenAI)
-curl -X PATCH https://user-service.intexuraos.com/users/$UID/settings \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"defaultModel": "claude-3-5-haiku-20241022", "fallbackModel": "gpt-4o-mini"}'
-
-# Delete OpenAI key — fallback should be cleared, default preserved
-curl -X DELETE https://user-service.intexuraos.com/users/$UID/settings/llm-keys/openai \
-  -H "Authorization: Bearer $TOKEN"
-
-# Verify: defaultModel still set, fallbackModel cleared
-curl https://user-service.intexuraos.com/users/$UID/settings/llm-keys \
-  -H "Authorization: Bearer $TOKEN"
-```
+Use a test account to set supported default/fallback models, then delete its personal OpenRouter key with `DELETE /users/:uid/settings/llm-keys/openrouter`. Read key status again: the personal key and test result are removed, model preferences remain, and `accessSource` becomes `platform` if fallback exists or `unavailable` otherwise.
 
 </details>

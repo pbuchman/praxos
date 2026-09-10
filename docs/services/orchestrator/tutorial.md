@@ -22,21 +22,19 @@ pnpm install
 pnpm build
 ```
 
-### Step 2: Sync secrets from GCP
+### Step 2: Render a pinned configuration package
+
+Use the host-specific renderer credential and exact reviewed numeric DEV package version described in the [orchestrator README](../../../workers/orchestrator/README.md#local-development-setup):
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/sa-key.json
-PROJECT_ID=intexuraos-dev-pbuchman ./scripts/sync-secrets.sh
-
-# Optional: prompt for missing Terraform-defined secret values
-PROJECT_ID=intexuraos-dev-pbuchman ./scripts/sync-secrets.sh --add-new
+./scripts/sync-secrets.sh --version <dev-numeric-version>
 ```
 
-This creates `.envrc` with secrets from Secret Manager and reports any missing/unreadable secrets.
+The host renderer combines versioned public settings and secrets, and writes the GitHub App PEM to a protected path. Keep renderer credentials scoped to that command; do not forward them to the worker runtime. The old per-secret sync and `--add-new` flow are removed.
 
 ### Step 3: Configure local overrides
 
-Create `.envrc.local` with orchestrator-specific variables:
+Create `.envrc.local` with host-specific non-secret overrides only. Use the runtime identity and package projection described in the README; never copy renderer credentials into this file:
 
 ```bash
 cat >> .envrc.local << 'EOF'
@@ -44,7 +42,6 @@ export INTEXURAOS_REPOSITORY_URL=https://github.com/pbuchman/intexuraos.git
 export INTEXURAOS_REPOSITORY_PATH=$HOME/.code-orchestrator/repo
 export INTEXURAOS_PROJECT_ID=intexuraos-dev-pbuchman
 export INTEXURAOS_CODE_AGENT_URL=https://intexuraos-code-agent-cj44trunra-lm.a.run.app/
-export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/sa-key.json
 EOF
 ```
 
@@ -107,7 +104,7 @@ Expected output:
 
 ```
 INFO: Starting orchestrator { port: 8199, capacity: 2 }
-INFO: Fetching GitHub private key from Secret Manager...
+INFO: Loading host-rendered GitHub App private key...
 INFO: Repository path exists, validating...
 INFO: Repository validation passed
 INFO: Code worker auth active { expiresInMinutes: 210, subscriptionType: 'max' }
@@ -325,7 +322,7 @@ For interactive Q&A (no PR creation, no Linear management):
 ```bash
 BODY='{
   "taskId": "task_00000000-0000-4000-8000-000000000006",
-  "workerType": "auto",
+  "workerType": "codex",
   "prompt": "Explain the caching strategy in user-service",
   "agentType": "ask_agent",
   "linearIssueLabels": [],
@@ -493,7 +490,7 @@ curl -H "CF-Access-Client-Id: <client-id>" \
 | Symptom                                           | Cause                                 | Fix                                                                                                                                               |
 | ------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `INTEXURAOS_REPOSITORY_URL not set`               | Missing env var                       | Add to `.envrc.local`, run `direnv allow`                                                                                                         |
-| `Secret Manager fetch failed`                     | Wrong credentials path                | Verify `GOOGLE_APPLICATION_CREDENTIALS` file exists                                                                                               |
+| Rendered GitHub key rejected | Missing or incorrectly protected PEM | Render the pinned DEV package and verify the file at `INTEXURAOS_GITHUB_APP_PRIVATE_KEY_PATH` has mode 0600                                                                                               |
 | `502 from tunnel`                                 | Orchestrator not running              | Start with `pnpm --filter orchestrator dev`                                                                                                       |
 | `401 Invalid signature`                           | HMAC secret mismatch                  | Match `INTEXURAOS_ORCHESTRATOR_SECRET` with UI setting                                                                                            |
 | Docker `name already in use`                      | Orphaned container from previous run  | Periodic stale cleanup handles this; manual: `docker rm -f $(docker ps -aq --filter name=code-worker-)`                                           |
@@ -502,12 +499,12 @@ curl -H "CF-Access-Client-Id: <client-id>" \
 | Tests skipped (E2E)                               | Docker network or test image missing  | See Part 3 prerequisites                                                                                                                          |
 | `Cannot find module '@intexuraos'`                | Packages not built                    | Run `pnpm build` at repository root                                                                                                               |
 | Turn metrics always zero                          | macOS host (no cgroup v2 exposure)    | Expected on macOS; metrics are non-fatal and show zeros                                                                                           |
-| `INTEXURAOS_OPENROUTER_APP_API_KEY not set`       | Missing required env var              | Populate the Secret Manager version and rerun secret sync                                                                                         |
+| `INTEXURAOS_OPENROUTER_APP_API_KEY not set`       | Missing required env var              | Render the reviewed DEV package version containing the key                                                                                         |
 | `TASK_RUNTIME_HARD_ERROR`                         | Worker/runtime failure or verifier hard error | Inspect the terminal logs and retry only after the runtime error is understood                                                              |
 | `503 docker_unavailable`                          | Docker daemon not responding          | Check Docker Desktop is running                                                                                                                   |
 | `503 auth_unavailable`                            | Worker auth not ready                 | Check `workerAuths` in health endpoint; run `claude login` or `codex-login.sh`                                                                    |
 | Container creation timeout                        | Docker pull or create taking too long | Check network for image pull; image pull has 15-minute timeout, container create has 2-minute timeout                                             |
 | Task adopted on restart but fails immediately     | Container state drift                 | Check Docker logs for the container before adoption                                                                                               |
-| No compliance report on PR                        | Missing OpenRouter API key            | Set `INTEXURAOS_OPENROUTER_APP_API_KEY` in `.envrc`                                                                                               |
+| No compliance report on PR                        | Missing OpenRouter API key            | Render the reviewed package projection with `INTEXURAOS_OPENROUTER_APP_API_KEY`                                                                                               |
 | `Port 8199 is already in use`                     | Another process on same port          | Find the process: `lsof -i :8199`; or use a different port: `export PORT=8200`                                                                    |
 | Task killed after 10 minutes of silence           | Inactivity detector triggered         | Expected behavior; session auto-restarts up to 3 times before failing                                                                             |

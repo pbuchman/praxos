@@ -31,7 +31,7 @@ interface OrchestratorTools {
     linearIssueTitle?: string;
     linearIssueLabels: string[];
     hasChildren: boolean;
-    agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent';
+    agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent' | 'sentry';
     executionMemoryContext?: ExecutionMemoryPromptContext;
     trackingCommentId?: string;
     prNumber?: number;
@@ -167,7 +167,7 @@ interface Task {
   webhookSecret: string;
   actionId?: string;
   retriedFrom?: string;
-  agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent';
+  agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent' | 'sentry';
   executionMemoryContext?: ExecutionMemoryPromptContext;
   trackingCommentId?: string;
   prNumber?: number;
@@ -264,9 +264,7 @@ interface TaskResult {
   planning_outcome_label?: 'planned' | 'unclear';
   planning_superpowers_writing_plans_used?: '0' | '1';
   planning_linear_url?: string;
-  planning_is_complex?: '0' | '1';
   planning_has_plan_doc?: '0' | '1';
-  planning_subtask_urls?: string;
   planning_pr_url?: string;
   planning_unclear_clarification?: string;
   execution_outcome_label?: 'implemented' | 'already_completed' | 'failed';
@@ -602,7 +600,7 @@ On startup, the orchestrator:
 | `INTEXURAOS_CODE_WORKER_FORENSICS_PATH`     | No       | `~/.code-orchestrator/forensics`   |
 | `INTEXURAOS_GIT_USER_NAME`                  | No       | (host git config)                  |
 | `INTEXURAOS_GIT_USER_EMAIL`                 | No       | (host git config)                  |
-| `INTEXURAOS_GITHUB_APP_PRIVATE_KEY`         | No       | (Secret Manager)                   |
+| `INTEXURAOS_GITHUB_APP_PRIVATE_KEY_PATH` | Yes | Path to host-rendered mode-0600 PEM |
 | `INTEXURAOS_ENVIRONMENT`                    | No       | `NODE_ENV` or `development`        |
 | `INTEXURAOS_SENTRY_DSN`                     | No       | (empty)                            |
 | `INTEXURAOS_RELEASE`                        | No       | (empty; fallback after `K_REVISION`) |
@@ -635,6 +633,14 @@ On startup, the orchestrator:
 | `PLANNING_AGENT_UNCLEAR`              | -    | Planning agent could not produce a plan                        |
 
 ---
+
+## Release Integration Boundaries
+
+Startup consumes host-rendered configuration and a mode-0600 GitHub App PEM; remote secret fetching is not a runtime fallback. Workers receive `ERROR_HUB_HOST` for the private SentryBox MCP connection.
+
+Planning accepts the SIMPLE or PLAN-DOC artifact shape, requires one evidence/planning PR, and no longer emits child-issue URLs. New Ask Agent tasks submitted by code-agent use Codex.
+
+Before a guarded restart, inspect the versioned health and persistent admission-freeze evidence documented in [the health and admission-freeze contract](technical.md#hmac-authentication); do not infer drain completion from the running-task count alone.
 
 ## Constraints
 

@@ -2,17 +2,23 @@
 
 Catalog for IntexuraOS services, workers, and packages.
 
-**Version 3.8.0** — June 26, 2026
+**Version 4.0.0** — September 10, 2026
 
 ---
 
-## v3.8.0 Highlights
+## v4.0.0 Highlights
+
+| Component | Key Changes |
+| --- | --- |
+| **message-digest-service** | Custom WhatsApp Message Digests with instructions, schedules, previews, run history, and delivery for a private group or direct chat |
+| **whatsapp-service / web** | WhatsApp Conversation Assistant with date-range selection, inspectable captured context, and streamed responses |
+
+## v3.8.0 Highlights (Previous)
 
 | Component                        | Key Changes                                                                                                                                                                     |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **intex-agent**                  | Unified action workflow for code tasks, research drafts, bookmarks, notes, and calendar actions, with explicit intent gates and WhatsApp session continuity                     |
 | **whatsapp-service**             | Private WhatsApp workspace with private ingest, read-only conversations, sender/day views, Matrix sync, outgoing/group event sync, and preserved group classification           |
-| **message-digest-service**       | WhatsApp group and direct-chat summaries with user-defined schedules and prompts, source-fenced private reads, run history, and delivery through the user's primary WhatsApp mapping |
 | **code-agent**                   | Documentation review dispatch reliability and unified Intex Agent code-task creation path                                                                                        |
 | **orchestrator**                 | More reliable completion finalization when Docker hangs, with reduced handled Sentry noise for code-task reliability paths                                                       |
 | **web**                          | Homepage and README showcase now lead with the current Intex Agent unified actions and private WhatsApp workspace capabilities                                                   |
@@ -148,7 +154,7 @@ graph TB
 
 | Service                                | AI Models                        | Capability                                    |
 | -------------------------------------- | -------------------------------- | --------------------------------------------- |
-| [intex-agent](intex-agent/features.md) | OpenRouter Gemini 3.6 Flash | WhatsApp text conversations with direct tools |
+| [intex-agent](intex-agent/features.md) | OpenRouter Gemini 3.6 Flash | WhatsApp text tools with confirmed changes and read-only queries |
 
 ### Image Generation
 
@@ -186,8 +192,8 @@ graph TB
 
 | Service                                          | AI Models    | Capability                                                                                |
 | ------------------------------------------------ | ------------ | ----------------------------------------------------------------------------------------- |
-| [whatsapp-service](whatsapp-service/features.md) | Intex route  | WhatsApp text ingestion, outbound notifications, verification, and delivery                |
-| [transcription](transcription/features.md)       | Speechmatics | Standalone audio-to-text worker retained outside the current WhatsApp text-only Intex path |
+| [whatsapp-service](whatsapp-service/features.md) | Intex route  | WhatsApp messaging, private conversations, captured-context analysis, and delivery                |
+| [transcription](transcription/features.md)       | Speechmatics | Voice and video transcription; private chats opt in separately from text-only Intex commands |
 
 ---
 
@@ -199,7 +205,7 @@ Services that directly invoke AI models for their core functionality.
 
 | Service                                                | Purpose                            | AI                                               | Docs                                                                                                                                                                                                                              |
 | ------------------------------------------------------ | ---------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [intex-agent](intex-agent/features.md)                 | WhatsApp text direct tools         | OpenRouter Gemini 3.6 Flash                | [features](intex-agent/features.md) / [technical](intex-agent/technical.md) / [tutorial](intex-agent/tutorial.md) / [debt](intex-agent/technical-debt.md) / [agent](intex-agent/agent.md)                                        |
+| [intex-agent](intex-agent/features.md)                 | Confirmed actions and read-only queries | OpenRouter Gemini 3.6 Flash                | [features](intex-agent/features.md) / [technical](intex-agent/technical.md) / [tutorial](intex-agent/tutorial.md) / [debt](intex-agent/technical-debt.md) / [agent](intex-agent/agent.md)                                        |
 | [research-agent](research-agent/features.md)           | Multi-LLM research orchestration   | Curated OpenRouter catalog, maximum 6 models     | [features](research-agent/features.md) / [technical](research-agent/technical.md) / [tutorial](research-agent/tutorial.md) / [debt](research-agent/technical-debt.md) / [agent](research-agent/agent.md)                          |
 | [image-service](image-service/features.md)             | AI image generation                | GPT aliases executed through OpenRouter          | [features](image-service/features.md) / [technical](image-service/technical.md) / [tutorial](image-service/tutorial.md) / [debt](image-service/technical-debt.md) / [agent](image-service/agent.md)                               |
 | [bookmarks-agent](bookmarks-agent/features.md)         | Link management with AI summaries  | Via web-agent                                    | [features](bookmarks-agent/features.md) / [technical](bookmarks-agent/technical.md) / [tutorial](bookmarks-agent/tutorial.md) / [debt](bookmarks-agent/technical-debt.md) / [agent](bookmarks-agent/agent.md)                     |
@@ -225,7 +231,7 @@ Core platform services that support the AI agents.
 
 | Service                                                                  | Purpose                                             | AI              | Docs                                                                                                                                                                                                                                                                           |
 | ------------------------------------------------------------------------ | --------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [whatsapp-service](whatsapp-service/features.md)                         | WhatsApp messaging, private source, and delivery      | Intex route     | [features](whatsapp-service/features.md) / [technical](whatsapp-service/technical.md) / [tutorial](whatsapp-service/tutorial.md) / [debt](whatsapp-service/technical-debt.md) / [agent](whatsapp-service/agent.md)                                                             |
+| [whatsapp-service](whatsapp-service/features.md)                         | WhatsApp messaging, private source, analysis, and delivery      | Intex route     | [features](whatsapp-service/features.md) / [technical](whatsapp-service/technical.md) / [tutorial](whatsapp-service/tutorial.md) / [debt](whatsapp-service/technical-debt.md) / [agent](whatsapp-service/agent.md)                                                             |
 | [user-service](user-service/features.md)                                 | Auth, API keys, model prefs                         | LLM validation  | [features](user-service/features.md) / [technical](user-service/technical.md) / [tutorial](user-service/tutorial.md) / [debt](user-service/technical-debt.md) / [agent](user-service/agent.md)                                                                                 |
 | [mobile-notifications-service](mobile-notifications-service/features.md) | Android notification capture and query               | -               | [features](mobile-notifications-service/features.md) / [technical](mobile-notifications-service/technical.md) / [tutorial](mobile-notifications-service/tutorial.md) / [debt](mobile-notifications-service/technical-debt.md) / [agent](mobile-notifications-service/agent.md) |
 | [notion-service](notion-service/features.md)                             | Notion integration                                  | -               | [features](notion-service/features.md) / [technical](notion-service/technical.md) / [tutorial](notion-service/tutorial.md) / [debt](notion-service/technical-debt.md) / [agent](notion-service/agent.md)                                                                       |
@@ -251,10 +257,8 @@ Cloud Functions and local services that run outside Cloud Run.
 | ------------------------------------------ | --------------- | ---------------------------------------------------------------- | --------------------------- |
 | [orchestrator](orchestrator/features.md)   | Local service   | Spawns code-worker sessions in Docker containers                 | HTTP (HMAC-signed dispatch) |
 | [code-worker](code-worker/features.md)     | Docker image    | Isolated Claude/Codex execution environment with git and tools   | Started by orchestrator     |
-| log-cleanup                                | Cloud Function  | Deletes old task logs via code-agent cleanup API                 | Pub/Sub (scheduled)         |
 | [vm-lifecycle](vm-lifecycle/features.md)   | Cloud Functions | Starts and stops GCE VM instances with health polling            | HTTP (internal auth)        |
-| [transcription](transcription/features.md) | Cloud Function  | Converts WhatsApp voice notes to text via Speechmatics           | Pub/Sub (audio-stored)      |
-| predev-lifecycle                           | Cloud Functions | Manages pre-dev VM gateway, idle-check, and ready-state webhooks | HTTP / Pub/Sub (scheduled)  |
+| [transcription](transcription/features.md) | Cloud Function  | Converts WhatsApp audio/video to text via Speechmatics           | Pub/Sub (audio/media stored)      |
 
 ### Worker Details
 
@@ -262,11 +266,9 @@ Cloud Functions and local services that run outside Cloud Run.
 
 **code-worker** is a Docker container (Node.js 22 Alpine) pre-loaded with Claude CLI, Codex CLI, git, pnpm, GitHub CLI, ripgrep, terraform, and gcloud. Runs as non-root user with network restrictions. The orchestrator manages its lifecycle.
 
-**log-cleanup** is a Pub/Sub-triggered Cloud Function that calls the code-agent's internal cleanup API to delete task logs older than the configured retention period (default 90 days).
-
 **vm-lifecycle** has two HTTP-triggered Cloud Functions (`startVm` and `stopVm`) that manage GCE Spot VM instances. `startVm` polls for health after boot; `stopVm` gracefully drains running tasks before shutdown.
 
-**transcription** — Pub/Sub-triggered Cloud Function that converts WhatsApp voice notes stored in GCS into text using Speechmatics Batch API. Supports auto language detection, AI-generated summaries, and 100+ custom vocabulary terms. Publishes results (success or failure) to the transcription-completed topic for whatsapp-service consumption.
+**transcription** — Pub/Sub-triggered Cloud Function that converts stored WhatsApp audio and video into text using Speechmatics Batch API. Supports auto language detection, AI-generated summaries, and 100+ custom vocabulary terms. Publishes results (success or failure) to the transcription-completed topic for whatsapp-service consumption.
 
 ---
 
@@ -293,6 +295,7 @@ Shared libraries used across apps and workers.
 | [infra-pubsub](../packages/infra-pubsub/README.md)       | Pub/Sub publishers for WhatsApp, calendar, and code-task events              |
 | [infra-sentry](../packages/infra-sentry/README.md)       | Sentry error tracking, Pino log stream, logger factory                       |
 | [infra-whatsapp](../packages/infra-whatsapp/README.md)   | WhatsApp Cloud API client (send, media, read receipts)                       |
+| [infra-pdf-export](../packages/infra-pdf-export/README.md) | PDF rendering for conversation-style transcripts |
 | [infra-notion](../packages/infra-notion/README.md)       | Notion API client, token validation, page retrieval                          |
 
 ### LLM Provider Clients
@@ -426,16 +429,16 @@ graph TD
 | Metric                 | Count    |
 | ---------------------- | -------- |
 | Total Apps             | Active app docs tracked in `docs/services` |
-| Total Workers          | 6        |
-| Total Packages         | 28       |
+| Total Workers          | 4 (three worker services and one Docker image) |
+| Total Packages         | 27       |
 | Apps with features.md  | Current service doc set |
 | Apps with technical.md | Current service doc set |
 | Apps with tutorial.md  | Current service doc set |
 | Apps with tech-debt.md | Current service doc set |
 | Apps with agent.md     | Current service doc set |
-| Packages with README   | 28       |
+| Packages with README   | 27       |
 | Workers with docs      | 4        |
-| **Coverage**           | **App/package docs tracked; 4 of 6 workers documented** |
+| **Coverage**           | **App/package docs tracked; all 4 worker components documented** |
 
 ---
 
@@ -445,7 +448,9 @@ graph TD
 
 **I want to...**
 
-- **Use WhatsApp text direct tools**: [intex-agent](intex-agent/features.md)
+- **Use confirmed WhatsApp actions and calendar queries**: [intex-agent](intex-agent/features.md)
+- **Configure WhatsApp message digests**: [message-digest-service](message-digest-service/features.md)
+- **Analyze a private WhatsApp conversation**: [whatsapp-service](whatsapp-service/features.md)
 - **Do multi-model research**: [research-agent](research-agent/features.md)
 - **Ask grounded fishing questions**: [fishing-assistant-service](fishing-assistant-service/features.md)
 - **Automate coding tasks**: [code-agent](code-agent/features.md)
@@ -478,6 +483,6 @@ graph TD
 
 ---
 
-**Last updated:** 2026-06-24
+**Last updated:** 2026-09-10
 
-**Components tracked:** Active app docs, 6 workers, and shared packages (log-cleanup and predev-lifecycle have no service doc directories yet)
+**Components tracked:** Active app docs, three worker services under `workers/`, the `docker/code-worker` image, and shared packages

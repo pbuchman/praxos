@@ -6,8 +6,8 @@ Use whatsapp-service for WhatsApp Business webhook intake, user phone verificati
 
 - Text messages are persisted and published as `intex.message.ingest` with `sourceType: "whatsapp_text"`.
 - URL shares are treated as text messages and routed through Intex.
-- Button payloads from retired workflows are ignored.
-- Voice/audio messages receive this explicit reply: `Voice messages are not supported by Intex yet. Please send text for now.`
+- `intex_confirm:` buttons publish `whatsapp_button` ingests; other retired workflow buttons are ignored.
+- Voice/audio messages are stored and dispatched for transcription; they do not directly create Intex action ingests.
 
 ## Private Workspace Behavior
 
@@ -20,12 +20,19 @@ Use whatsapp-service for WhatsApp Business webhook intake, user phone verificati
 
 ## Important Boundaries
 
-- Do not reintroduce general approval reply matching.
-- Do not route audio transcripts into Intex.
+- Preserve the explicit Intex confirmation policy and do not reintroduce retired workflow reply matching.
+- Do not automatically execute audio transcripts as Intex commands. A text reply to a completed audio message may include its transcript as bounded reply context.
 - Do not publish retired command/action events.
 - Keep webhook handlers idempotent and log incoming internal requests before auth validation.
 - Do not mutate private WhatsApp messages through read routes.
 - Do not expose raw Matrix events or Matrix room IDs from authenticated private read responses. `/private/account` exposes the authenticated user's `sourceAccountId`; collection read routes must derive it server-side and reject caller-supplied values.
+
+## Conversation And Media Contracts
+
+- Conversation Assistant owns immutable initial context, explicit continuation updates, durable streamed turns, model selection at creation, and owner-scoped PDF export. Enforce model input budgets before provider execution.
+- Private audio/video transcription is enabled per chat; direct voice-to-action execution remains separate.
+- Signed media/thumbnail access checks ownership; Matrix ingest and recovery retain account fences and inline reaction relationships.
+- Matrix corpus evaluations exercise transport with strict mocked product actions.
 
 ## Message Digest Contracts
 

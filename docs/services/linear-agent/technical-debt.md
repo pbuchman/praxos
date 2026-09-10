@@ -121,6 +121,10 @@ None. The service uses current versions of:
 
 ---
 
+## Release Reliability Improvements
+
+Since v3.8.0, deterministic internal issue IDs and post-create race recovery protect retrying remediation requests. Issue-list page retries and typed `UPSTREAM_UNAVAILABLE` mapping distinguish transient failures from authentication problems. Webhook authentication now precedes event filtering. Existing internal-route, webhook, and Linear mapper/client tests cover these cases.
+
 ## Resolved Issues
 
 | Date       | Issue                                                    | Resolution                                                                        |

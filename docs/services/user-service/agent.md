@@ -52,7 +52,7 @@ interface UserServiceTools {
     }
   ): Promise<LlmKeyUpdateResult>;
   testLlmApiKey(userId: string, provider: ConfigurableLlmProvider): Promise<LlmTestResult>;
-  deleteLlmApiKey(userId: string, provider: LlmProvider): Promise<void>;
+  deleteLlmApiKey(userId: string, provider: ConfigurableLlmProvider): Promise<void>;
 
   // OAuth Connections (Google)
   initiateGoogleOAuth(): Promise<{ authorizationUrl: string }>;
@@ -144,7 +144,6 @@ interface TranscriptionPreferences {
 interface LlmKeysStatus {
   defaultModel: string | null; // User's preferred default LLM model
   fallbackModel: string | null; // User's fallback LLM model (auto-retry when primary unavailable)
-  google: null; // Compatibility field; direct Google LLM keys are retired
   openrouter: string | null;
   accessSource: 'user' | 'platform' | 'unavailable';
   testResults: Record<ConfigurableLlmProvider, LlmTestResult | null>;
@@ -162,7 +161,6 @@ interface LlmKeyUpdateResult {
 }
 
 interface DecryptedLlmKeys {
-  google: null; // Compatibility field; never returned as an executable key
   openai?: string; // deprecated compatibility field
   anthropic?: string; // deprecated compatibility field
   perplexity?: string; // deprecated compatibility field
@@ -188,6 +186,14 @@ interface GitHubOAuthConnectionStatus {
 
 ---
 
+## Intex Model And Test Runs Contracts
+
+- Read selector availability from `GET /users/:uid/settings/llm-keys`. When available, retain its revision and explicit/effective model projection.
+- Update with `PATCH /users/:uid/settings` and exactly `{ intexAgentModel, expectedRevision }`; pass `null` to clear the explicit choice. Do not mix this with `defaultModel`/`fallbackModel`.
+- Selection is restricted to the configured eligible subject and conformant model catalog; stale revisions return a conflict.
+- Runtime callers use internally authenticated `GET /internal/users/:uid/settings/intex-agent-runtime` for the effective model and time zone.
+- `GET /users/:uid/settings` reports the separately gated Test Runs capability. Run evidence and versioned personal instructions belong to intex-agent.
+
 ## Constraints
 
 | Rule                           | Description                                                                    |
@@ -201,7 +207,7 @@ interface GitHubOAuthConnectionStatus {
 | **Internal Auth**              | Service-to-service calls require X-Internal-Auth header                        |
 | **Model Validation**           | `defaultModel` must pass `isDefaultEligibleModel()` and be resolvable          |
 | **Fallback Validation**        | `fallbackModel` must differ from default, pass eligibility, and be resolvable  |
-| **Model Cascade on Delete**    | Deleting API key clears default/fallback if they use the deleted provider      |
+| **Personal Key Deletion**      | Removes key/test result; preserves models for platform fallback      |
 | **OAuth2 Raw Responses**       | `/auth/oauth/*` routes use flat OAuth2-spec responses                          |
 | **GitHub Tokens Never Expire** | GitHub access tokens stored with far-future expiry (9999-12-31)                |
 | **OAuth State TTL**            | OAuth state parameters expire after 10 minutes                                 |
@@ -283,21 +289,19 @@ const testResult = await testLlmApiKey(userId, 'openrouter');
 ```typescript
 // Set preferred default model + fallback -- each route must be resolvable
 const result = await updateUserSettings(userId, {
-  defaultModel: 'claude-3-5-haiku-20241022',
-  fallbackModel: 'gpt-4o-mini',
+  defaultModel: 'or:minimax/minimax-m3',
+  fallbackModel: 'or:google/gemini-3.6-flash',
 });
-// Fails with INVALID_REQUEST if a non-OpenRouter provider has no configured user key
+// Fails with INVALID_REQUEST if no personal or platform OpenRouter access is available
 // Fails with INVALID_REQUEST if fallbackModel === defaultModel
 
 // Clear fallback by passing null
 const cleared = await updateUserSettings(userId, {
-  defaultModel: 'claude-3-5-haiku-20241022',
+  defaultModel: 'or:minimax/minimax-m3',
   fallbackModel: null,
 });
 
-// Deleting API key cascades:
-// - If default model uses deleted provider: both default and fallback cleared
-// - If only fallback uses deleted provider: only fallback cleared
+// Deleting the personal key preserves models; platform fallback may supply access.
 await deleteLlmApiKey(userId, 'openrouter');
 ```
 
@@ -405,7 +409,7 @@ The configurable OpenRouter key is validated with a dedicated key-check endpoint
 | llm-usage-service  | LLM usage reporting          | Usage not tracked (non-fatal)           |
 | Firebase Admin SDK | Custom token generation      | Firebase token endpoint returns 500     |
 | Firestore          | All persistent state         | Endpoints return 500                    |
-| LLM APIs (4)       | Key validation and testing   | Validation/test returns formatted error |
+| OpenRouter API     | Key validation and testing   | Validation/test returns formatted error |
 
 ---
 

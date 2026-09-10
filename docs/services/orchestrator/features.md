@@ -8,7 +8,7 @@ Every AI coding agent on the market asks for the same thing: send us your code. 
 
 But keeping the code on your own hardware only solves half the problem. An AI agent that writes code and then declares its own work complete is an AI agent grading its own homework. The model that introduced a subtle bug is the same model telling you the bug does not exist. Self-assessment is not verification. It is a confidence score wearing a lab coat. And when you are running agents autonomously — no human watching every keystroke — that gap between confidence and correctness is where production incidents hide.
 
-The orchestrator closes both gaps at once. It runs entirely on your infrastructure, so your source code never touches a third-party server. And it enforces a cross-model verification pipeline where the agent that writes the code is never the agent that judges the result. Claude or Codex executes. A configurable chain of validation models — Gemini, OpenRouter, or both — verifies. A separate compliance validator audits the full session transcript. Deterministic rules enforce what no model can be trusted to check. Multiple layers, multiple independent trust boundaries, one principle: no model verifies its own work.
+The orchestrator closes both gaps at once. It runs entirely on your infrastructure, so your source code never touches a third-party server. And it enforces a cross-model verification pipeline where the agent that writes the code is never the agent that judges the result. Claude or Codex executes. A configurable OpenRouter validation model chain supports independent validation. A separate compliance validator audits the full session transcript. Deterministic rules enforce what no model can be trusted to check. Multiple layers, multiple independent trust boundaries, one principle: no model verifies its own work.
 
 ## Use Case: From Idle Hardware to an Autonomous Engineering Team
 
@@ -17,7 +17,7 @@ Built for engineering teams who need autonomous coding agents but cannot — or 
 1. A startup CTO has a workstation sitting idle after an office move — a machine with Docker installed and nothing to do. She installs the orchestrator and connects it to IntexuraOS through a Cloudflare tunnel — an outbound-only encrypted connection. The machine never accepts inbound traffic from the internet.
 2. A developer files a Linear issue describing a new API endpoint. The platform dispatches the task to her orchestrator, cryptographically signed to verify it came from IntexuraOS and has not been tampered with. The orchestrator validates the signature, checks that Docker is healthy and disk space is available, and accepts the work.
 3. The orchestrator creates a dedicated copy of the repository on its own branch, then spins up a Docker container scoped to that workspace — locked down so it cannot see the host machine, cannot reach other containers, and cannot access any other task's files or credentials.
-4. The Planning Agent analyzes the issue, reads all existing comments and context, makes an explicit complexity judgment, and produces a design — either enriching the issue directly or creating subtasks with a planning pull request. No code is committed yet. The orchestrator injects execution memories from past tasks — patterns, pitfalls, and verified approaches — so the agent does not repeat known mistakes.
+4. The Planning Agent analyzes the issue, reads all existing comments and context, makes an explicit complexity judgment, and produces a design — either updating the issue with a SIMPLE evidence PR or creating one plan document with a planning pull request. No code is committed yet. The orchestrator injects execution memories from past tasks — patterns, pitfalls, and verified approaches — so the agent does not repeat known mistakes.
 5. The CTO watches logs stream to her dashboard in real time, flushed every three seconds. She sends a mid-task message clarifying a requirement, which the orchestrator queues and delivers when the current attempt finishes.
 6. The Execution Agent writes tests first, implements the endpoint, runs the full test suite, performs a mandatory simplification pass on every changed file, executes a zero-tolerance code review loop, and opens a pull request — including which AI model produced the work.
 7. Now the verification pipeline begins. **Stage one:** A deterministic completion verifier parses the agent's final output against an agent-specific contract, extracting structured metadata — PR URLs, skill usage proofs, outcome labels — and validating them against strict schemas. Claude's own assessment of its performance is not consulted. If the contract is not met and the attempt limit has not been reached, the orchestrator automatically launches a follow-up attempt with a targeted prompt listing exactly which criteria failed. All planned outcomes — including simple tasks — require an evidence PR to pass verification.
@@ -78,7 +78,7 @@ Memories are advisory, not authoritative. The agent is instructed to trust the c
 
 ### Ask Questions in Interactive Sessions
 
-The Ask Agent provides interactive Claude Code sessions where users send questions and receive direct answers — no PR creation, no Linear issue management, just a code-aware conversation. Messages flow through the same orchestrator infrastructure (Docker isolation, log streaming, HMAC-signed dispatch) but skip the planning/execution ceremony entirely.
+The Ask Agent provides interactive Codex sessions where users send questions and receive direct answers — no PR creation, no Linear issue management, just a code-aware conversation. Messages flow through the same orchestrator infrastructure (Docker isolation, log streaming, HMAC-signed dispatch) but skip the planning/execution ceremony entirely.
 
 Ask Agent sessions skip the PR resume preamble that other agent types use, deliver messages directly without wrapper prompts, check for pending messages in the completion path, and prohibit the `AskUserQuestion` tool (since users communicate via the message endpoint). The completion verifier still validates the session, but the contract is lighter — no PR URL or outcome label is required.
 
@@ -109,6 +109,12 @@ Logs stream back to the platform as they happen, flushed every three seconds, so
 A heartbeat pings the platform every ten minutes. If the orchestrator goes silent, the platform knows immediately rather than waiting for a timeout. Mid-task messages let you inject clarifications or course corrections while work is in progress — the orchestrator queues the message and delivers it when the current attempt finishes, triggering a follow-up session with your feedback incorporated.
 
 **Example:** A team lead watches the orchestrator work through a complex refactoring task. Forty minutes in, she notices the worker is heading down the wrong path. She sends a mid-task message with a clarification. The orchestrator queues it and delivers it when the current attempt finishes, triggering a follow-up with her feedback incorporated. Without real-time visibility, she would have discovered the problem only after reviewing a flawed pull request.
+
+## Recent Changes Since v3.8.0
+
+Guarded restarts freeze new admissions and expose recovery evidence for active work, callbacks, and log forwarding. The persistent freeze survives process restarts until the operator clears it through the recovery procedure.
+
+Planning now uses a single artifact and one evidence/planning PR. SentryBox remediation has a dedicated worker prompt and a private Error Hub MCP connection. Host-rendered versioned configuration replaces runtime secret fetching; persisted state is written with restricted permissions.
 
 ## Getting Connected
 

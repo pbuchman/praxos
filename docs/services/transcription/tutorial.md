@@ -43,7 +43,7 @@ The transcription worker follows a 7-step pipeline:
 
 ### Key Design Decisions
 
-The worker always publishes a result event, even on failure. This guarantees that downstream services never need to handle missing events or implement their own timeouts.
+The worker attempts to publish a result event on success and on handled failures. Publishing can itself fail; invalid input is dead-lettered.
 
 All dependencies are injected through the `TranscriptionDeps` interface:
 
@@ -58,7 +58,7 @@ interface TranscriptionDeps {
 }
 ```
 
-**Checkpoint:** You should understand that every code path — signed URL failure, job submission error, poll timeout, job rejection, transcript fetch error, or unexpected exception — ends with a published event.
+**Checkpoint:** You should understand that every code path — signed URL failure, job submission error, poll timeout, job rejection, transcript fetch error, or unexpected exception — attempts to publish an event.
 
 ---
 
@@ -100,6 +100,10 @@ pnpm vitest run src/__tests__/polling.test.ts
 **Checkpoint:** You should see the polling tests cover done, rejected, timeout, and transient error scenarios.
 
 ---
+
+## Exercise the Media Request Path
+
+In the handler tests, compare a legacy audio request with `whatsapp.media.transcription.requested`, `mediaKind: video`, and `messageSource: private_whatsapp`. Verify that the same source and media kind reach both successful and failed completion events. Omitting `mediaKind` from the media request should produce `invalid_event_schema` and a dead-letter decision.
 
 ## Part 3: Understand Error Formatting (5 minutes)
 

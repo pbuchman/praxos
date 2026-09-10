@@ -16,12 +16,16 @@ You have just signed up and opened Settings.
 
 1. You add an OpenRouter key. The service validates it with OpenRouter's lightweight `/api/v1/key` endpoint before encrypting it.
 2. You select an `or:` default model and optional OpenRouter fallback. If you have no personal key, the platform key supplies access automatically.
-6. You connect your Google account for calendar access. One OAuth flow, and the calendar-agent can read your schedule indefinitely — tokens refresh automatically in the background.
-7. You connect your GitHub account for code automation. Another OAuth flow, and the code-agent can create pull requests on your behalf. GitHub tokens do not expire unless revoked, so there is no refresh logic.
-8. You set Speechmatics as your preferred transcription provider. Voice notes from WhatsApp are now processed through your chosen engine.
-9. You set your timezone to Europe/Berlin. All time-aware features across the platform now display and process dates in your local timezone.
+3. You connect your Google account for calendar access. One OAuth flow, and the calendar-agent can read your schedule indefinitely — tokens refresh automatically in the background.
+4. You connect your GitHub account for code automation. Another OAuth flow, and the code-agent can create pull requests on your behalf. GitHub tokens do not expire unless revoked, so there is no refresh logic.
+5. You set Speechmatics as your preferred transcription provider. Supported media transcription uses that engine; Intex voice commands remain unsupported.
+6. You set your timezone to Europe/Berlin. All time-aware features across the platform now display and process dates in your local timezone.
 
-Nine settings, configured once. From this point on, you never think about credentials again.
+These settings are configured once. From this point on, you never think about credentials again.
+
+## Recent Changes
+
+Since v3.8.0, Intex has a separate model setting with revision checks and availability restricted to the configured eligible user and a valid model catalog. Settings also report whether operator Test Runs are available. General model access now resolves through a personal OpenRouter key or the platform fallback; retired direct-provider credentials are not active options. Versioned personal instructions are owned by intex-agent.
 
 ## How It Helps
 
@@ -65,7 +69,7 @@ GitHub OAuth connects your GitHub account for code automation. The code-agent us
 
 ### Personalized Preferences
 
-Set your preferred transcription provider for voice note processing. When you send a voice message via WhatsApp, the platform uses your chosen provider instead of the system default.
+Set your preferred transcription provider for voice note processing. Private WhatsApp voice/video transcripts also require transcription to be enabled for the chat; this preference does not enable Intex voice commands.
 
 Set your timezone so all time-aware features display and process dates correctly for your location.
 
@@ -76,7 +80,7 @@ Set your timezone so all time-aware features display and process dates correctly
 - **Validated before stored** — A zero-cost OpenRouter key check catches problems at configuration time
 - **Explicit access source** — Settings report whether access comes from the user key, platform fallback, or is unavailable
 - **Primary + fallback model resilience** — Automatic retry with a secondary model when the primary is unavailable
-- **Cascading cleanup** — Deleting an API key automatically clears any dependent primary or fallback model preferences
+- **Platform fallback after key removal** — Removing a personal key retains model preferences; callers can use the platform OpenRouter key when available
 - **Automatic token refresh** — Google OAuth tokens refresh before expiry with no user interaction
 - **Works without a browser** — Device code flow supports CLI and mobile authentication
 - **Multi-provider OAuth** — Google and GitHub accounts connect with a single flow each
@@ -86,7 +90,7 @@ Set your timezone so all time-aware features display and process dates correctly
 
 - **Auth0 dependency** — All authentication routes through Auth0; there is no built-in username and password option
 - **Two OAuth providers** — Google and GitHub are the only connected OAuth providers today; Microsoft and Notion are not yet supported
-- **Validation has a cost** — Testing a key makes a real API call to the provider (except OpenRouter, which uses a free endpoint), incurring a small charge mitigated by always using the cheapest model
+- **Tests can incur usage** — Saving a key uses a zero-token key check; the explicit test endpoint generates a short OpenRouter response and can incur usage
 - **No user-side rate limits** — Rate limiting is enforced by the providers themselves, not configurable per user
 - **Re-authentication on revocation** — If you revoke OAuth access at the provider, you must reconnect manually
 - **One transcription provider** — Only Speechmatics is currently supported as a transcription provider

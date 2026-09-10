@@ -2,6 +2,10 @@
 
 Message Digest Service turns private WhatsApp conversations into scheduled summaries. A user can create one digest for a group or a direct chat, choose when it runs, and provide the instructions used to create the summary.
 
+## Recent Changes
+
+Since v3.8.0, configurable Message Digests replace the former Mobile Notifications digest implementation. The release adds private group/direct-chat sources, editable prompts, schedules, preview, run history, and WhatsApp delivery while retaining the migrated Fishing history. The final delivery format uses the approved v4 template with compact runtime parameters.
+
 ## User experience
 
 The Message Digests page lives under WhatsApp in the web application. From one place a user can:

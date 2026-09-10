@@ -10,6 +10,10 @@ Fishing knowledge in IntexuraOS is split across manually saved notes, WhatsApp d
 
 The service stores per-user knowledge folders and pages, indexes page chunks with embeddings, persists chat sessions and messages, and retrieves supporting evidence before generating a cited answer. Its compatibility digest views read canonical history from `message-digest-service`, while supporting source-message evidence comes from the scoped private WhatsApp API.
 
+## Recent Changes
+
+Since v3.8.0, Fishing digest views and retrieval use Message Digest Service for migrated Fishing summaries and WhatsApp Service for bounded private source evidence. The existing Fishing digest URLs remain compatibility views, not a browser for every custom digest. Chat and embeddings now use OpenRouter, preserving stored embedding aliases and dimensions.
+
 ## Release 3.7.0 Highlights
 
 - Added the Fishing Assistant RAG foundation: knowledge folders, knowledge pages, page chunking, OpenRouter embeddings, Firestore vector search, and chat endpoints. The persisted embedding alias remains `text-embedding-3-small`. (PRs #2038, #2054)

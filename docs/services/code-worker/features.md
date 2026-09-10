@@ -18,7 +18,7 @@ A team lead who wants a complex feature implemented by morning — without babys
 
 1. The lead opens the IntexuraOS dashboard and assigns the task before leaving for the day. No one configures an environment, installs dependencies, or sets up credentials.
 2. The system provisions a fresh, isolated environment automatically. It arrives ready to write code, run tests, search codebases, validate infrastructure, automate a browser, create pull requests, and look up documentation — all connected and configured from the first command.
-3. Environment variables are synced from GCP Secret Manager at container start. Project dependencies install automatically using a shared package cache, so packages that any previous environment already downloaded are available in seconds rather than minutes. The agent begins working immediately.
+3. The container loads a host-rendered environment projection filtered for the task. Project dependencies install automatically using a shared package cache, so packages that any previous environment already downloaded are available in seconds rather than minutes. The agent begins working immediately.
 4. Logs stream back to the dashboard in real time. A teammate checking in over coffee can see exactly what the agent is doing, what tests it is running, and whether it has hit any problems.
 5. Midway through, a test fails. The agent adjusts its approach and continues. If it stalls or hits the two-hour attempt limit, the system does not tear down the environment and start over. Instead, it retries inside the same running environment — session history, installed packages, and prior reasoning all carry forward. The next attempt picks up where the last one left off, already knowing what it tried and why it failed.
 6. By morning, the only evidence of the work is a clean pull request. The environment has been destroyed — no leftover processes, no credentials lingering on disk, no container sitting idle. Everything ran on the team's own infrastructure, under their own API keys, with nothing sent to a third-party cloud.
@@ -76,6 +76,10 @@ When a task completes, the environment is destroyed. Temporary files, session st
 This is not just tidiness. Ephemeral environments eliminate an entire category of security concerns. There are no stale credentials to rotate, no leftover files to audit, and no risk that one task's secrets leak into the next task's workspace. Idle and exited environments are cleaned up automatically through periodic garbage collection, so no container lingers past its usefulness.
 
 **Example:** A task that required access to a sensitive API key finishes at 3 AM. By 3:01 AM, the environment is gone. The API key is no longer mounted anywhere on the machine. No one needs to remember to clean it up.
+
+## Recent Changes Since v3.8.0
+
+Workers consume configuration prepared on the host and no longer activate a general GCP service account or fetch secrets during startup. Codex restores its baked MCP configuration alongside its skills, providing Linear and the private SentryBox Error Hub connection for supported tasks.
 
 ## Getting Started
 

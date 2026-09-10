@@ -11,7 +11,7 @@ export function VoiceSection(): React.JSX.Element {
   const actions = [
     { input: 'Fix the Safari login redirect', output: 'Code task starts in planning mode for design review', icon: Code2, tag: 'CODE' },
     { input: 'Research quantum computing breakthroughs', output: 'Multi-model synthesis with citations and disagreement analysis', icon: Brain, tag: 'RESEARCH' },
-    { input: 'Schedule sync with engineering Tuesday 2pm', output: 'Calendar event created when title, date, and time are clear', icon: Layers, tag: 'CALENDAR' },
+    { input: 'Schedule sync with engineering Tuesday 2pm', output: 'Review the event details and confirm before it is created', icon: Layers, tag: 'CALENDAR' },
     { input: 'Save this link about TypeScript 5.0', output: 'AI summary generated, metadata extracted, bookmarked', icon: MessageSquare, tag: 'LINK' },
     { input: 'Interesting thought about microservice boundaries', output: 'Note created with tags, searchable later', icon: MessageSquare, tag: 'NOTE' },
   ];
@@ -30,9 +30,10 @@ export function VoiceSection(): React.JSX.Element {
             </span>
           </h2>
           <p className="mb-6 text-lg leading-relaxed text-neutral-600">
-            Five tool types. One mobile interface. Send a WhatsApp text message and Intex
-            exposes only the supported action that fits: note, event, research draft, bookmark,
-            or code task. Polish and English are first-class paths.
+            One mobile interface for notes, research drafts, bookmarks, code tasks, calendar
+            queries and updates, personal preferences, and external saving. Send a WhatsApp
+            text message and Intex exposes only the supported action that fits. Review and
+            confirm proposed changes before they are applied. Polish and English are first-class paths.
           </p>
           <p className="text-sm leading-relaxed text-neutral-500">
             Unsupported requests get a clear response instead of being forced through a generic workflow.

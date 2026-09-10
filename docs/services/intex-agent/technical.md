@@ -1,6 +1,6 @@
 # Intex Agent Technical Reference
 
-Intex Agent is the WhatsApp text conversation runtime. It accepts `intex.message.ingest` events, keeps WhatsApp sessions in Firestore, selects at most one supported direct tool, calls the downstream typed client, and publishes the reply through the WhatsApp send topic.
+Intex Agent is the WhatsApp text conversation runtime. It accepts `intex.message.ingest` events, keeps WhatsApp sessions in Firestore, uses a bounded tool policy with explicit mutation confirmation, calls the downstream typed client, and publishes the reply through the WhatsApp send topic.
 
 ## Endpoints
 
@@ -8,13 +8,21 @@ Intex Agent is the WhatsApp text conversation runtime. It accepts `intex.message
 | --- | --- | --- | --- |
 | `POST` | `/internal/intex-agent/messages` | internal auth or Pub/Sub push OIDC header | Accept a direct or Pub/Sub-wrapped `intex.message.ingest` payload and return `202` with the session ID. |
 | `POST` | `/internal/intex-agent/test/conversation` | internal auth only, local/dev only | Run a test conversation with captured replies, real session persistence, real prompt/classifier/runner flow, and mocked tool execution. Production returns `404`. |
-| `GET` | `/preferences` | bearer auth | Return prompt instructions and External Save configuration with the Cloudflare secret masked. |
-| `PUT` | `/preferences` | bearer auth | Save prompt instructions and External Save configuration. |
-| `DELETE` | `/preferences` | bearer auth | Clear prompt instructions and External Save configuration. |
+| `GET` | `/preferences` | bearer auth | Return legacy External Save configuration with the Cloudflare secret masked. |
+| `PUT` | `/preferences` | bearer auth | Save External Save configuration; plain instructions are rejected. |
+| `DELETE` | `/preferences` | bearer auth | Clear legacy External Save configuration; itemized prompt preferences are separate. |
 | `POST` | `/preferences/external-save/test` | bearer auth | Test the saved or submitted External Save configuration. |
 | `GET` | `/sessions` | bearer auth | List the authenticated user's Intex Agent sessions. |
 | `GET` | `/sessions/:sessionId` | bearer auth | Return one authenticated-user session. |
 | `GET` | `/sessions/:sessionId/events` | bearer auth | Return ordered timeline events for one authenticated-user session. |
+
+## Confirmations, Settings, and Evaluation Evidence
+
+Mutating tool calls produce a reviewable pending action and execute after the matching WhatsApp confirmation. Calendar readiness asks for missing title/date/start, derives an end from explicit duration, or displays a 60-minute default in the final confirmation when no end or duration is supplied. Updates preserve unspecified fields and reject stale event snapshots; a multi-event confirmation contains independent operations, not an atomic batch.
+
+Prompt preferences use `GET /preferences/prompt`, `POST /preferences/prompt/items`, `PATCH` and `DELETE /preferences/prompt/items/:itemId`, plus `GET /preferences/prompt/versions` and `GET /preferences/prompt/versions/:version`. Mutations require `expectedVersion`; old versions remain immutable. Intex model selection is stored separately by user-service.
+
+Gated bearer-authenticated `GET /test-runs`, `GET /test-runs/:runId`, and `GET /test-runs/:runId/scenarios/:scenarioId` expose sanitized evaluation evidence. Matrix corpus routes and strict mocks exercise the production transport boundary without real action-tool writes. See the evaluation runbook for operator setup.
 
 ## Tool Boundary
 
@@ -23,6 +31,11 @@ The current tools are defined in `apps/intex-agent/src/domain/agent/toolDefiniti
 - `create_note`
 - `create_calendar_event`
 - `query_calendar_events`
+- `update_calendar_event`
+- `get_user_preferences`
+- `add_user_preference`
+- `update_user_preference`
+- `delete_user_preference`
 - `create_research`
 - `create_link`
 - `create_code_task`
@@ -30,9 +43,9 @@ The current tools are defined in `apps/intex-agent/src/domain/agent/toolDefiniti
 
 The system prompt in `apps/intex-agent/src/domain/agent/systemPrompt.ts` is the runtime contract. Requests outside those jobs must return `unsupported` rather than being routed through a fallback action system.
 
-`classifyIntexAgentIntent` gates tool exposure before the LLM call. It exposes only the single matched tool for explicit create/save intent, exposes `create_link` for bare URL shares, exposes `save_external` for English and Polish external-save phrases, routes read-only calendar list/count questions only through `query_calendar_events`, and rejects messages that contain multiple supported resource intents. Other read-only personal-data requests remain unsupported.
+`classifyIntexAgentIntent` gates tool exposure before the LLM call. It exposes tools permitted by the classified request, exposes `create_link` for bare URL shares, exposes `save_external` for English and Polish external-save phrases, routes read-only calendar list/count questions only through `query_calendar_events`, and rejects unrelated multi-resource actions. Calendar updates may query first and propose multiple singular updates under one confirmation. Preference reads are supported; unrelated personal-data reads remain unsupported.
 
-WhatsApp image messages skip the LLM and call `save_external` directly when External Save is enabled. The signed stored-image URL is passed as `sourceUrl` for the current turn only; the long-lived Intex session event stores `hasSourceUrl: true` instead of the full signed URL.
+WhatsApp image messages skip the LLM and prepare `save_external` for confirmation when External Save is enabled. The signed stored-image URL is passed as `sourceUrl` for the current turn only; the long-lived Intex session event stores `hasSourceUrl: true` instead of the full signed URL.
 
 ## Downstream Services
 
@@ -41,6 +54,8 @@ WhatsApp image messages skip the LLM and call `save_external` directly when Exte
 | `create_note` | notes-agent |
 | `create_calendar_event` | calendar-agent |
 | `query_calendar_events` | calendar-agent |
+| `update_calendar_event` | calendar-agent |
+| `get_user_preferences`, `add_user_preference`, `update_user_preference`, `delete_user_preference` | Intex prompt-preference repository |
 | `create_research` | research-agent |
 | `create_link` | bookmarks-agent |
 | `create_code_task` | code-agent |
@@ -178,7 +193,7 @@ Request body:
 The web client in `apps/web/src/services/intexAgentApi.ts` exposes:
 
 - `getIntexAgentPreferences(token)`
-- `saveIntexAgentPreferences(token, { instructions, externalSave })`
+- `saveIntexAgentPreferences(token, { externalSave })`
 - `testIntexAgentExternalSave(token, externalSave)`
 - `clearIntexAgentPreferences(token)`
 

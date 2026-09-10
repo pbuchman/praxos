@@ -101,6 +101,8 @@ The PM shares the link in the board pre-read Slack channel and exports it to Not
 - OpenRouter calls require an OpenRouter credential resolved by user-service (user key or platform fallback)
 - OpenRouter model selection is restricted to a curated allowlist of 16 models
 - At most six unique models can be selected for a new run or enhancement
+- Synthesis uses MiniMax M3 or GPT-5.4 through OpenRouter; the research model list is broader
+- Historical direct-provider results remain readable, but a new executable run must use supported OpenRouter IDs
 
 ---
 

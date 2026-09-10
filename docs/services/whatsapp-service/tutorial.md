@@ -75,6 +75,15 @@ Use internal routes for agent or maintenance reads that already know the `source
 - `GET /internal/whatsapp/private/sender-days`
 - `POST /internal/whatsapp/private/aggregates/rebuild`
 
+## Analyze A Private Conversation
+
+1. Open one private chat and start Conversation Assistant.
+2. Select a date range and an available model, then prepare the analysis.
+3. Inspect its captured context and ask a question; the answer streams as it is generated.
+4. Use PDF export to save the analysis. Large context can fail the selected model’s input budget; narrow the range if needed.
+
+In the private chat, open stored images or play audio/video attachments. Enable the chat’s transcription setting to request private voice/video transcripts. Reactions appear with their source message. These controls do not enable voice commands for Intex.
+
 ## Continue A Conversation Assistant Analysis
 
 1. Open a completed Conversation Assistant analysis.
@@ -112,15 +121,11 @@ A ready response exposes only a masked form of the first mapped phone. Missing m
 
 To inspect a digest source safely, first validate the owned chat through `/internal/whatsapp/private/digest-source/validate`, then use the returned account generation and source revision with `/internal/whatsapp/private/digest-source/messages/query`. Never copy request or response content into operational logs.
 
-## Test Unsupported Voice
+## Test Audio Transcription And Reply Context
 
-Send a voice message. The expected reply is:
+Send a voice message and inspect its stored audio and transcription state. Audio should publish an audio-stored event for transcription, without directly publishing an Intex action ingest or the old unsupported-voice reply.
 
-```text
-Voice messages are not supported by Intex yet. Please send text for now.
-```
-
-No Intex ingestion event should be published for that audio message.
+After transcription completes, reply to that audio with a text request. The completed transcript may be included as bounded context for the text request. Check that pending or unsafe transcript context is not forwarded.
 
 ## Send An Outbound Notification
 

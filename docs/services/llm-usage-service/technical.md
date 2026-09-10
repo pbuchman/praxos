@@ -74,6 +74,12 @@ sequenceDiagram
     Service-->>-Caller: { accepted, duplicates, rejected }
 ```
 
+## Changes Since v3.8.0
+
+The input schema and stored usage model accept additive `request.operation: embedding`. Existing operations remain valid. This supports usage attribution for OpenRouter-routed embedding workloads.
+
+Aggregate IDs percent-escape `%` and `/` in `source.component`, in that order, while stored aggregate dimensions retain the raw value. Literal `%2F` and `/` therefore produce distinct encoded components. Client/model hashing and event replay deduplication retain their existing behavior.
+
 ## Release 3.7.0 Changes
 
 | Commit       | Description                                                             | Date        |
@@ -143,7 +149,7 @@ Same as UsageEvent but without `receivedAt`, `ingress` (server-set), and with a 
 
 ### DailyUsageAggregate
 
-Pre-computed daily rollups keyed by a composite ID: `{date}__{ownerType}__{ownerIdHash}__{service}__{component}__{clientHash}__{environment}__{provider}__{modelHash}__{operation}__{promptTypeHash}__{success}`. Uses Firestore `FieldValue.increment()` for atomic counter updates.
+Pre-computed daily rollups keyed by a composite ID: `{date}__{ownerType}__{ownerIdHash}__{service}__{componentKey}__{clientHash}__{environment}__{provider}__{modelHash}__{operation}__{promptTypeHash}__{success}`. Uses Firestore `FieldValue.increment()` for atomic counter updates.
 
 **Metrics:** `calls`, `costUsd`, `inputTokens`, `outputTokens`, `totalTokens`, `cacheReadTokens`, `cacheWriteTokens`, `cachedTokens`, `reasoningTokens`, `thinkingTokens`, `webSearchCalls`, `imageCount`
 

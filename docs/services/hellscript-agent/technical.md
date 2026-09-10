@@ -92,6 +92,10 @@ sequenceDiagram
 
 ## Recent Changes
 
+### Changes since v3.8.0
+
+Platform fallback now uses the required `INTEXURAOS_OPENROUTER_APP_API_KEY`. `LlmIntentInterpreter` and `LlmDraftGenerator` consume the per-user `LlmGenerateClient`; the direct `infra-gemini` dependency and optional Gemini fallback warning have been removed. Buffer events, writing settings, and draft-generation routes retain their existing contracts.
+
 Introduced in v3.4.0 (INT-1032). Major update in v3.5.0 with categorized writing configuration (INT-1064).
 
 | Commit      | Description                                                                  | Date       |

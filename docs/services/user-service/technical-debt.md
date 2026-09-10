@@ -19,6 +19,10 @@
 
 ---
 
+## Current Release Watch Points
+
+The older dated assessments below are historical. Since v3.8.0, active credentials use OpenRouter, while Intex model selection has independent availability and optimistic revision checks. Keep tests for stale catalog evidence, unauthorized selector access, malformed stored state, mixed settings bodies, and revision conflicts. Test Runs capability visibility is independently gated. Personal OpenRouter key deletion preserves model preferences and removes only the key/test result.
+
 ## Future Plans
 
 ### Additional OAuth Providers
@@ -74,7 +78,7 @@ The `llmKeysRoutes.ts` file is large but all routes are cohesive around the LLM 
 - Easy addition of new providers
 - Provider-specific error handling
 
-OpenRouter's `validateKey` method differs from the others (uses `/api/v1/key` instead of `generate()`), which justifies the per-provider approach.
+Saving an OpenRouter key uses `/api/v1/key`; an explicit test uses `generate()`. Historical provider parsers are separate from this active key flow.
 
 Not considered actionable debt as the pattern is explicit and maintainable.
 
@@ -92,7 +96,7 @@ Could potentially be abstracted into a base class if more providers are added.
 
 ## Test Coverage
 
-### Current Status
+### Historical Assessment (2026-04-22)
 
 Comprehensive test coverage across all layers with 100% branch coverage enforcement:
 
