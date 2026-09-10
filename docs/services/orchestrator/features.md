@@ -1,18 +1,18 @@
 # Orchestrator
 
-Your code never leaves your machine — and no model ever verifies its own work.
+Run coding tools on your own hardware, with independent verification of their work.
 
 ## The Problem
 
-Every AI coding agent on the market asks for the same thing: send us your code. Ship your repository to our servers, let our infrastructure run against it, and trust that nothing leaks, nothing persists, and nothing gets logged where it shouldn't. For a side project, maybe that trade is acceptable. For a company with compliance requirements, customer data baked into the repository, or proprietary algorithms refined over years — it is a non-starter. The moment your source code crosses the wire to someone else's infrastructure, you have lost a guarantee you cannot get back.
+Managed coding platforms host the execution environment for you. Teams that need control over repository workspaces, installed tools, and task isolation may instead want to run that environment on their own hardware. Execution location and model data handling are separate concerns: remote inference can send source-code context outside the worker network.
 
-But keeping the code on your own hardware only solves half the problem. An AI agent that writes code and then declares its own work complete is an AI agent grading its own homework. The model that introduced a subtle bug is the same model telling you the bug does not exist. Self-assessment is not verification. It is a confidence score wearing a lab coat. And when you are running agents autonomously — no human watching every keystroke — that gap between confidence and correctness is where production incidents hide.
+Controlling the execution environment only solves half the problem. An AI agent that writes code and then declares its own work complete is an AI agent grading its own homework. The model that introduced a subtle bug is the same model telling you the bug does not exist. Self-assessment is not verification. It is a confidence score wearing a lab coat. And when you are running agents autonomously — no human watching every keystroke — that gap between confidence and correctness is where production incidents hide.
 
-The orchestrator closes both gaps at once. It runs entirely on your infrastructure, so your source code never touches a third-party server. And it enforces a cross-model verification pipeline where the agent that writes the code is never the agent that judges the result. Claude or Codex executes. A configurable OpenRouter validation model chain supports independent validation. A separate compliance validator audits the full session transcript. Deterministic rules enforce what no model can be trusted to check. Multiple layers, multiple independent trust boundaries, one principle: no model verifies its own work.
+The orchestrator combines local execution with independent verification. Repository workspaces and coding tools run on your infrastructure, while remote model calls can transmit source-code context and session transcripts to configured providers. And it enforces a cross-model verification pipeline where the agent that writes the code is never the agent that judges the result. Claude or Codex executes. A configurable OpenRouter validation model chain supports independent validation. A separate compliance validator audits the full session transcript. Deterministic rules enforce what no model can be trusted to check. Multiple layers, multiple independent trust boundaries, one principle: no model verifies its own work.
 
 ## Use Case: From Idle Hardware to an Autonomous Engineering Team
 
-Built for engineering teams who need autonomous coding agents but cannot — or will not — send their source code to someone else's infrastructure.
+Built for engineering teams who want to control where coding tools execute and which remote model providers receive task context.
 
 1. A startup CTO has a workstation sitting idle after an office move — a machine with Docker installed and nothing to do. She installs the orchestrator and connects it to IntexuraOS through a Cloudflare tunnel — an outbound-only encrypted connection. The machine never accepts inbound traffic from the internet.
 2. A developer files a Linear issue describing a new API endpoint. The platform dispatches the task to her orchestrator, cryptographically signed to verify it came from IntexuraOS and has not been tampered with. The orchestrator validates the signature, checks that Docker is healthy and disk space is available, and accepts the work.
@@ -24,17 +24,17 @@ Built for engineering teams who need autonomous coding agents but cannot — or 
 8. **Stage two:** An Agent Compliance Validator reads the full session transcript — every tool call, every edit, every decision — and performs a structured audit via an independent LLM (OpenRouter). The resulting compliance report covers claim verification (did the agent actually do what it said it did?), contract compliance (were mandatory skills invoked in the correct order?), and anomaly detection (fabrication, hallucination, protocol violations). This report is posted directly on the pull request with visual severity indicators, so reviewers see an independent, evidence-backed assessment before they read a single line of code.
 9. **Stage three:** A Remediation Agent — triggered when the Review Agent identifies findings above a severity threshold — autonomously addresses review feedback on the existing PR branch, runs CI, and decides whether a re-review is needed. This auto-improvement loop can cross LLM boundaries, using different models to check each other's work.
 10. **Stage four:** A separate code-agent service enforces deterministic rules — Linear issue mutations, label updates, status transitions — that no language model can be trusted to apply consistently.
-11. The CTO reviews a clean pull request with an independent compliance report attached and a requirements audit confirming every plan item was addressed. Her source code never left the building.
+11. The CTO reviews a clean pull request with an independent compliance report attached and a requirements audit confirming every plan item was addressed. The coding tools ran on her workstation; model inference and transcript validation used remote providers.
 
 ## How It Helps
 
-### Keep Your Code on Your Infrastructure
+### Run Coding Tools on Your Infrastructure
 
-The orchestrator runs as a native process on your hardware. A server rack in your office, a cloud VM in your preferred region, a repurposed laptop — the requirements are Docker and a Cloudflare tunnel. Your source code stays on your machine. AI inference calls go directly from your hardware to the model provider. The only data that reaches IntexuraOS is task status, logs, and performance metrics. The platform sees an endpoint, not your codebase.
+The orchestrator runs as a native process on your hardware. A server rack in your office, a cloud VM in your preferred region, a repurposed laptop — the requirements are Docker and a Cloudflare tunnel. Repository workspaces remain on the worker host, and AI inference calls go from that host to remote model providers with the context needed for the task, which can include source code. Compliance validation also sends session-transcript context through OpenRouter. IntexuraOS receives task status, logs, and performance metrics; logs can contain task context. Local execution does not guarantee source-code residency.
 
 You can run one orchestrator or several, each on different hardware, each in a different location. The platform dispatches work to whichever has capacity. A sensitive file guard scans every commit against twenty-plus patterns — environment files, certificates, private keys, infrastructure state — and reverts anything that matches before results reach your repository. This matters because autonomous agents occasionally stage files they should not. The guard catches the mistake before it leaves your machine — a safety net that most self-hosted solutions lack entirely.
 
-**Example:** A fintech company runs one orchestrator on a VM in Frankfurt for GDPR-sensitive repositories and another on a workstation in their New York office for US-based projects. Both appear as worker endpoints to the platform. The source code in each location never crosses the Atlantic. When a worker accidentally stages a `.env` file containing database credentials, the sensitive file guard catches it and reverts the file before the commit is pushed.
+**Example:** A fintech company runs one orchestrator on a VM in Frankfurt for GDPR-sensitive repositories and another on a workstation in their New York office for US-based projects. Both appear as worker endpoints to the platform. These locations determine where tools execute; model-provider routing and data handling must be assessed separately for any residency requirement. When a worker accidentally stages a `.env` file containing database credentials, the sensitive file guard catches it and reverts the file before the commit is pushed.
 
 ### Run Tasks Across Multiple AI Runtimes
 
@@ -118,11 +118,11 @@ Planning now uses a single artifact and one evidence/planning PR. SentryBox reme
 
 ## Getting Connected
 
-Install the orchestrator on any Unix machine with Docker, set up a Cloudflare tunnel, and point it at your IntexuraOS instance. The machine becomes a worker endpoint within minutes. Your code stays on your hardware from the first task onward.
+Install the orchestrator on any Unix machine with Docker, set up a Cloudflare tunnel, and point it at your IntexuraOS instance. The machine becomes a worker endpoint within minutes. Coding tools execute on that hardware; configure remote model access with its source-code and transcript data flows in mind.
 
 ## Key Benefits
 
-- **Your code, your hardware** — Source code never leaves your network; outbound data is limited to task status, logs, and performance metrics
+- **Your execution environment, your hardware** — Repository workspaces and coding tools run locally; remote model calls can include source code and session transcripts, and the platform receives task status, logs, and metrics
 - **Independent trust boundary** — Claude or Codex writes the code, deterministic completion contracts verify the result, an independent LLM can audit the full transcript, and deterministic rules enforce what no model can be trusted to check
 - **Worker type presets** — Claude (`auto`, `opus`, `sonnet`), Codex (`codex`, `codex-xhigh`), and OpenRouter (`openrouter-free`)
 - **Autonomous remediation loop** — Review findings trigger automatic fix, re-review, and verification without human intervention, crossing LLM boundaries at each step

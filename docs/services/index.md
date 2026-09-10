@@ -154,7 +154,7 @@ graph TB
 
 | Service                                | AI Models                        | Capability                                    |
 | -------------------------------------- | -------------------------------- | --------------------------------------------- |
-| [intex-agent](intex-agent/features.md) | OpenRouter Gemini 3.6 Flash | WhatsApp text tools with confirmed changes and read-only queries |
+| [intex-agent](intex-agent/features.md) | OpenRouter DeepSeek V4 Flash by default; gated per-user model selection | WhatsApp text tools with confirmed changes and read-only queries |
 
 ### Image Generation
 
@@ -205,7 +205,7 @@ Services that directly invoke AI models for their core functionality.
 
 | Service                                                | Purpose                            | AI                                               | Docs                                                                                                                                                                                                                              |
 | ------------------------------------------------------ | ---------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [intex-agent](intex-agent/features.md)                 | Confirmed actions and read-only queries | OpenRouter Gemini 3.6 Flash                | [features](intex-agent/features.md) / [technical](intex-agent/technical.md) / [tutorial](intex-agent/tutorial.md) / [debt](intex-agent/technical-debt.md) / [agent](intex-agent/agent.md)                                        |
+| [intex-agent](intex-agent/features.md)                 | Confirmed actions and read-only queries | OpenRouter DeepSeek V4 Flash by default; gated per-user model selection                | [features](intex-agent/features.md) / [technical](intex-agent/technical.md) / [tutorial](intex-agent/tutorial.md) / [debt](intex-agent/technical-debt.md) / [agent](intex-agent/agent.md)                                        |
 | [research-agent](research-agent/features.md)           | Multi-LLM research orchestration   | Curated OpenRouter catalog, maximum 6 models     | [features](research-agent/features.md) / [technical](research-agent/technical.md) / [tutorial](research-agent/tutorial.md) / [debt](research-agent/technical-debt.md) / [agent](research-agent/agent.md)                          |
 | [image-service](image-service/features.md)             | AI image generation                | GPT aliases executed through OpenRouter          | [features](image-service/features.md) / [technical](image-service/technical.md) / [tutorial](image-service/tutorial.md) / [debt](image-service/technical-debt.md) / [agent](image-service/agent.md)                               |
 | [bookmarks-agent](bookmarks-agent/features.md)         | Link management with AI summaries  | Via web-agent                                    | [features](bookmarks-agent/features.md) / [technical](bookmarks-agent/technical.md) / [tutorial](bookmarks-agent/tutorial.md) / [debt](bookmarks-agent/technical-debt.md) / [agent](bookmarks-agent/agent.md)                     |
@@ -336,13 +336,15 @@ Shared libraries used across apps and workers.
 
 Used for deep research queries with parallel execution. The UI lists the curated OpenRouter catalog first, and new requests accept at most six unique `or:` model IDs. Stored reports retain exact retired model IDs and provider labels for historical display without writeback.
 
-### Fast Conversation Models (1)
+### Fast Conversation Models (3)
 
-Used for direct WhatsApp text conversations and fast tool-call decisions.
+Used for direct WhatsApp text conversations and fast tool-call decisions. Intex defaults to DeepSeek V4 Flash. Users with access to the model selector can choose DeepSeek V4 Flash, MiniMax M3, or Gemini 3.6 Flash through OpenRouter. Runtime callers receive the explicit per-user choice when available; users without selector access and users without an explicit choice use the DeepSeek default.
 
 | Model                  | Provider   | Use Case                                |
 | ---------------------- | ---------- | --------------------------------------- |
-| Gemini 3.6 Flash | OpenRouter | Intex tool selection and concise replies |
+| DeepSeek V4 Flash | OpenRouter | Default Intex tool selection and concise replies |
+| MiniMax M3 | OpenRouter | Optional Intex model for users with selector access |
+| Gemini 3.6 Flash | OpenRouter | Optional Intex model for users with selector access |
 
 ### Image Models
 
