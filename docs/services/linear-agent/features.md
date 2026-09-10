@@ -76,11 +76,11 @@ When the code agent discovers that the work described in an issue has already be
 
 ### Clean Up Your Board Automatically
 
-As your issue count grows, the Linear Agent monitors your board against a configurable threshold. When the active issue count exceeds 200, it uses Gemini to classify issues as deletion candidates — cancelled issues, duplicates, obsolete sub-issues, simple fixes that were already merged, and review-only items that no longer need tracking. The candidates are stored for your review in the web app, not deleted immediately. You see each candidate's score, reason, and category before confirming deletion.
+As your issue count grows, the Linear Agent monitors your board against a configurable threshold. When the active issue count exceeds 200, it uses the resolved LLM client to classify issues as deletion candidates — cancelled issues, duplicates, obsolete sub-issues, simple fixes that were already merged, and review-only items that no longer need tracking. Platform fallback traffic goes through OpenRouter. The candidates are stored for your review in the web app, not deleted immediately. You see each candidate's score, reason, and category before confirming deletion.
 
 This keeps your Linear workspace under subscription limits without manual auditing. The classification runs on a schedule, and confirmed deletions cascade through all connected users' local caches — so the cleanup is visible everywhere.
 
-**Example:** Your board has grown to 230 issues over several sprints. The pruning system activates and Gemini classifies 30 candidates: 8 cancelled issues, 6 duplicates, 10 sub-issues whose parents are already done, and 6 simple fixes that were merged weeks ago. You review the list in the web app, confirm, and the candidates are soft-deleted from Linear. Your board drops back to 200 issues.
+**Example:** Your board has grown to 230 issues over several sprints. The pruning system activates and the LLM classifies 30 candidates: 8 cancelled issues, 6 duplicates, 10 sub-issues whose parents are already done, and 6 simple fixes that were merged weeks ago. You review the list in the web app, confirm, and the candidates are soft-deleted from Linear. Your board drops back to 200 issues.
 
 ### Generate Titles from Descriptions
 
@@ -101,6 +101,12 @@ When something does go wrong — the AI cannot parse your message, the input is 
 Networks hiccup. Updates miss a beat. Over weeks, the local copy can drift from what Linear actually holds. When that happens, you trigger a full refresh — or let the automatic scheduled sync handle it — and the agent pulls every issue from Linear, updates the local store, and removes anything that no longer exists. Completed issues are retained for 60 days in the sync window, giving you a full two-month view of recently closed work. Your board snaps back to reality.
 
 **Example:** After a server restart, you suspect the board might be stale. You trigger a full refresh. The agent reconciles every issue — creates three that were missing, updates twelve that had changed, and removes one that was deleted from Linear. Your dashboard matches your Linear board exactly.
+
+## Recent Changes Since v3.8.0
+
+Internal issue creation accepts a stable caller key so retries and concurrent error-remediation requests can reuse the same Linear issue. Issue-list synchronization retries transient upstream and network failures with backoff. Expected outages return a clear temporary-unavailability result while retaining useful logs.
+
+Webhook signatures are checked before unsupported events are ignored; a missing team secret or unverifiable comment context is rejected. Platform AI fallback uses OpenRouter.
 
 ## Getting Connected
 

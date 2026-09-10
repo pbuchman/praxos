@@ -23,7 +23,7 @@ interface OrchestratorTools {
   // Submit a new code task for execution
   submitTask(params: {
     taskId: string;
-    workerType: 'opus' | 'auto' | 'sonnet' | 'minimax' | 'mimo-pro' | 'glm' | 'qwen' | 'kimi' | 'codex' | 'codex-xhigh' | 'openrouter-free';
+    workerType: 'opus' | 'auto' | 'sonnet' | 'codex' | 'codex-xhigh' | 'openrouter-free';
     prompt: string;
     repository?: string;
     baseBranch?: string;
@@ -31,7 +31,7 @@ interface OrchestratorTools {
     linearIssueTitle?: string;
     linearIssueLabels: string[];
     hasChildren: boolean;
-    agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent';
+    agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent' | 'sentry';
     executionMemoryContext?: ExecutionMemoryPromptContext;
     trackingCommentId?: string;
     prNumber?: number;
@@ -73,11 +73,17 @@ interface OrchestratorTools {
 
   // Check service health and capacity
   getHealth(): Promise<{
-    healthContractVersion: 1;
+    healthContractVersion: 2;
+    admissionFrozen: boolean;
+    pendingAdmissions: number;
+    admissionActivityTotal: number;
     status: 'ready' | 'initializing' | 'recovering' | 'degraded' | 'auth_degraded' | 'shutting_down';
     capacity: number;
     running: number;
     available: number;
+    workerContainers: number | null;
+    pendingTerminalCallbacks: number | null;
+    terminalCallbackActivityTotal: number | null;
     githubTokenExpiresAt: string | null;
     workerAuths: {
       claude: WorkerAuthState;
@@ -86,6 +92,22 @@ interface OrchestratorTools {
     dockerHealthy: boolean;
     diskHealthy: boolean;
     providerApiKeys: Record<string, ProviderApiKeyHealth>;
+    logForwarderDrain: {
+      counterEpochId: string;
+      processStartedAt: string;
+      activeForwarders: number;
+      bufferedBytes: number;
+      partialLineBytes: number;
+      queuedChunks: number;
+      inFlightBatches: number;
+      inFlightChunks: number;
+      activeFlushOperations: number;
+      openUploadRequests: number;
+      detachedUploadRetryPromises: number;
+      droppedChunksTotal: number;
+      forwarderActivityTotal: number;
+      lastActivityAt: string | null;
+    };
   }>;
   // Auth: None
 
@@ -130,7 +152,7 @@ interface OrchestratorResources {
 ```typescript
 interface Task {
   taskId: string;
-  workerType: 'opus' | 'auto' | 'sonnet' | 'minimax' | 'mimo-pro' | 'glm' | 'qwen' | 'kimi' | 'codex' | 'codex-xhigh' | 'openrouter-free';
+  workerType: 'opus' | 'auto' | 'sonnet' | 'codex' | 'codex-xhigh' | 'openrouter-free';
   runtime?: 'claude' | 'codex';
   runtimeSessionId?: string;
   prompt: string;
@@ -145,7 +167,7 @@ interface Task {
   webhookSecret: string;
   actionId?: string;
   retriedFrom?: string;
-  agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent';
+  agentType?: 'planning' | 'execution' | 'pull_request' | 'review' | 'remediation' | 'ask_agent' | 'sentry';
   executionMemoryContext?: ExecutionMemoryPromptContext;
   trackingCommentId?: string;
   prNumber?: number;
@@ -242,9 +264,7 @@ interface TaskResult {
   planning_outcome_label?: 'planned' | 'unclear';
   planning_superpowers_writing_plans_used?: '0' | '1';
   planning_linear_url?: string;
-  planning_is_complex?: '0' | '1';
   planning_has_plan_doc?: '0' | '1';
-  planning_subtask_urls?: string;
   planning_pr_url?: string;
   planning_unclear_clarification?: string;
   execution_outcome_label?: 'implemented' | 'already_completed' | 'failed';
@@ -566,16 +586,11 @@ On startup, the orchestrator:
 | `INTEXURAOS_GITHUB_INSTALLATION_ID`         | Yes      | -                                  |
 | `INTEXURAOS_INTERNAL_AUTH_TOKEN`            | Yes      | -                                  |
 | `INTEXURAOS_LINEAR_API_KEY`                 | Yes      | -                                  |
-| `INTEXURAOS_SENTRY_AUTH_TOKEN`              | Yes      | -                                  |
-| `INTEXURAOS_GEMINI_APP_API_KEY`             | Yes      | -                                  |
-| `INTEXURAOS_MINIMAX_APP_API_KEY`            | Yes      | -                                  |
-| `INTEXURAOS_MIMO_APP_API_KEY`               | Yes      | -                                  |
-| `INTEXURAOS_DASHSCOPE_APP_API_KEY`          | Yes      | -                                  |
-| `INTEXURAOS_KIMI_APP_API_KEY`               | Yes      | -                                  |
+| `INTEXURAOS_ERROR_HUB_HOST`                 | Yes      | -                                  |
 | `INTEXURAOS_USAGE_WEBHOOK_URL`              | Yes      | -                                  |
 | `GOOGLE_APPLICATION_CREDENTIALS`            | Yes      | -                                  |
-| `INTEXURAOS_ORCHESTRATOR_VALIDATION_MODELS` | No       | `or:google/gemma-4-31b-it,gemini-2.5-flash` |
-| `INTEXURAOS_OPENROUTER_APP_API_KEY`         | No       | Required unless validation models are Gemini-only |
+| `INTEXURAOS_ORCHESTRATOR_VALIDATION_MODELS` | No       | `or:google/gemma-4-31b-it,or:deepseek/deepseek-v4-flash` |
+| `INTEXURAOS_OPENROUTER_APP_API_KEY`         | Yes      | -                                  |
 | `INTEXURAOS_REPOSITORY_PATH`                | No       | `~/.code-orchestrator/repo`        |
 | `INTEXURAOS_WORKER_CAPACITY`                | No       | `2`                                |
 | `INTEXURAOS_COMPLETION_MAX_ATTEMPTS`        | No       | `3`                                |
@@ -585,7 +600,7 @@ On startup, the orchestrator:
 | `INTEXURAOS_CODE_WORKER_FORENSICS_PATH`     | No       | `~/.code-orchestrator/forensics`   |
 | `INTEXURAOS_GIT_USER_NAME`                  | No       | (host git config)                  |
 | `INTEXURAOS_GIT_USER_EMAIL`                 | No       | (host git config)                  |
-| `INTEXURAOS_GITHUB_APP_PRIVATE_KEY`         | No       | (Secret Manager)                   |
+| `INTEXURAOS_GITHUB_APP_PRIVATE_KEY_PATH` | Yes | Path to host-rendered mode-0600 PEM |
 | `INTEXURAOS_ENVIRONMENT`                    | No       | `NODE_ENV` or `development`        |
 | `INTEXURAOS_SENTRY_DSN`                     | No       | (empty)                            |
 | `INTEXURAOS_RELEASE`                        | No       | (empty; fallback after `K_REVISION`) |
@@ -618,6 +633,14 @@ On startup, the orchestrator:
 | `PLANNING_AGENT_UNCLEAR`              | -    | Planning agent could not produce a plan                        |
 
 ---
+
+## Release Integration Boundaries
+
+Startup consumes host-rendered configuration and a mode-0600 GitHub App PEM; remote secret fetching is not a runtime fallback. Workers receive `ERROR_HUB_HOST` for the private SentryBox MCP connection.
+
+Planning accepts the SIMPLE or PLAN-DOC artifact shape, requires one evidence/planning PR, and no longer emits child-issue URLs. New Ask Agent tasks submitted by code-agent use Codex.
+
+Before a guarded restart, inspect the versioned health and persistent admission-freeze evidence documented in [the health and admission-freeze contract](technical.md#hmac-authentication); do not infer drain completion from the running-task count alone.
 
 ## Constraints
 

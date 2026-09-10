@@ -51,10 +51,10 @@ export function SelfBuildingSection(): React.JSX.Element {
             <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
               <Lock className="h-6 w-6" />
             </div>
-            <h3 className="mb-2 text-lg font-bold text-neutral-900">Your Code Never Leaves Your Network</h3>
+            <h3 className="mb-2 text-lg font-bold text-neutral-900">Code Runs On Your Worker</h3>
             <p className="text-neutral-600">
               The orchestrator runs on a worker you control. Each task receives its own checkout,
-              credentials, and container, powered by your configured coding runtime.
+              credentials, and container, powered by your configured coding runtime. Model providers receive the context that runtime sends.
             </p>
           </motion.div>
           <motion.div
@@ -79,14 +79,14 @@ export function SelfBuildingSection(): React.JSX.Element {
           <PipelineStep
             number="Step 1"
             title="Plan"
-            description="A planning agent analyzes the task, enriches the project issue with technical context, creates subissues for complex work, and labels it code-task when the plan is sound."
+            description="A planning agent analyzes the task, updates the original project issue, and produces one reviewable planning artifact with an evidence pull request."
             icon={Brain}
             accent="bg-purple-100 text-purple-700"
           />
           <PipelineStep
             number="Step 2"
             title="Execute"
-            description="A strict execution agent picks up the labeled issue, writes code in an isolated container on your machine, runs the full test suite, and creates a code change for review."
+            description="An execution agent carries out the reviewed plan, writes code in an isolated container on your machine, runs the full test suite, and creates a code change for review."
             icon={Code2}
             accent="bg-blue-100 text-blue-700"
           />

@@ -16,7 +16,7 @@ Before release operations:
 4. Keep controller-owned work in the controller session.
 5. Identify bounded subagent tasks and reasoning efforts for this release.
 
-Do not create git worktrees. This repo forbids worktrees in `.claude/CLAUDE.md`.
+Do not create git worktrees. This repo forbids worktrees in `AGENTS.md`.
 
 If subagent tools are unavailable, report:
 
@@ -243,11 +243,11 @@ Write scope: `README.md` only. The controller reviews the diff before Phase 5.
 
 ## Phase 5: Website Improvements
 
-Target file: `apps/web/src/pages/HomePage.tsx`.
+Target entry point: `apps/web/src/pages/HomePage.tsx`; release presentation lives in `apps/web/src/components/home/`. Read the imported components before choosing the write scope.
 
 Skip only when there are zero high-priority features.
 
-Dispatch a `worker` subagent with `reasoning_effort: high`. Write scope: `apps/web/src/pages/HomePage.tsx` only.
+Dispatch a `worker` subagent with `reasoning_effort: high`. Write scope: the homepage entry point, the existing home components that own release content, and their affected tests. Preserve the component boundaries instead of moving presentation back into the page.
 
 Required changes:
 
@@ -336,7 +336,7 @@ Verify before staging:
 - website and README do not present migrations or refactors as new features
 - documented endpoints and version numbers are grounded in code or tags
 
-Before committing, dispatch a final `explorer` subagent with `reasoning_effort: xhigh` as Final Release Auditor. It must check the planned release artifacts against `reference/subagent-execution.md`, this workflow, and `.claude/CLAUDE.md`. Fix all critical findings before staging.
+Before committing, dispatch a final `explorer` subagent with `reasoning_effort: xhigh` as Final Release Auditor. It must check the planned release artifacts against `reference/subagent-execution.md`, this workflow, and `AGENTS.md`. Fix all critical findings before staging.
 
 ### 6.6 Commit and PR to Development
 

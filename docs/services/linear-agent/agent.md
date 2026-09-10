@@ -177,6 +177,7 @@ interface CreateIssueInput {
   title: string;
   description: string;
   labels?: string[]; // Accepted but not forwarded to Linear yet
+  idempotencyKey?: string; // Stable logical request key, 1–1024 characters
 }
 ```
 
@@ -492,6 +493,12 @@ interface SyncOutput {
 
 ---
 
+## Retry and Authentication Contract
+
+For `POST /internal/issues`, retain the same `idempotencyKey` across retries of one logical creation request. Keys are scoped by user; do not reuse one for unrelated issues. The route can return an existing issue after a concurrent create.
+
+Issue-list synchronization retries transient upstream/network failures. Webhooks require an authenticated team context and valid HMAC even when their event type will be ignored.
+
 ## Constraints
 
 **Do NOT:**
@@ -582,6 +589,7 @@ interface SyncOutput {
 | 401        | Unauthorized                        | Check `X-Internal-Auth` and `X-User-Id` headers        |
 | 403        | User not connected to Linear        | User must connect via `POST /connection` first  |
 | 404        | Issue not found or wrong team       | Verify identifier and that user is on correct team     |
+| 503 | Linear temporarily unavailable | Retry with backoff using the same logical request key |
 | 500        | Internal or downstream error        | Retry with backoff; check Linear API status            |
 
 ## Events Published
@@ -601,10 +609,10 @@ Linear sends issue and comment events to `POST /webhooks`. The service:
 
 | Service              | Why Needed                     | Failure Behavior                     |
 | -------------------- | ------------------------------ | ------------------------------------ |
-| user-service         | LLM API key for extraction     | Returns `NOT_CONNECTED` on failure   |
-| app-settings-service | LLM pricing context at startup | Startup fails if unreachable         |
-| code-agent           | Auto-trigger on assignment     | Logged and dropped (fire-and-forget) |
-| code-agent           | Group summary recomputes       | Logged and dropped (best-effort)     |
-| Linear API           | Issue CRUD, team data          | Returns error to caller              |
-| Gemini API           | Issue pruning classification   | Pruning fails gracefully             |
-| Firestore            | Local issue/comment storage    | Returns `INTERNAL_ERROR`             |
+| user-service         | Resolve LLM client for extraction/pruning | Returns `NOT_CONNECTED` on failure   |
+| llm-usage-service    | LLM usage attribution                    | Tracking failure is non-blocking     |
+| code-agent           | Auto-trigger on assignment               | Logged and dropped (fire-and-forget) |
+| code-agent           | Group summary recomputes                 | Logged and dropped (best-effort)     |
+| Linear API           | Issue CRUD, team data                    | Returns error to caller              |
+| Resolved LLM         | Extraction, titles, pruning              | Pruning fails gracefully             |
+| Firestore            | Local issue/comment storage              | Returns `INTERNAL_ERROR`             |

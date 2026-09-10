@@ -20,11 +20,8 @@
 
 ```typescript
 interface WorkerSecrets {
-  ANTHROPIC_API_KEY: string;
   LINEAR_API_KEY: string;
-  SENTRY_AUTH_TOKEN: string;
-  MINIMAX_API_KEY: string;
-  DASHSCOPE_API_KEY: string;
+  ERROR_HUB_HOST: string;
   OPENROUTER_API_KEY: string;
 }
 
@@ -37,10 +34,6 @@ interface WorkerConfig {
     | 'auto'
     | 'opus'
     | 'sonnet'
-    | 'minimax'
-    | 'glm'
-    | 'qwen'
-    | 'kimi'
     | 'codex'
     | 'codex-xhigh'
     | 'openrouter-free';
@@ -111,10 +104,6 @@ type WorkerType =
   | 'auto'
   | 'opus'
   | 'sonnet'
-  | 'minimax'
-  | 'glm'
-  | 'qwen'
-  | 'kimi'
   | 'codex'
   | 'codex-xhigh'
   | 'openrouter-free';
@@ -124,16 +113,20 @@ type WorkerRuntime = 'claude' | 'codex';
 interface WorkerTypeConfig {
   runtime: WorkerRuntime;
   apiBaseUrl: string;
-  apiKeyEnvVar?: 'ANTHROPIC_API_KEY' | 'MINIMAX_API_KEY' | 'DASHSCOPE_API_KEY' | 'OPENROUTER_API_KEY';
+  apiKeyEnvVar?: 'OPENROUTER_API_KEY';
   model?: string;
   effort?: 'low' | 'medium' | 'high' | 'max' | 'xhigh';
   disableExperimentalBetas?: boolean;
 }
 ```
 
-`codex` and `codex-xhigh` use the Codex runtime with shared Codex auth. `codex-xhigh` sets `CODEX_REASONING_EFFORT=xhigh`. All other types use the Claude runtime with Anthropic-compatible API routing.
+`auto`, `opus`, and `sonnet` use subscription-authenticated Claude CLI sessions. `codex` and `codex-xhigh` use subscription-authenticated Codex CLI sessions; `codex-xhigh` sets `CODEX_REASONING_EFFORT=xhigh`. `openrouter-free` is the only provider-key worker route.
 
 ---
+
+## Release Runtime Contract
+
+Codex restores `/home/claude/.codex/config.toml` from baked defaults. Linear uses `LINEAR_API_KEY`; private SentryBox tools use the `error_hub` MCP entry and `ERROR_HUB_HOST`. Keep host renderer credentials outside worker mounts and environment projections.
 
 ## Critical Rules and Constraints
 
@@ -147,7 +140,7 @@ interface WorkerTypeConfig {
 8. GitHub token refresh is handled by the orchestrator's `TokenRefresher`, which updates `/secrets/github-token` every 30 minutes via bind mount. The git credential helper and `gh` CLI wrapper re-read the file on each invocation. The `GITHUB_TOKEN` env var is a point-in-time snapshot and is not the authoritative source.
 9. In managed mode (`WORKER_MANAGED_MODE=1`), the container does NOT exit after completing an attempt. The orchestrator must call `destroyWorker` explicitly when the task is done.
 10. When `continueSession: true` is passed to `createWorker`, it restores a preserved container (via `preservedWorkers` map) or reconnects to an orphaned container by name (`code-worker-{taskId}`).
-11. The container syncs environment variables from GCP Secret Manager at startup via `scripts/sync-secrets.sh`. The orchestrator does not need to pre-sync secrets.
+11. The container loads the host-rendered, task-filtered `/repo/.envrc`. Prepare this projection before startup; the container does not fetch Secret Manager values or activate a GCP service-account key.
 12. Crash forensics are enabled by setting `WORKER_FORENSICS=1`. The forensics directory must be bind-mounted if the orchestrator needs to access artifacts after container destruction.
 13. **Both runtimes require session IDs for resume.** When `WORKER_CONTINUE=1` is set, Claude requires `CLAUDE_SESSION_ID` and Codex requires `CODEX_THREAD_ID`. Without the respective ID, the entrypoint exits with an error. Claude uses `--resume <sessionId>` (not `--continue`, which silently creates fresh sessions in `--print` mode).
 14. **Runtime selection is via `WORKER_RUNTIME`.** The entrypoint dispatches to `run_claude_attempt()` or `run_codex_attempt()` based on this env var. Default is `claude`.
@@ -169,7 +162,6 @@ interface ContainerMounts {
     mode: 'ro';
     required: true;
     files: {
-      'gcp-sa.json': 'optional';
       'github-token': 'optional';
       'system-prompt.txt': 'required-for-run-attempt';
       'user-prompt.txt': 'required-for-run-attempt';
@@ -225,12 +217,9 @@ const handle = await provider.createWorker({
   systemPrompt: 'You are a coding agent working on IntexuraOS...',
   prompt: 'Implement the feature described in INT-500.',
   secrets: {
-    ANTHROPIC_API_KEY: 'sk-ant-...',
     LINEAR_API_KEY: 'lin_api_...',
-    SENTRY_AUTH_TOKEN: 'sntrys_...',
-    MINIMAX_API_KEY: '',
-    DASHSCOPE_API_KEY: '',
-    OPENROUTER_API_KEY: '',
+    ERROR_HUB_HOST: 'home-dev.example.ts.net:8443',
+    OPENROUTER_API_KEY: 'stored-outside-repository',
   },
   gcpSaKeyPath: '/home/user/.config/gcloud/sa-key.json',
   githubAppKeyPath: '/home/user/.code-orchestrator/secrets/INT-500/github-token',
@@ -316,5 +305,5 @@ None. Code Worker does not publish Pub/Sub events. Communication is via containe
 | OpenAI API                        | Codex runtime access           | Codex runtime exits with error                 |
 | GitHub (public)                   | Push commits, create PRs       | Git operations fail                            |
 | npm registry                      | pnpm install                   | Dependency install fails (non-fatal for retry) |
-| GCP Secret Manager                | Environment variable sync      | Falls back to existing .envrc                  |
+| Host-rendered task projection | Runtime environment | Must be prepared before container startup |
 | Artifact Registry                 | Image pull                     | Uses cached local image                        |

@@ -76,7 +76,8 @@ interface CreateBookmarkInternalOutput {
   success: true;
   data: {
     id: string;        // Bookmark ID
-    url: string;       // App deep link: "/#/bookmarks/{id}"
+    url: string;       // App deep link: "https://intexuraos.cloud/#/bookmarks/{id}"
+    resourceUrl: string; // Same absolute app URL as url
     bookmark: Bookmark;
   };
 }
@@ -98,7 +99,8 @@ interface CreateBookmarkInternalOutput {
   "success": true,
   "data": {
     "id": "bk_xyz789",
-    "url": "/#/bookmarks/bk_xyz789",
+    "url": "https://intexuraos.cloud/#/bookmarks/bk_xyz789",
+    "resourceUrl": "https://intexuraos.cloud/#/bookmarks/bk_xyz789",
     "bookmark": {
       "id": "bk_xyz789",
       "ogFetchStatus": "pending",

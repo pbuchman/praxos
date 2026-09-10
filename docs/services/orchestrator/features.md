@@ -1,48 +1,48 @@
 # Orchestrator
 
-Your code never leaves your machine — and no model ever verifies its own work.
+Run coding tools on your own hardware, with independent verification of their work.
 
 ## The Problem
 
-Every AI coding agent on the market asks for the same thing: send us your code. Ship your repository to our servers, let our infrastructure run against it, and trust that nothing leaks, nothing persists, and nothing gets logged where it shouldn't. For a side project, maybe that trade is acceptable. For a company with compliance requirements, customer data baked into the repository, or proprietary algorithms refined over years — it is a non-starter. The moment your source code crosses the wire to someone else's infrastructure, you have lost a guarantee you cannot get back.
+Managed coding platforms host the execution environment for you. Teams that need control over repository workspaces, installed tools, and task isolation may instead want to run that environment on their own hardware. Execution location and model data handling are separate concerns: remote inference can send source-code context outside the worker network.
 
-But keeping the code on your own hardware only solves half the problem. An AI agent that writes code and then declares its own work complete is an AI agent grading its own homework. The model that introduced a subtle bug is the same model telling you the bug does not exist. Self-assessment is not verification. It is a confidence score wearing a lab coat. And when you are running agents autonomously — no human watching every keystroke — that gap between confidence and correctness is where production incidents hide.
+Controlling the execution environment only solves half the problem. An AI agent that writes code and then declares its own work complete is an AI agent grading its own homework. The model that introduced a subtle bug is the same model telling you the bug does not exist. Self-assessment is not verification. It is a confidence score wearing a lab coat. And when you are running agents autonomously — no human watching every keystroke — that gap between confidence and correctness is where production incidents hide.
 
-The orchestrator closes both gaps at once. It runs entirely on your infrastructure, so your source code never touches a third-party server. And it enforces a cross-model verification pipeline where the agent that writes the code is never the agent that judges the result. Claude or Codex executes. A configurable chain of validation models — Gemini, OpenRouter, or both — verifies. A separate compliance validator audits the full session transcript. Deterministic rules enforce what no model can be trusted to check. Multiple layers, multiple independent trust boundaries, one principle: no model verifies its own work.
+The orchestrator combines local execution with independent verification. Repository workspaces and coding tools run on your infrastructure, while remote model calls can transmit source-code context and session transcripts to configured providers. And it enforces a cross-model verification pipeline where the agent that writes the code is never the agent that judges the result. Claude or Codex executes. A configurable OpenRouter validation model chain supports independent validation. A separate compliance validator audits the full session transcript. Deterministic rules enforce what no model can be trusted to check. Multiple layers, multiple independent trust boundaries, one principle: no model verifies its own work.
 
 ## Use Case: From Idle Hardware to an Autonomous Engineering Team
 
-Built for engineering teams who need autonomous coding agents but cannot — or will not — send their source code to someone else's infrastructure.
+Built for engineering teams who want to control where coding tools execute and which remote model providers receive task context.
 
 1. A startup CTO has a workstation sitting idle after an office move — a machine with Docker installed and nothing to do. She installs the orchestrator and connects it to IntexuraOS through a Cloudflare tunnel — an outbound-only encrypted connection. The machine never accepts inbound traffic from the internet.
 2. A developer files a Linear issue describing a new API endpoint. The platform dispatches the task to her orchestrator, cryptographically signed to verify it came from IntexuraOS and has not been tampered with. The orchestrator validates the signature, checks that Docker is healthy and disk space is available, and accepts the work.
 3. The orchestrator creates a dedicated copy of the repository on its own branch, then spins up a Docker container scoped to that workspace — locked down so it cannot see the host machine, cannot reach other containers, and cannot access any other task's files or credentials.
-4. The Planning Agent analyzes the issue, reads all existing comments and context, makes an explicit complexity judgment, and produces a design — either enriching the issue directly or creating subtasks with a planning pull request. No code is committed yet. The orchestrator injects execution memories from past tasks — patterns, pitfalls, and verified approaches — so the agent does not repeat known mistakes.
+4. The Planning Agent analyzes the issue, reads all existing comments and context, makes an explicit complexity judgment, and produces a design — either updating the issue with a SIMPLE evidence PR or creating one plan document with a planning pull request. No code is committed yet. The orchestrator injects execution memories from past tasks — patterns, pitfalls, and verified approaches — so the agent does not repeat known mistakes.
 5. The CTO watches logs stream to her dashboard in real time, flushed every three seconds. She sends a mid-task message clarifying a requirement, which the orchestrator queues and delivers when the current attempt finishes.
 6. The Execution Agent writes tests first, implements the endpoint, runs the full test suite, performs a mandatory simplification pass on every changed file, executes a zero-tolerance code review loop, and opens a pull request — including which AI model produced the work.
 7. Now the verification pipeline begins. **Stage one:** A deterministic completion verifier parses the agent's final output against an agent-specific contract, extracting structured metadata — PR URLs, skill usage proofs, outcome labels — and validating them against strict schemas. Claude's own assessment of its performance is not consulted. If the contract is not met and the attempt limit has not been reached, the orchestrator automatically launches a follow-up attempt with a targeted prompt listing exactly which criteria failed. All planned outcomes — including simple tasks — require an evidence PR to pass verification.
 8. **Stage two:** An Agent Compliance Validator reads the full session transcript — every tool call, every edit, every decision — and performs a structured audit via an independent LLM (OpenRouter). The resulting compliance report covers claim verification (did the agent actually do what it said it did?), contract compliance (were mandatory skills invoked in the correct order?), and anomaly detection (fabrication, hallucination, protocol violations). This report is posted directly on the pull request with visual severity indicators, so reviewers see an independent, evidence-backed assessment before they read a single line of code.
 9. **Stage three:** A Remediation Agent — triggered when the Review Agent identifies findings above a severity threshold — autonomously addresses review feedback on the existing PR branch, runs CI, and decides whether a re-review is needed. This auto-improvement loop can cross LLM boundaries, using different models to check each other's work.
 10. **Stage four:** A separate code-agent service enforces deterministic rules — Linear issue mutations, label updates, status transitions — that no language model can be trusted to apply consistently.
-11. The CTO reviews a clean pull request with an independent compliance report attached and a requirements audit confirming every plan item was addressed. Her source code never left the building.
+11. The CTO reviews a clean pull request with an independent compliance report attached and a requirements audit confirming every plan item was addressed. The coding tools ran on her workstation; model inference and transcript validation used remote providers.
 
 ## How It Helps
 
-### Keep Your Code on Your Infrastructure
+### Run Coding Tools on Your Infrastructure
 
-The orchestrator runs as a native process on your hardware. A server rack in your office, a cloud VM in your preferred region, a repurposed laptop — the requirements are Docker and a Cloudflare tunnel. Your source code stays on your machine. AI inference calls go directly from your hardware to the model provider. The only data that reaches IntexuraOS is task status, logs, and performance metrics. The platform sees an endpoint, not your codebase.
+The orchestrator runs as a native process on your hardware. A server rack in your office, a cloud VM in your preferred region, a repurposed laptop — the requirements are Docker and a Cloudflare tunnel. Repository workspaces remain on the worker host, and AI inference calls go from that host to remote model providers with the context needed for the task, which can include source code. Compliance validation also sends session-transcript context through OpenRouter. IntexuraOS receives task status, logs, and performance metrics; logs can contain task context. Local execution does not guarantee source-code residency.
 
 You can run one orchestrator or several, each on different hardware, each in a different location. The platform dispatches work to whichever has capacity. A sensitive file guard scans every commit against twenty-plus patterns — environment files, certificates, private keys, infrastructure state — and reverts anything that matches before results reach your repository. This matters because autonomous agents occasionally stage files they should not. The guard catches the mistake before it leaves your machine — a safety net that most self-hosted solutions lack entirely.
 
-**Example:** A fintech company runs one orchestrator on a VM in Frankfurt for GDPR-sensitive repositories and another on a workstation in their New York office for US-based projects. Both appear as worker endpoints to the platform. The source code in each location never crosses the Atlantic. When a worker accidentally stages a `.env` file containing database credentials, the sensitive file guard catches it and reverts the file before the commit is pushed.
+**Example:** A fintech company runs one orchestrator on a VM in Frankfurt for GDPR-sensitive repositories and another on a workstation in their New York office for US-based projects. Both appear as worker endpoints to the platform. These locations determine where tools execute; model-provider routing and data handling must be assessed separately for any residency requirement. When a worker accidentally stages a `.env` file containing database credentials, the sensitive file guard catches it and reverts the file before the commit is pushed.
 
 ### Run Tasks Across Multiple AI Runtimes
 
-The orchestrator supports worker type presets spanning multiple AI providers and runtimes. Claude-backed types (auto, opus, sonnet) use Anthropic's models via OAuth. Third-party model types (minimax, mimo-pro, glm, qwen, kimi, openrouter-free) route through MiniMax, Xiaomi MiMo Pro 2.5, Alibaba Cloud DashScope, Kimi Code, or OpenRouter APIs. Codex-backed types (codex, codex-xhigh) use OpenAI's Codex runtime with ChatGPT device-auth. Each worker type carries its own API base URL, model identifier, and effort level — the orchestrator resolves the correct credentials, runtime adapter, and log processor automatically.
+The orchestrator supports three subscription-authenticated Claude presets (`auto`, `opus`, `sonnet`), two subscription-authenticated Codex presets (`codex`, `codex-xhigh`), and one provider-key route (`openrouter-free`). OpenRouter is the only provider API used by code workers.
 
 Codex tasks produce human-readable logs through a dedicated log processor that formats streaming output differently from Claude sessions. The orchestrator handles auth lifecycle independently for each runtime — Claude uses OAuth with automatic token refresh, Codex uses ChatGPT device-auth with periodic revalidation. Both auth states are exposed on the health endpoint so operators know at a glance which runtimes are ready.
 
-**Example:** A team routes complex architectural tasks through `opus` (high-effort Claude) for its deep reasoning, uses `codex-xhigh` for tasks that benefit from Codex's code generation strengths, runs `mimo-pro` for cost-effective execution via Xiaomi MiMo Pro 2.5, and falls back to `openrouter-free` for lightweight triage or zero-cost prototyping. All run through the same orchestrator, same verification pipeline, same compliance checks — the worker type selection is the only difference.
+**Example:** A team routes complex architectural tasks through `opus`, uses `codex-xhigh` for tasks that benefit from Codex's code generation strengths, and uses `openrouter-free` for provider-key execution. All run through the same verification and compliance pipeline.
 
 ### Verify Every Result with Deterministic Contracts
 
@@ -78,7 +78,7 @@ Memories are advisory, not authoritative. The agent is instructed to trust the c
 
 ### Ask Questions in Interactive Sessions
 
-The Ask Agent provides interactive Claude Code sessions where users send questions and receive direct answers — no PR creation, no Linear issue management, just a code-aware conversation. Messages flow through the same orchestrator infrastructure (Docker isolation, log streaming, HMAC-signed dispatch) but skip the planning/execution ceremony entirely.
+The Ask Agent provides interactive Codex sessions where users send questions and receive direct answers — no PR creation, no Linear issue management, just a code-aware conversation. Messages flow through the same orchestrator infrastructure (Docker isolation, log streaming, HMAC-signed dispatch) but skip the planning/execution ceremony entirely.
 
 Ask Agent sessions skip the PR resume preamble that other agent types use, deliver messages directly without wrapper prompts, check for pending messages in the completion path, and prohibit the `AskUserQuestion` tool (since users communicate via the message endpoint). The completion verifier still validates the session, but the contract is lighter — no PR URL or outcome label is required.
 
@@ -110,15 +110,21 @@ A heartbeat pings the platform every ten minutes. If the orchestrator goes silen
 
 **Example:** A team lead watches the orchestrator work through a complex refactoring task. Forty minutes in, she notices the worker is heading down the wrong path. She sends a mid-task message with a clarification. The orchestrator queues it and delivers it when the current attempt finishes, triggering a follow-up with her feedback incorporated. Without real-time visibility, she would have discovered the problem only after reviewing a flawed pull request.
 
+## Recent Changes Since v3.8.0
+
+Guarded restarts freeze new admissions and expose recovery evidence for active work, callbacks, and log forwarding. The persistent freeze survives process restarts until the operator clears it through the recovery procedure.
+
+Planning now uses a single artifact and one evidence/planning PR. SentryBox remediation has a dedicated worker prompt and a private Error Hub MCP connection. Host-rendered versioned configuration replaces runtime secret fetching; persisted state is written with restricted permissions.
+
 ## Getting Connected
 
-Install the orchestrator on any Unix machine with Docker, set up a Cloudflare tunnel, and point it at your IntexuraOS instance. The machine becomes a worker endpoint within minutes. Your code stays on your hardware from the first task onward.
+Install the orchestrator on any Unix machine with Docker, set up a Cloudflare tunnel, and point it at your IntexuraOS instance. The machine becomes a worker endpoint within minutes. Coding tools execute on that hardware; configure remote model access with its source-code and transcript data flows in mind.
 
 ## Key Benefits
 
-- **Your code, your hardware** — Source code never leaves your network; outbound data is limited to task status, logs, and performance metrics
+- **Your execution environment, your hardware** — Repository workspaces and coding tools run locally; remote model calls can include source code and session transcripts, and the platform receives task status, logs, and metrics
 - **Independent trust boundary** — Claude or Codex writes the code, deterministic completion contracts verify the result, an independent LLM can audit the full transcript, and deterministic rules enforce what no model can be trusted to check
-- **Worker type presets** — Anthropic (auto, opus, sonnet), MiniMax, Xiaomi MiMo Pro 2.5 (mimo-pro), Alibaba Cloud DashScope (GLM, Qwen), Kimi Code, OpenRouter free tier, and Codex (standard and xhigh) — all through a single orchestrator
+- **Worker type presets** — Claude (`auto`, `opus`, `sonnet`), Codex (`codex`, `codex-xhigh`), and OpenRouter (`openrouter-free`)
 - **Autonomous remediation loop** — Review findings trigger automatic fix, re-review, and verification without human intervention, crossing LLM boundaries at each step
 - **Six review scopes** — code_quality, security, architecture, plan_review, test_quality, and documentation — each targeting a specific dimension of pull request quality
 - **Execution memory** — Past patterns, pitfalls, and verified approaches are injected into future tasks with a simplified verification pipeline, preventing repeated mistakes and building institutional knowledge
@@ -133,10 +139,10 @@ Install the orchestrator on any Unix machine with Docker, set up a Cloudflare tu
 - **Docker required** — The host machine must have Docker installed and running; containers are the isolation boundary, and there is no fallback
 - **Cloudflare tunnel required** — Connectivity to the platform depends on a Cloudflare tunnel for the outbound-only connection
 - **Five-hour attempt ceiling** — Each individual attempt has a maximum runtime of five hours; long-running tasks need to be broken into smaller issues
-- **Validation model dependency** — The Agent Compliance Validator uses the configured validation model chain. The default chain starts with OpenRouter, so `INTEXURAOS_OPENROUTER_APP_API_KEY` is required unless `INTEXURAOS_ORCHESTRATOR_VALIDATION_MODELS` is overridden to Gemini-only models.
+- **Validation model dependency** — The Agent Compliance Validator uses an OpenRouter-only model chain, so `INTEXURAOS_OPENROUTER_APP_API_KEY` is required.
 - **Log volume cap** — Log output is capped at eight megabytes per task; extremely verbose builds may see truncated output
 - **Linux metrics only** — Per-task CPU and memory metrics rely on Linux control groups; macOS hosts report zero values for resource consumption
-- **OpenRouter dependency for compliance** — The default Agent Compliance Validator model chain requires an OpenRouter API key; override `INTEXURAOS_ORCHESTRATOR_VALIDATION_MODELS` to Gemini-only models if OpenRouter is unavailable.
+- **OpenRouter dependency for compliance** — The Agent Compliance Validator has no direct-provider fallback. OpenRouter availability is required.
 
 ---
 

@@ -26,7 +26,7 @@ Replace static hash placeholders with computed hashes from the real system promp
 
 ### 2. Distributed drain queue guard
 
-Replace module-level `isDraining` and `isDrainingRetries` booleans with Firestore-based distributed locks if multi-instance deployment is planned. Currently safe for the single-process service deployment.
+Per-user Firestore dispatch leases, attempt fencing, and durable review reservations now guard competing execution. The module-level drain guards remain local optimizations; future scaling reviews should assess recovery and lease behavior, rather than treating those booleans as the only dispatch protection.
 
 ### 3. Execution memory pipeline maturation
 
@@ -70,11 +70,11 @@ Module-level mutable state for deduplicating concurrent health probes. This map 
 
 **Files:** `domain/usecases/drainTaskQueue.ts`, `domain/usecases/drainRetryQueue.ts`
 
-Module-level mutable state for preventing concurrent drain operations. Works for the current single-process service deployment but would break with multiple instances.
+Module-level flags prevent redundant drain work within a process. Durable per-user dispatch leases and task-attempt checks additionally protect dispatch across processes.
 
-**Impact:** Not a problem in current deployment (single instance), but would become a race condition if scaled horizontally.
+**Impact:** The flags alone do not coordinate processes, but they are no longer the execution ownership boundary.
 
-**Remediation:** Use Firestore-based distributed lock if multi-instance deployment is planned.
+**Remediation:** Preserve the durable claim, fencing, and rollback checks when changing queue behavior.
 
 ## TypeScript Strictness Issues
 
@@ -107,6 +107,10 @@ Common exemption categories in this service:
 - `upstream`: Error handling for external service failures
 
 Several v8 ignore blocks were replaced with real tests in previous releases (INT-1071, INT-1072, INT-1073, INT-1237).
+
+## Release Reliability Improvements
+
+Since v3.8.0, SentryBox reservation and correlated-error deduplication, active remediation reuse, durable review locks, lifecycle timestamps, and merge-ready evidence address repeated work and stale task state. Existing tests cover those boundaries in the webhook, queue, review reservation, and task-group repository suites.
 
 ## Resolved Issues
 

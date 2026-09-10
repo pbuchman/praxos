@@ -77,6 +77,10 @@ sequenceDiagram
 
 ## Recent Changes
 
+### Changes since v3.8.0
+
+Internal note creation now returns an absolute `https://intexuraos.cloud/#/notes/{id}` in `ServiceFeedback.resourceUrl`, so assistant replies contain a directly usable link.
+
 | Commit      | Description                                       | Date       |
 | ----------- | ------------------------------------------------- | ---------- |
 | `c4e3a13c`  | Release v3.3.0 — version bump, docs refresh       | 2026-03-15 |
@@ -182,7 +186,7 @@ sequenceDiagram
 | Component                      | Purpose                         |
 | ------------------------------ | ------------------------------- |
 | Firestore (`notes` collection) | Note persistence                |
-| Sentry                         | Error tracking                  |
+| SentryBox                      | Error tracking                  |
 
 ### Internal Services (callers)
 

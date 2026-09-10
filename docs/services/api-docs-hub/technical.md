@@ -2,7 +2,7 @@
 
 ## Overview
 
-API Docs Hub is a lightweight Fastify server that aggregates OpenAPI specifications from all 20 IntexuraOS services into a single Swagger UI instance. It runs on Cloud Run with zero minimum instances and fetches specs client-side from each service's `/openapi.json` endpoint. The service has no database, no domain logic, and no Pub/Sub integration — it exists solely to serve a configured Swagger UI.
+API Docs Hub is a lightweight Fastify server that aggregates OpenAPI specifications from all 17 configured IntexuraOS services into a single Swagger UI instance. It runs on Cloud Run with zero minimum instances and fetches specs client-side from each service's `/openapi.json` endpoint. The service has no database, no domain logic, and no Pub/Sub integration — it exists solely to serve a configured Swagger UI.
 
 **Versions:** Package `3.5.0` / OpenAPI spec `0.0.5`
 
@@ -15,7 +15,7 @@ graph LR
 
     Browser -->|fetch /openapi.json| S1[User Service]
     Browser -->|fetch /openapi.json| S2[Research Agent]
-    Browser -->|fetch /openapi.json| SN[... 18 more services]
+    Browser -->|fetch /openapi.json| SN[... 15 more services]
 
     Hub -->|GET /health| Health[Config Validation]
 ```
@@ -39,6 +39,10 @@ sequenceDiagram
 ```
 
 ## Recent Changes
+
+### Changes since v3.8.0
+
+Message Digest Service is now a required source in `OPEN_API_SOURCE_CATALOG`. Configure `INTEXURAOS_MESSAGE_DIGEST_SERVICE_OPENAPI_URL` to expose the digest API in the same Swagger UI dropdown as the existing services. The current catalog contains 17 sources (`config.test.ts` verifies the new required entry).
 
 | Commit      | Description                                                                        | Date       |
 | ----------- | ---------------------------------------------------------------------------------- | ---------- |
@@ -81,23 +85,25 @@ interface Config {
 
 ## Aggregated Services (17)
 
-| Display Name                     | Environment Variable                                      |
-| -------------------------------- | --------------------------------------------------------- |
-| User Service API                 | `INTEXURAOS_USER_SERVICE_OPENAPI_URL`                     |
-| Notion Service API               | `INTEXURAOS_NOTION_SERVICE_OPENAPI_URL`                   |
-| WhatsApp Service API             | `INTEXURAOS_WHATSAPP_SERVICE_OPENAPI_URL`                 |
-| Mobile Notifications Service API | `INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_OPENAPI_URL`     |
-| Research Agent API               | `INTEXURAOS_RESEARCH_AGENT_OPENAPI_URL`                   |
-| Intex Agent API                  | `INTEXURAOS_INTEX_AGENT_OPENAPI_URL`                      |
-| Image Service API                | `INTEXURAOS_IMAGE_SERVICE_OPENAPI_URL`                    |
-| Application Settings API         | `INTEXURAOS_APP_SETTINGS_SERVICE_OPENAPI_URL`             |
-| Notes Agent API                  | `INTEXURAOS_NOTES_AGENT_OPENAPI_URL`                      |
-| Bookmarks Agent API              | `INTEXURAOS_BOOKMARKS_AGENT_OPENAPI_URL`                  |
-| Calendar Agent API               | `INTEXURAOS_CALENDAR_AGENT_OPENAPI_URL`                   |
-| Code Agent API                   | `INTEXURAOS_CODE_AGENT_OPENAPI_URL`                       |
-| Linear Agent API                 | `INTEXURAOS_LINEAR_AGENT_OPENAPI_URL`                     |
-| Web Agent API                    | `INTEXURAOS_WEB_AGENT_OPENAPI_URL`                        |
-| Hellscript Agent API             | `INTEXURAOS_HELLSCRIPT_AGENT_OPENAPI_URL`                 |
+| Display Name | Environment Variable |
+| --- | --- |
+| User Service API | `INTEXURAOS_USER_SERVICE_OPENAPI_URL` |
+| Notion Service API | `INTEXURAOS_NOTION_SERVICE_OPENAPI_URL` |
+| WhatsApp Service API | `INTEXURAOS_WHATSAPP_SERVICE_OPENAPI_URL` |
+| Mobile Notifications Service API | `INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_OPENAPI_URL` |
+| Message Digest Service API | `INTEXURAOS_MESSAGE_DIGEST_SERVICE_OPENAPI_URL` |
+| Fishing Assistant Service API | `INTEXURAOS_FISHING_ASSISTANT_SERVICE_OPENAPI_URL` |
+| Research Agent API | `INTEXURAOS_RESEARCH_AGENT_OPENAPI_URL` |
+| Image Service API | `INTEXURAOS_IMAGE_SERVICE_OPENAPI_URL` |
+| Application Settings API | `INTEXURAOS_APP_SETTINGS_SERVICE_OPENAPI_URL` |
+| Notes Agent API | `INTEXURAOS_NOTES_AGENT_OPENAPI_URL` |
+| Bookmarks Agent API | `INTEXURAOS_BOOKMARKS_AGENT_OPENAPI_URL` |
+| Calendar Agent API | `INTEXURAOS_CALENDAR_AGENT_OPENAPI_URL` |
+| Code Agent API | `INTEXURAOS_CODE_AGENT_OPENAPI_URL` |
+| Linear Agent API | `INTEXURAOS_LINEAR_AGENT_OPENAPI_URL` |
+| Web Agent API | `INTEXURAOS_WEB_AGENT_OPENAPI_URL` |
+| Hellscript Agent API | `INTEXURAOS_HELLSCRIPT_AGENT_OPENAPI_URL` |
+| Intex Agent API | `INTEXURAOS_INTEX_AGENT_OPENAPI_URL` |
 
 ## Pub/Sub
 
@@ -112,7 +118,7 @@ None. This service does not publish or subscribe to any Pub/Sub topics.
 | `@fastify/swagger`           | OpenAPI 3.1.1 spec generation                       |
 | `@fastify/swagger-ui`        | Swagger UI with multi-spec `urls` support           |
 | `@intexuraos/common-http`    | `intexuraFastifyPlugin`, quiet health check logging |
-| `@intexuraos/http-server`    | `buildHealthResponse`, `HealthCheck` types          |
+| `@intexuraos/http-server`    | `registerHealthCheck`, `HealthCheck` types          |
 | `@intexuraos/infra-sentry`   | Sentry error capture, `createLogStream()`           |
 
 Note: `@intexuraos/common-core` is listed in `package.json` but is no longer imported in source code.
@@ -139,7 +145,7 @@ Health check routes are excluded from request logging via `registerQuietHealthCh
 
 ## Configuration
 
-### Required Environment Variables (20)
+### Required Environment Variables (17)
 
 | Variable                                              | Description                        |
 | ----------------------------------------------------- | ---------------------------------- |
@@ -147,6 +153,8 @@ Health check routes are excluded from request logging via `registerQuietHealthCh
 | `INTEXURAOS_NOTION_SERVICE_OPENAPI_URL`               | Notion Service OpenAPI URL         |
 | `INTEXURAOS_WHATSAPP_SERVICE_OPENAPI_URL`             | WhatsApp Service OpenAPI URL       |
 | `INTEXURAOS_MOBILE_NOTIFICATIONS_SERVICE_OPENAPI_URL` | Mobile Notifications URL           |
+| `INTEXURAOS_MESSAGE_DIGEST_SERVICE_OPENAPI_URL` | Message Digest Service OpenAPI URL |
+| `INTEXURAOS_FISHING_ASSISTANT_SERVICE_OPENAPI_URL` | Fishing Assistant Service OpenAPI URL |
 | `INTEXURAOS_RESEARCH_AGENT_OPENAPI_URL`               | Research Agent OpenAPI URL         |
 | `INTEXURAOS_INTEX_AGENT_OPENAPI_URL`                  | Intex Agent OpenAPI URL            |
 | `INTEXURAOS_IMAGE_SERVICE_OPENAPI_URL`                | Image Service OpenAPI URL          |
@@ -175,7 +183,7 @@ Health check routes are excluded from request logging via `registerQuietHealthCh
 - **Config validation scope** — The health check only validates that env vars were present at startup. It does not verify that the service URLs are reachable or returning valid OpenAPI specs.
 - **Empty sources = "down"** — If `openApiSources` array is empty (which cannot happen in practice due to fail-fast), the health check returns status `"down"`.
 - **Static config** — OpenAPI source URLs are loaded once at startup. Adding or removing a service requires redeployment.
-- **Health endpoint uses raw reply.send()** — The `/health` endpoint bypasses the `reply.ok()` / `reply.fail()` response contract. This is intentional for infrastructure monitoring stability.
+- **Shared health contract** — `registerHealthCheck()` reports `status: "ok"` when the configured source list is non-empty; successful probe details are `null`. The response does not expose a source count or probe upstream URLs.
 - **Not in ecosystem.config.cjs** — This service is not listed in `ecosystem.config.cjs` for local PM2 development. It must be run manually via `pnpm --filter api-docs-hub start:local`.
 - **Max scale 1** — Terraform limits this service to a single Cloud Run instance (min_scale=0, max_scale=1), which is appropriate for a documentation-only service.
 - **Unused common-core dependency** — `@intexuraos/common-core` remains in `package.json` but is no longer imported. It can be removed to clean up the dependency graph.
@@ -193,14 +201,14 @@ module "api_docs_hub" {
   # OpenAPI URLs reference other module outputs
   env_vars = {
     INTEXURAOS_USER_SERVICE_OPENAPI_URL = "${module.user_service.service_url}/openapi.json"
-    # ... 19 more service URLs
+    # ... 16 more service URLs
   }
 
   depends_on = [module.user_service, module.notion_service, ...]
 }
 ```
 
-The Terraform module uses `depends_on` for all 20 upstream services to ensure their Cloud Run URLs are available before the hub deploys.
+The Terraform module uses `depends_on` for configured upstream services to ensure their Cloud Run URLs are available before the hub deploys.
 
 ## File Structure
 

@@ -75,15 +75,57 @@ Use internal routes for agent or maintenance reads that already know the `source
 - `GET /internal/whatsapp/private/sender-days`
 - `POST /internal/whatsapp/private/aggregates/rebuild`
 
-## Test Unsupported Voice
+## Analyze A Private Conversation
 
-Send a voice message. The expected reply is:
+1. Open one private chat and start Conversation Assistant.
+2. Select a date range and an available model, then prepare the analysis.
+3. Inspect its captured context and ask a question; the answer streams as it is generated.
+4. Use PDF export to save the analysis. Large context can fail the selected model’s input budget; narrow the range if needed.
+
+In the private chat, open stored images or play audio/video attachments. Enable the chat’s transcription setting to request private voice/video transcripts. Reactions appear with their source message. These controls do not enable voice commands for Intex.
+
+## Continue A Conversation Assistant Analysis
+
+1. Open a completed Conversation Assistant analysis.
+2. Select **Include new messages**. This freezes a cutoff; it does not yet modify the analysis.
+3. Review the prepared summary or preview. If newer messages arrive, choose **Refresh** to replace the uncommitted draft with a newly frozen cutoff.
+4. Write the question and send. The context update and question commit atomically.
+5. Confirm the response begins with the persisted receipt containing the exact included count and range, followed by the model answer.
+6. Reload the page and confirm the context card, receipt, and answer are still represented once.
+
+To exercise corrections, complete a pending transcription or edit/redact an earlier source message after the initial snapshot. The next update should report that change as a correction. Removed text must not appear in the preview, prompt, receipt, PDF, logs, or API response.
+
+If preparation reaches the hard size limit, reduce the selected scope or start a new analysis. The service never sends a truncated snapshot.
+
+## Physically Erase A Private Account
+
+Physical erasure is an operator-only internal workflow and is intentionally different from disabling the mirror in the UI.
+
+1. Send an internally authenticated `POST /internal/whatsapp/private/accounts/:sourceAccountId/erasure` with `{ "userId": "...", "erasureRequestId": "..." }`.
+2. Retry the same request id safely if the response is interrupted.
+3. Poll `GET /internal/whatsapp/private/accounts/:sourceAccountId/erasure/:erasureRequestId` until `completed`.
+4. Confirm the response contains only status, stage, attempt, timestamps, and deletion counts.
+5. Confirm the old source generation can no longer ingest or update messages. A later reconnect must receive a new source generation.
+
+Do not use this workflow as ordinary disconnect. `DELETE /private/account` remains disable-only.
+
+## Verify Message Digest readiness
+
+Message Digest Service calls the internal readiness contract with the owning user ID:
 
 ```text
-Voice messages are not supported by Intex yet. Please send text for now.
+POST /internal/whatsapp/delivery-readiness/get
 ```
 
-No Intex ingestion event should be published for that audio message.
+A ready response exposes only a masked form of the first mapped phone. Missing mapping, disconnected account, or disabled delivery is returned as an explicit status. The digest UI must direct the user to repair the existing WhatsApp connection; it must not ask for a separate destination number.
+
+To inspect a digest source safely, first validate the owned chat through `/internal/whatsapp/private/digest-source/validate`, then use the returned account generation and source revision with `/internal/whatsapp/private/digest-source/messages/query`. Never copy request or response content into operational logs.
+
+## Test Audio Transcription And Reply Context
+
+Send a voice message and inspect its stored audio and transcription state. Audio should publish an audio-stored event for transcription, without directly publishing an Intex action ingest or the old unsupported-voice reply.
+
+After transcription completes, reply to that audio with a text request. The completed transcript may be included as bounded context for the text request. Check that pending or unsafe transcript context is not forwarded.
 
 ## Send An Outbound Notification
 

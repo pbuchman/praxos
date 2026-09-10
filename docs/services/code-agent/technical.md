@@ -54,6 +54,14 @@ flowchart LR
 
 GitHub Agent review triage supports `code_quality`, `security`, `architecture`, `test_quality`, and `documentation` review scopes. Plan-only PRs still route to `plan_review` through deterministic file matching. Docs-only non-plan PRs now route deterministically to a `documentation` review without LLM triage; mixed documentation and code changes continue through GitHub Agent triage so multiple review scopes can be requested when appropriate.
 
+## Changes Since v3.8.0
+
+- **Error remediation:** `POST /webhooks/sentry` verifies SentryBox signatures and accepts supported issue/event alerts. `processSentryWebhook` uses durable leased reservations; repeated correlated errors and active remediation work reuse existing tasks. Retryable reservation failures remain retryable.
+- **Dispatch ownership:** queue dispatch claims a per-user lease and task attempt before contacting the worker. Attempt/owner checks prevent stale acknowledgments or rollbacks from overwriting newer ownership. Review reservations and PR locks coordinate competing review requests; queued non-review work runs before review.
+- **Lifecycle evidence:** `statusChangedAt` records status transitions separately from ordinary updates; `taskLifecycleTime.ts` resolves legacy timestamps. Merge-ready evidence and invalidation decisions persist with task-group summaries rather than depending only on the latest task.
+- **Planning and messages:** planning uses one artifact and one evidence PR; `sendTaskMessage` accepts planning tasks but still rejects ephemeral review/remediation tasks. `startAskAgent` selects `workerType: codex`.
+- **Provider routing:** platform LLM clients use OpenRouter through the shared factory. Expected recovery/validation warnings remain in logs without duplicate error alerts.
+
 ## Removed Compatibility Behavior
 
 - No action status mirror service.

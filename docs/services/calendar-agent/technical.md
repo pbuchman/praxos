@@ -31,5 +31,19 @@ flowchart LR
 | `POST` | `/internal/calendar/preview` | Generate a synchronous event preview | Internal clients |
 | `GET` | `/internal/calendar/preview/:actionId` | Fetch a stored preview | Internal clients |
 
+## Calendar Queries And Confirmed Updates
+
+- `POST /internal/calendar/events/query` supports bounded list/count requests.
+- `PATCH /internal/calendar/events/:eventId` updates identified events, including attendee additions/removals and supported event fields.
+- Intex owns clarification and user confirmation. The update contract checks the confirmed event’s ETag and rejects stale snapshots with `CONFLICT`; unspecified fields are preserved.
+- Multi-event Intex updates call the singular endpoint per event; they do not provide atomic rollback.
+
+## Daily Lookahead
+
+- `GET /schedules/calendar-daily-lookahead` reads the authenticated user’s schedule and delivery status.
+- `PUT /schedules/calendar-daily-lookahead` accepts `enabled`, `localTime`, and `timeZone`; `localTime` must fall on a 15-minute boundary.
+- `POST /internal/calendar/schedules/tick` claims due schedules with leases and sends the fixed next-24-hours calendar request through WhatsApp’s Matrix outbound path with `startNewSession: true`.
+- Scheduling follows the configured IANA zone, including DST. A per-schedule/local-date idempotency key prevents duplicate outbound requests; transport failures retry after 15 minutes, while setup-required outcomes are recorded without that transient retry.
+
 Every internal route must call `logIncomingRequest()` before auth validation.
 

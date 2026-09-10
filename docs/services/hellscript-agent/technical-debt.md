@@ -55,7 +55,7 @@ No gaps identified. The service has comprehensive test coverage across:
 - Domain services (`applyIntentToState.test.ts`, `sanitize.test.ts`)
 - Use cases (`imposeOnBuffer.test.ts`, `usecases.test.ts`, `writingConfigUsecases.test.ts`)
 - Routes (`hellscriptRoutes.test.ts`, `writingConfigRoutes.test.ts`)
-- Infrastructure (`firestoreHellscriptRepository.test.ts`, `firestoreWritingConfigRepository.test.ts`, `geminiDraftGenerator.test.ts`, `geminiIntentInterpreter.test.ts`)
+- Infrastructure (`firestoreHellscriptRepository.test.ts`, `firestoreWritingConfigRepository.test.ts`, `llmDraftGenerator.test.ts`, `llmIntentInterpreter.test.ts`)
 - Prompts (`prompts.test.ts`)
 - Configuration (`config.test.ts`, `server.test.ts`, `services.test.ts`)
 
@@ -87,7 +87,7 @@ None identified.
 
 ## Deprecations
 
-None.
+The direct `infra-gemini` dependency and platform Gemini fallback were removed after v3.8.0. The active adapters are `LlmIntentInterpreter` and `LlmDraftGenerator`; deployments require the OpenRouter platform credential.
 
 ---
 

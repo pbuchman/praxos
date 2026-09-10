@@ -12,7 +12,7 @@ graph TB
         Orchestrator[Orchestrator Process]
 
         subgraph "Docker Engine"
-            Network[code-worker-net<br/>172.28.0.0/16]
+            Network[code-worker-net<br/>172.28.0.0/16<br/>fd00:172:28::/64]
 
             subgraph "Container: code-worker-{taskId}"
                 Entrypoint[entrypoint.sh]
@@ -68,7 +68,6 @@ sequenceDiagram
     participant E as entrypoint.sh
     participant R as Runtime (Claude/Codex)
     participant GH as GitHub
-    participant GCP as GCP Secret Manager
 
     O->>E: docker exec run-attempt
     E->>E: Verify /tmp/worker-ready
@@ -82,6 +81,12 @@ sequenceDiagram
     E->>E: Cleanup child processes (SIGTERM/SIGKILL)
     E-->>O: Return exit code
 ```
+
+## Changes Since v3.8.0
+
+The entrypoint restores Codex MCP configuration from `/opt/codex-home/.codex` into its temporary home. `config-defaults/codex-config.toml` configures Linear with `LINEAR_API_KEY` and `error_hub` with `ERROR_HUB_HOST`; the Error Hub client connects to the private SentryBox compatibility API with Seer disabled.
+
+The worker no longer mounts/activates a general GCP service-account key for startup secret sync. It consumes the host-rendered task projection. Docker image and orchestrator MCP verification tests cover the restored configuration and private error-service connection.
 
 ## Recent Changes
 
@@ -139,12 +144,12 @@ Added timeout enforcement for the Linear MCP server integration to prevent hung 
 
 | Target                                    | Access  | Enforcement                 |
 | ----------------------------------------- | ------- | --------------------------- |
-| Public internet                           | Allowed | Default Docker bridge       |
+| Public internet                           | Allowed | User-defined worker bridge  |
 | Cloud metadata                            | Blocked | iptables on production host |
 | Localhost (127.0.0.0/8)                   | Blocked | iptables on production host |
 | Private IPs (10/8, 172.16/12, 192.168/16) | Blocked | iptables on production host |
 
-Network: `code-worker-net` (bridge driver, subnet `172.28.0.0/16`, IP masquerade enabled).
+Network: `code-worker-net` (dual-stack bridge driver, fixed Linux bridge `code-worker-br`, IPv4 subnet `172.28.0.0/16`, IPv6 subnet `fd00:172:28::/64`, IP masquerade enabled).
 
 ## Mount Points
 
@@ -164,7 +169,6 @@ Network: `code-worker-net` (bridge driver, subnet `172.28.0.0/16`, IP masquerade
 
 | File                | Required | Description                                       |
 | ------------------- | -------- | ------------------------------------------------- |
-| `gcp-sa.json`       | Optional | GCP service account key for gcloud auth           |
 | `github-token`      | Optional | GitHub access token (refreshed every 30 min)      |
 | `system-prompt.txt` | Required | Worker system prompt (read at `run-attempt` time) |
 | `user-prompt.txt`   | Required | Worker user prompt (read via stdin redirect)      |
@@ -184,8 +188,7 @@ Network: `code-worker-net` (bridge driver, subnet `172.28.0.0/16`, IP masquerade
 | `CODEX_THREAD_ID`                     | Orchestrator     | Thread ID for resumed Codex attempts (required when `WORKER_CONTINUE=1`)                 |
 | `CODEX_REASONING_EFFORT`              | Orchestrator     | Reasoning effort level for Codex runtime (e.g., `xhigh`)                                 |
 | `LINEAR_API_KEY`                      | Orchestrator env | Linear integration key                                                                   |
-| `SENTRY_AUTH_TOKEN`                   | Orchestrator env | Sentry error tracking token                                                              |
-| `GOOGLE_APPLICATION_CREDENTIALS`      | Fixed            | `/secrets/gcp-sa.json`                                                                   |
+| `ERROR_HUB_HOST`                      | Orchestrator env | Private SentryBox host for the `error_hub` MCP entry                                      |
 | `CLAUDE_PROJECT_DIR`                  | Fixed            | `/repo`                                                                                  |
 | `CODE_WORKER_MODE`                    | Fixed            | `1` — identifies this as an automated worker process                                     |
 | `WORKER_MANAGED_MODE`                 | Orchestrator     | `1` = stay alive, accept `run-attempt` via docker exec                                   |
@@ -202,20 +205,14 @@ Network: `code-worker-net` (bridge driver, subnet `172.28.0.0/16`, IP masquerade
 
 ## Worker Types
 
-| Type              | Runtime  | API Base URL                                                | API Key Env Var       | Model Override           | Effort  |
-| ----------------- | -------- | ----------------------------------------------------------- | --------------------- | ------------------------ | ------- |
-| `auto`            | claude   | `https://api.anthropic.com`                                 | `ANTHROPIC_API_KEY`   | None                     | —       |
-| `opus`            | claude   | `https://api.anthropic.com`                                 | `ANTHROPIC_API_KEY`   | `opus`                   | high    |
-| `sonnet`          | claude   | `https://api.anthropic.com`                                 | `ANTHROPIC_API_KEY`   | `sonnet`                 | —       |
-| `minimax`         | claude   | `https://api.minimax.io/anthropic`                          | `MINIMAX_API_KEY`     | `MiniMax-M2.7`           | —       |
-| `glm`             | claude   | `https://coding-intl.dashscope.aliyuncs.com/apps/anthropic` | `DASHSCOPE_API_KEY`   | `glm-5`                  | —       |
-| `qwen`            | claude   | `https://coding-intl.dashscope.aliyuncs.com/apps/anthropic` | `DASHSCOPE_API_KEY`   | `qwen3.5-plus`           | —       |
-| `kimi`            | claude   | `https://api.kimi.com/coding`                               | `KIMI_API_KEY`        | `kimi-for-coding`        | high    |
-| `codex`           | codex    | `https://api.openai.com`                                    | shared `auth.json`    | runtime default          | —       |
-| `codex-xhigh`     | codex    | `https://api.openai.com`                                    | shared `auth.json`    | runtime default          | xhigh   |
-| `openrouter-free` | claude   | `https://openrouter.ai/api`                                 | `OPENROUTER_API_KEY`  | `qwen/qwen3.6-plus:free` | high    |
-
-GLM-5 and Qwen are accessed via Alibaba Cloud Model Studio (DashScope) and share `DASHSCOPE_API_KEY`. Kimi uses the native Kimi Code API with `KIMI_API_KEY` and the stable `kimi-for-coding` model ID.
+| Type              | Runtime | Authentication           | Model override           | Effort |
+| ----------------- | ------- | ------------------------ | ------------------------ | ------ |
+| `auto`            | claude  | Claude subscription      | runtime default          | —      |
+| `opus`            | claude  | Claude subscription      | `opus`                   | high   |
+| `sonnet`          | claude  | Claude subscription      | `sonnet`                 | —      |
+| `codex`           | codex   | Codex subscription       | runtime default          | —      |
+| `codex-xhigh`     | codex   | Codex subscription       | runtime default          | xhigh  |
+| `openrouter-free` | claude  | `OPENROUTER_API_KEY`     | `qwen/qwen3.6-plus:free` | high   |
 
 The `openrouter-free` type routes through OpenRouter's free tier with experimental betas disabled.
 
@@ -232,8 +229,8 @@ The `entrypoint.sh` script supports two invocation modes:
 5. **Plugin restoration** — Copies pre-installed Claude Code plugins from `/opt/claude-plugins/.claude/plugins/` to `/home/claude/.claude/plugins/`, rewriting staging paths to match the runtime HOME directory
 6. **Codex skill restoration** — Copies pre-staged Codex Superpowers skills from `/opt/codex-home/.agents/` to `/home/claude/.agents/`
 7. **Mount verification** — Checks that `/repo` exists and contains a git repository (supports both `.git` directory and worktree `.git` file)
-8. **GCP authentication** — Activates GCP service account from `/secrets/gcp-sa.json` via `gcloud auth`
-9. **Secret sync** — Runs `scripts/sync-secrets.sh dev` to pull environment variables from GCP Secret Manager into `/repo/.envrc`
+8. **Codex MCP restoration** — Copies `/opt/codex-home/.codex/` into `/home/claude/.codex/`
+9. **Host configuration boundary** — Uses the host-rendered, task-filtered `/repo/.envrc`; does not activate GCP credentials or fetch Secret Manager values
 10. **Environment loading** — Sources `/repo/.envrc` and runs `direnv allow /repo` so env vars auto-load for all subsequent commands
 11. **Git identity setup** — Configures `user.name` / `user.email` from `GIT_USER_NAME` / `GIT_USER_EMAIL` env vars at both global and repo level
 12. **GitHub token setup** — Reads token from `/secrets/github-token`; configures git credential helper to read the token file directly on each git operation
@@ -271,9 +268,9 @@ The `run-attempt` handler:
 10. If forensics enabled: tees runtime output to `claude-stream.log` or `codex-stream.log` in the forensics directory
 11. Terminates lingering child processes (SIGTERM, wait 0.5s, SIGKILL) to prevent Docker exec file descriptor leaks
 
-### Codex Automation Parity Evidence
+### Codex Runtime Evidence
 
-Codex does not run `.claude/hooks/*.sh` inside the worker. The retained non-interactive parity is instead surfaced through stable log evidence:
+Codex runtime setup is surfaced through stable log evidence:
 
 - `[entrypoint] Bootstrap evidence: ...`
   Shows whether Codex skill discovery, GitHub token setup, GCP auth, secret sync, and `.envrc` loading all executed during worker startup.
@@ -394,7 +391,7 @@ If `/repo/.claude/settings.local.json` already exists, the entrypoint merges the
 | strace / gdb          | Alpine package         | Crash forensics debugging                                  |
 | file                  | Alpine package         | File type identification                                   |
 | @upstash/context7-mcp | npm global             | Context7 MCP server                                        |
-| @sentry/mcp-server    | npm global             | Sentry MCP server                                          |
+| @sentry/mcp-server    | npm global             | Pinned MCP client for the private SentryBox compatibility API |
 | @playwright/mcp       | npm global             | Playwright MCP server (uses system Chromium)               |
 | @openai/codex         | npm global             | Codex CLI (AI coding agent runtime)                        |
 | claude                | Anthropic installer    | Claude Code CLI (AI coding agent runtime)                  |
@@ -499,7 +496,7 @@ docker/code-worker/
 
 **GitHub token is read from file, not env** — The `GITHUB_TOKEN` env var set at startup is a point-in-time snapshot that may go stale within long-running attempts. The git credential helper reads `/secrets/github-token` directly on each git operation (`$(cat /secrets/github-token)` in gitconfig). The `gh` CLI uses a wrapper at `/usr/local/bin/gh` that re-reads the file before each invocation. Both mechanisms pick up token refreshes from the orchestrator's `TokenRefresher` without any background watcher.
 
-**Secret sync runs inside the container** — The entrypoint calls `scripts/sync-secrets.sh dev` to pull environment variables from GCP Secret Manager into `/repo/.envrc`. This requires the GCP service account key to be mounted. If sync fails, the entrypoint continues with any pre-existing `.envrc` file.
+**Configuration is prepared on the host** — The entrypoint loads the host-rendered, task-filtered `/repo/.envrc`. Container-side GCP activation and Secret Manager synchronization are removed; prepare the projection before starting the worker.
 
 **direnv hook in .bashrc** — The entrypoint bakes `eval "$(direnv hook bash)"` into `.bashrc` so that environment variables from `.envrc` auto-load when Claude (or any bash subprocess) enters `/repo`. The `.envrc` is also sourced explicitly during startup before the direnv hook takes effect.
 

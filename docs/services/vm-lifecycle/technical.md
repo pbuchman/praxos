@@ -208,6 +208,10 @@ The function polls the health endpoint during the grace period. It stops waiting
 | `SHUTDOWN_POLL_INTERVAL_MS`            | number | `30000` (30 seconds)                            |
 | `ORCHESTRATOR_UNRESPONSIVE_TIMEOUT_MS` | number | `120000` (2 minutes)                            |
 
+## Changes Since v3.8.0
+
+The legacy per-worker `workers/vm-lifecycle/cloudbuild.yaml` deployment entry was removed as part of runtime-configuration migration. The `startVm` and `stopVm` source handlers are unchanged in this release window. This worker is separate from the guarded orchestrator restart and DEV hibernation procedures; those procedures must not be inferred from its running-task poll.
+
 ## Recent Changes
 
 | Commit     | Description                                                 | Date       |

@@ -1,13 +1,13 @@
 # WhatsApp Service Agent Reference
 
-Use whatsapp-service for WhatsApp Business webhook intake, user phone verification, outbound message delivery, text ingestion into Intex Agent, and private WhatsApp mirror reads.
+Use whatsapp-service for WhatsApp Business webhook intake, user phone verification, outbound message delivery, text ingestion into Intex Agent, private WhatsApp mirror reads, and the fenced source/delivery boundary used by Message Digest Service.
 
 ## Current Inbound Behavior
 
 - Text messages are persisted and published as `intex.message.ingest` with `sourceType: "whatsapp_text"`.
 - URL shares are treated as text messages and routed through Intex.
-- Button payloads from retired workflows are ignored.
-- Voice/audio messages receive this explicit reply: `Voice messages are not supported by Intex yet. Please send text for now.`
+- `intex_confirm:` buttons publish `whatsapp_button` ingests; other retired workflow buttons are ignored.
+- Voice/audio messages are stored and dispatched for transcription; they do not directly create Intex action ingests.
 
 ## Private Workspace Behavior
 
@@ -20,9 +20,26 @@ Use whatsapp-service for WhatsApp Business webhook intake, user phone verificati
 
 ## Important Boundaries
 
-- Do not reintroduce general approval reply matching.
-- Do not route audio transcripts into Intex.
+- Preserve the explicit Intex confirmation policy and do not reintroduce retired workflow reply matching.
+- Do not automatically execute audio transcripts as Intex commands. A text reply to a completed audio message may include its transcript as bounded reply context.
 - Do not publish retired command/action events.
 - Keep webhook handlers idempotent and log incoming internal requests before auth validation.
 - Do not mutate private WhatsApp messages through read routes.
 - Do not expose raw Matrix events or Matrix room IDs from authenticated private read responses. `/private/account` exposes the authenticated user's `sourceAccountId`; collection read routes must derive it server-side and reject caller-supplied values.
+
+## Conversation And Media Contracts
+
+- Conversation Assistant owns immutable initial context, explicit continuation updates, durable streamed turns, model selection at creation, and owner-scoped PDF export. Enforce model input budgets before provider execution.
+- Private audio/video transcription is enabled per chat; direct voice-to-action execution remains separate.
+- Signed media/thumbnail access checks ownership; Matrix ingest and recovery retain account fences and inline reaction relationships.
+- Matrix corpus evaluations exercise transport with strict mocked product actions.
+
+## Message Digest Contracts
+
+- `POST /internal/whatsapp/private/digest-source/validate` validates one user-owned group or direct chat and issues a source revision.
+- `POST /internal/whatsapp/private/digest-source/messages/query` reads one bounded window only when account generation and source revision still match.
+- `POST /internal/whatsapp/delivery-readiness/get` reports whether the first mapped phone can receive a message; it does not expose a destination selector.
+- `POST /internal/whatsapp/outbound-deliveries/get` reconciles idempotent provider state.
+- `POST /internal/whatsapp/outbound-deliveries/retry` permits only a byte-identical retry of a definitively failed send.
+
+Never log source request bodies, message projections, phone numbers, prompts, or summary text. Never retry an ambiguous provider outcome. Message Digest delivery must use the frozen template and acquire run authorization from message-digest-service before the provider call.

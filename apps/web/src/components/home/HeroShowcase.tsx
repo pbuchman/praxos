@@ -153,7 +153,7 @@ export function HeroShowcase(): React.JSX.Element {
               <span className="text-[10px] font-black text-white">I</span>
             </div>
             <span className="text-[11px] font-bold text-slate-900">IntexuraOS</span>
-            <span className="text-[8px] text-slate-400">ver. 3.8.0</span>
+            <span className="text-[8px] text-slate-400">ver. 4.0.0</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-1">
@@ -243,14 +243,14 @@ export function HeroShowcase(): React.JSX.Element {
                 issueId="RES-42"
                 title="Research draft ready: battery supply chain"
                 pipeline={<><Dot state="done" /><span className="ml-0.5 text-slate-500">Draft</span><PipeConn /><Dot state="done" /><span className="ml-0.5 text-slate-500">Council</span><PipeConn /><Dot state="done" /></>}
-                time={<><span className="text-slate-500">Created</span> 18m ago<br /><span className="text-slate-500">Models</span> 5 providers</>}
+                time={<><span className="text-slate-500">Created</span> 18m ago<br /><span className="text-slate-500">Models</span> 3 selected</>}
                 output={<span className="inline-flex items-center gap-0.5 rounded-full border border-cyan-200 bg-cyan-50 px-1.5 py-0.5 text-[8px] font-semibold text-cyan-700"><ExternalLink className="h-2 w-2" />Report</span>}
               />
               <TaskRow
                 issueId="CAL"
                 title="Calendar event created: dentist Friday 9:00"
                 accent="green"
-                pipeline={<><Dot state="done" /><span className="ml-0.5 text-slate-500">Extract</span><PipeConn /><Dot state="done" /><span className="ml-0.5 text-slate-500">Create</span></>}
+                pipeline={<><Dot state="done" /><span className="ml-0.5 text-slate-500">Confirm</span><PipeConn /><Dot state="done" /><span className="ml-0.5 text-slate-500">Create</span></>}
                 time={<><span className="text-slate-500">Created</span> 31m ago<br /><span className="text-slate-500">Calendar</span> Primary</>}
                 output={<span className="inline-flex items-center gap-0.5 rounded bg-green-600 px-1.5 py-0.5 text-[8px] font-semibold text-white"><Check className="h-2 w-2" />Done</span>}
               />
@@ -305,7 +305,7 @@ export function HeroShowcase(): React.JSX.Element {
           {/* Research created */}
           <WaBot>
             <span className="text-[8px]"><strong>RES-42</strong> | Research draft ready</span><br />
-            <span className="text-[8px] text-neutral-500">5 providers selected. Synthesis will preserve attribution.</span>
+            <span className="text-[8px] text-neutral-500">3 models via OpenRouter. Synthesis will preserve attribution.</span>
             <WaTime align="left">9:41 AM</WaTime>
           </WaBot>
 

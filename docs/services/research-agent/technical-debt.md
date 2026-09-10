@@ -78,7 +78,9 @@ No violations. The largest files (`researchRoutes.ts`, `internalRoutes.ts`) are 
 
 ## Deprecations
 
-No deprecated items identified.
+Direct-provider research execution was retired after v3.8.0. Stored historical records remain readable; new execution and retries require an allowlisted OpenRouter model, with a narrower MiniMax M3/GPT-5.4 synthesis subset. Retained historical adapters are not alternate execution routes.
+
+Cover-image provider failover was replaced by a single OpenRouter pipeline. A handled failure leaves the report publishable without a cover and does not produce a duplicate actionable alert.
 
 ---
 

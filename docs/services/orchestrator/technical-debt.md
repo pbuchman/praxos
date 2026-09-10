@@ -179,6 +179,10 @@ Worktrees accumulate until manually cleaned or the stale threshold is exceeded. 
 
 ---
 
+## Changes Since v3.8.0
+
+Guarded restart support adds a persistent admission freeze and evidence for in-flight admissions, terminal callbacks, and log forwarding. This complements the existing shutdown endpoint; operators must use the guarded restart procedure. State writes use restricted permissions. Host-rendered pinned configuration and a private SentryBox MCP replace the legacy secret-fetch and error-service compatibility paths. Existing restart, state-persistence, webhook, planning-contract, and MCP tests cover these boundaries.
+
 ## Recent Improvements (current release documentation)
 
 The following release-relevant reliability changes landed since v3.7.0:
@@ -199,7 +203,6 @@ The following items improved quality and capability since v3.5.0:
 - **Docker RFC3339 timestamp stripping** — Fixed log formatter to properly strip Docker-prepended RFC3339 timestamps (INT-1411)
 - **Validation model chain for resume summaries and compliance** — Configurable validation models replace hardcoded Gemini where LLM validation is still used (INT-1371)
 - **Gemini client usage mapping** — Validation model clients use HttpWebhookUsageSink for cost tracking (INT-1369)
-- **mimo-pro worker type** — Xiaomi MiMo Pro 2.5 as a new execution backend
 - **test_quality review scope** — Review type covering test quality analysis
 - **Inactivity restart tracking** — `inactivityRestartCount` persisted for observability
 - **retriedFrom field** — Declared in CreateTaskRequestSchema for retry chain tracking

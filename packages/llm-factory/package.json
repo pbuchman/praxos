@@ -1,6 +1,6 @@
 {
   "name": "@intexuraos/llm-factory",
-  "version": "3.8.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -16,7 +16,6 @@
   "dependencies": {
     "@intexuraos/common-core": "workspace:*",
     "@intexuraos/infra-claude": "workspace:*",
-    "@intexuraos/infra-gemini": "workspace:*",
     "@intexuraos/infra-gpt": "workspace:*",
     "@intexuraos/infra-openrouter": "workspace:*",
     "@intexuraos/infra-perplexity": "workspace:*",

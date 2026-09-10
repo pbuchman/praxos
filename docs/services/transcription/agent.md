@@ -24,6 +24,7 @@
 ```typescript
 interface AudioStoredEvent {
   type: 'whatsapp.audio.stored';
+  messageSource?: 'public_whatsapp' | 'private_whatsapp';
   userId: string;
   messageId: string;
   mediaId: string;
@@ -38,6 +39,8 @@ interface AudioStoredEvent {
 ```typescript
 interface TranscriptionCompletedEvent {
   type: 'srt.transcription.completed';
+  messageSource?: 'public_whatsapp' | 'private_whatsapp';
+  mediaKind?: 'audio' | 'video';
   userId: string;
   messageId: string;
   jobId: string;
@@ -90,6 +93,10 @@ interface TranscriptionCompletedEvent {
   "timestamp": "2026-03-07T10:00:05Z"
 }
 ```
+
+## Media Request Compatibility
+
+Use `whatsapp.media.transcription.requested` with the same required fields as `AudioStoredEvent` plus `mediaKind: audio | video`. Optional `messageSource` identifies public/private WhatsApp storage. These metadata fields are preserved in completion and failure events. Legacy audio events remain accepted; per-chat opt-in is enforced by whatsapp-service.
 
 ## Constraints
 
@@ -161,5 +168,6 @@ interface TranscriptionCompletedEvent {
 | `INTEXURAOS_INTERNAL_AUTH_TOKEN`                  | Yes      |
 | `INTEXURAOS_USER_SERVICE_URL`                     | Yes      |
 | `INTEXURAOS_PUBSUB_TRANSCRIPTION_COMPLETED_TOPIC` | Yes      |
+| `INTEXURAOS_PUBSUB_TRANSCRIPTION_DLQ_TOPIC` | Yes |
 | `INTEXURAOS_GCP_PROJECT_ID`                       | Yes      |
 | `INTEXURAOS_WHATSAPP_MEDIA_BUCKET`                | Yes      |

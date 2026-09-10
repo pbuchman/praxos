@@ -63,21 +63,32 @@ Create the isolated Docker network that worker containers use:
 ./scripts/setup-worker-network.sh
 ```
 
-This creates a bridge network named `code-worker-net` on subnet `172.28.0.0/16`.
+This creates a non-internal dual-stack Docker bridge named `code-worker-net` on the fixed
+Linux interface `code-worker-br`, IPv4 subnet `172.28.0.0/16`, and IPv6 subnet
+`fd00:172:28::/64`. IP masquerading is enabled and both gateway modes must be absent
+(Docker's `nat` default) or explicitly `nat`. The setup fails closed when a network with
+the same name exists but does not satisfy this exact contract.
 
 To verify:
 
 ```bash
-docker network inspect code-worker-net --format '{{.Name}}: {{range .IPAM.Config}}{{.Subnet}}{{end}}'
+./scripts/setup-worker-network.sh
 ```
 
 **Expected output:**
 
 ```
-code-worker-net: 172.28.0.0/16
+Network 'code-worker-net' already exists
+Network details:
+code-worker-net: 172.28.0.0/16 fd00:172:28::/64
+Network setup complete: code-worker-net
 ```
 
 ---
+
+## Prepare the Current Runtime
+
+Before a real worker run, render the reviewed configuration package on the host using the [orchestrator setup](../../../workers/orchestrator/README.md#local-development-setup). The worker receives the filtered task environment; do not supply renderer or general Secret Manager credentials to the container. For Codex, verify that startup restores MCP configuration and that the configured `ERROR_HUB_HOST` is reachable through the approved worker network.
 
 ## Part 4: Run a Container Manually (Legacy Mode) (10 minutes)
 
@@ -94,7 +105,6 @@ git init && echo "# Test" > README.md && git add . && git commit -m "init"
 
 ```bash
 mkdir -p /tmp/test-secrets
-echo '{"type": "service_account"}' > /tmp/test-secrets/gcp-sa.json
 echo "ghp_test_token_here" > /tmp/test-secrets/github-token
 echo "You are a helpful coding assistant." > /tmp/test-secrets/system-prompt.txt
 echo "List the files in the repository." > /tmp/test-secrets/user-prompt.txt
@@ -113,8 +123,7 @@ docker run -it --rm \
   -e ANTHROPIC_API_KEY=your-api-key \
   -e ANTHROPIC_BASE_URL=https://api.anthropic.com \
   -e LINEAR_API_KEY=your-linear-key \
-  -e SENTRY_AUTH_TOKEN=your-sentry-token \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-sa.json \
+  -e ERROR_HUB_HOST=home-dev.example.ts.net:8443 \
   -e GIT_USER_NAME="Test User" \
   -e GIT_USER_EMAIL="test@example.com" \
   -v /tmp/test-repo:/repo:rw \
@@ -139,7 +148,6 @@ docker run -it --rm \
   -e TASK_ID=codex-test \
   -e WORKER_RUNTIME=codex \
   -e CODEX_REASONING_EFFORT=xhigh \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-sa.json \
   -e GIT_USER_NAME="Test User" \
   -e GIT_USER_EMAIL="test@example.com" \
   -v /tmp/test-repo:/repo:rw \
@@ -163,12 +171,9 @@ docker run -it --rm \
 [entrypoint] Plugin cache restored (2 marketplaces)
 [entrypoint] Codex skill discovery restored
 [entrypoint] Git repo verified: /repo
-[entrypoint] GCP auth successful
-[entrypoint] Syncing secrets from GCP Secret Manager...
-[entrypoint] Secret sync complete
 [entrypoint] Loaded environment from /repo/.envrc (15 vars)
 [entrypoint] GitHub token loaded and git credential configured
-[entrypoint] Bootstrap evidence: codex_skills=restored github_token=loaded gcp_auth=active secret_sync=synced envrc=loaded
+[entrypoint] Bootstrap evidence: codex_skills=restored github_token=loaded gcp_auth=skipped secret_sync=skipped envrc=loaded
 [entrypoint] Installing dependencies...
 [entrypoint] Dependencies installed
 [entrypoint] Attribution set: Crafted with love by ...
@@ -320,13 +325,13 @@ The E2E test suite verifies container lifecycle, mount permissions, input/output
 
 ```bash
 docker build -t code-worker:test -f docker/code-worker/Dockerfile.test docker/code-worker/
-docker network create --driver bridge --subnet 172.28.0.0/16 code-worker-net 2>/dev/null || true
+./scripts/setup-worker-network.sh
 ```
 
 ### Step 7.2: Run the E2E tests
 
 ```bash
-WORKER_IMAGE=code-worker:test WORKER_NETWORK=code-worker-net pnpm --filter orchestrator test:e2e
+WORKER_IMAGE=code-worker:test pnpm --filter orchestrator test:e2e
 ```
 
 **Expected test suites:**
@@ -377,8 +382,7 @@ The stub streams output line-by-line to match real Codex behavior.
 | Issue                       | Symptom                                                     | Solution                                                                           |
 | --------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Container exits immediately | `[entrypoint] ERROR: Running as root is forbidden`          | Run with `--user 1001:1001`                                                        |
-| GCP auth fails              | `[entrypoint] GCP auth failed (non-fatal)`                  | Verify `/secrets/gcp-sa.json` contains a valid SA key                              |
-| Secret sync fails           | `[entrypoint] Secret sync failed (non-fatal...)`            | Check GCP SA has Secret Manager access; existing .envrc used                       |
+| Runtime configuration missing | Expected task settings are absent | Prepare the host-rendered task projection before starting the container |
 | No git repo detected        | `[entrypoint] WARNING: /repo is not a git repository`       | Ensure the mounted directory has a `.git` dir or file                              |
 | Claude onboarding prompt    | Interactive setup screens on startup                        | Check that config defaults are at `/opt/claude-defaults/`                          |
 | Plugins not loaded          | MCP servers fail to start                                   | Check `/opt/claude-plugins/.claude/plugins/` exists in image                       |

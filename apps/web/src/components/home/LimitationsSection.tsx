@@ -4,7 +4,7 @@ import { AlertTriangle } from 'lucide-react';
 export function LimitationsSection(): React.JSX.Element {
   const limitations = [
     'WhatsApp is the only mobile channel — no SMS, email, or native push',
-    'WhatsApp 24-hour messaging policy — the system cannot reach you after a day of silence until you send the next message',
+    'Free-form WhatsApp replies require an active 24-hour messaging window; approved templates support deliveries such as Message Digests outside that window',
     'Google Calendar only — no Outlook or Apple Calendar',
     'Linear for project tracking — no Jira or Asana',
     'Android-only notification capture — iOS not supported',
@@ -12,7 +12,7 @@ export function LimitationsSection(): React.JSX.Element {
     'Two worker machines (any Mac or Linux computer) maximum — a primary and a fallback',
     'Designed for individual use — no shared workspaces or team features',
     'Design review before code execution — a deliberate quality gate',
-    'No recurring events or tasks — single instances only',
+    'Recurring calendar event creation is not supported; scheduled Message Digests and daily calendar lookahead are available',
     'API keys configured manually — the system validates each before accepting',
   ];
 

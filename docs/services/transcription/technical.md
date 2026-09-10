@@ -2,7 +2,7 @@
 
 ## Overview
 
-The transcription worker is a Google Cloud Function that converts WhatsApp voice notes into text using Speechmatics Batch API. It subscribes to the `audio-stored` Pub/Sub topic, processes audio files stored in GCS, and publishes transcription results (success or failure) to the `transcription-completed` topic. Built with `@google-cloud/functions-framework` and deployed as a CloudEvent handler.
+The transcription worker is a Google Cloud Function that converts WhatsApp voice notes and video speech into text using Speechmatics Batch API. It subscribes to the `audio-stored` Pub/Sub topic, processes audio files stored in GCS, and publishes transcription results (success or failure) to the `transcription-completed` topic. Built with `@google-cloud/functions-framework` and deployed as a CloudEvent handler.
 
 > **History:** Prior to v3.2.0, transcription was handled inline by whatsapp-service. The extraction to a standalone worker (INT-684) introduced event-driven processing, user-level provider preferences, and cleaner separation of concerns.
 
@@ -85,6 +85,12 @@ sequenceDiagram
     Worker->>PSO: TranscriptionCompletedEvent
     Worker-->>-PS: ack
 ```
+
+## Changes Since v3.8.0
+
+The worker accepts both the legacy `whatsapp.audio.stored` event and `whatsapp.media.transcription.requested`. The latter requires `mediaKind: audio | video`; all other required identifiers, GCS path, MIME type, and timestamp match the legacy request. Both support optional `messageSource: public_whatsapp | private_whatsapp`. Completion events preserve `messageSource` and, when supplied, `mediaKind` on success and failure.
+
+Invalid event types or schemas are dead-lettered. Handled Speechmatics rejections and transient poll warnings are logged with error-report suppression. With the production user-service base `https://intexuraos.cloud/api/user`, provider lookup uses the internal edge route and a Google identity token; other bases use `X-Internal-Auth`.
 
 ## Recent Changes
 
@@ -214,6 +220,7 @@ Transient poll errors do not abort — the worker continues polling with increas
 | `INTEXURAOS_INTERNAL_AUTH_TOKEN`                  | Internal service auth token    | Yes      |
 | `INTEXURAOS_USER_SERVICE_URL`                     | Base URL of user-service       | Yes      |
 | `INTEXURAOS_PUBSUB_TRANSCRIPTION_COMPLETED_TOPIC` | Pub/Sub topic name             | Yes      |
+| `INTEXURAOS_PUBSUB_TRANSCRIPTION_DLQ_TOPIC` | Dead-letter topic for invalid requests | Yes |
 | `INTEXURAOS_GCP_PROJECT_ID`                       | GCP project ID                 | Yes      |
 | `INTEXURAOS_WHATSAPP_MEDIA_BUCKET`                | GCS bucket for WhatsApp media  | Yes      |
 | `LOG_LEVEL`                                       | Pino log level                 | No       |
@@ -235,11 +242,11 @@ The worker uses a user-friendly error formatter (`formatSpeechmaticsError`) that
 | `network`/`connection`      | "Could not connect to transcription service"               |
 | Messages > 100 chars        | Truncated to 97 chars + `...`                              |
 
-**Critical design rule:** The worker always publishes a `TranscriptionCompletedEvent` regardless of success or failure. Downstream consumers never need to handle timeouts or missing events.
+**Result delivery:** Each valid request attempts to publish a success or failure event. Publication can fail, so consumers must not assume an event is guaranteed; malformed requests follow the dead-letter path.
 
 ## Gotchas
 
-- **Two-step event validation:** The handler first checks the `type` field explicitly (for a specific log message with the wrong type value), then runs the full `isAudioStoredEvent` guard for remaining required fields. Both checks are intentional and serve different debugging purposes.
+- **Two-step event validation:** The handler first checks the `type` field explicitly (for a specific log message with the wrong type value), then runs the full `isTranscriptionRequestEvent` guard for remaining required fields. Both checks are intentional and serve different debugging purposes.
 - **mediaId is unused:** The `AudioStoredEvent` includes `mediaId` for audit traceability in consuming services, but the transcription workflow itself only needs `gcsPath` to identify the file.
 - **Signed URL expiry:** GCS signed URLs are generated with a 4-hour expiry window. If Speechmatics takes longer to start processing, the URL will expire.
 - **Logger type mismatch:** The `Logger` interface in `logger.ts` is a simplified subset for dependency injection in tests, while `BasePubSubPublisher` requires the full `pino.Logger` type. The module-level singleton satisfies both.

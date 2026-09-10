@@ -42,7 +42,7 @@ interface UsageEventInput {
   request: {
     provider: 'google' | 'openai' | 'anthropic' | 'perplexity' | 'openrouter';
     model: string;
-    operation: 'research' | 'generate' | 'image_generation' | 'tool_calling' | 'other';
+    operation: 'research' | 'generate' | 'image_generation' | 'embedding' | 'tool_calling' | 'other';
     success: boolean;
     durationMs: number;
     promptType?: string;
@@ -237,6 +237,10 @@ interface PricingResponse {
 ```
 
 Successful HTTP responses are wrapped as `ApiOk<PricingResponse>`.
+
+## Embedding and Component Compatibility
+
+Set `request.operation` to `embedding` for embedding usage. Send `source.component` unchanged even when it contains `/` or `%`; the service encodes storage keys internally and preserves the original dimension. Do not pre-encode the component value.
 
 ## Constraints
 
